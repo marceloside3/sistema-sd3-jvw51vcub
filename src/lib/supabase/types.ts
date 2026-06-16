@@ -435,6 +435,17 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION set_updated_at()
+//   CREATE OR REPLACE FUNCTION public.set_updated_at()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     NEW.updated_at = NOW();
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION sync_last_login()
 //   CREATE OR REPLACE FUNCTION public.sync_last_login()
 //    RETURNS trigger
@@ -453,6 +464,14 @@ export const Constants = {
 //   END;
 //   $function$
 //
+
+// --- TRIGGERS ---
+// Table: areas
+//   set_areas_updated_at: CREATE TRIGGER set_areas_updated_at BEFORE UPDATE ON public.areas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: profiles
+//   set_profiles_updated_at: CREATE TRIGGER set_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: users
+//   set_users_updated_at: CREATE TRIGGER set_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
 // --- INDEXES ---
 // Table: area_responsibles

@@ -252,6 +252,7 @@ export default function UsersPage() {
                         variant={a.is_principal ? 'default' : 'secondary'}
                         className="text-xs"
                       >
+                        {a.is_principal && <span className="mr-1">⭐</span>}
                         {a.area.name} {a.is_principal && '(Principal)'}
                       </Badge>
                     ))}
