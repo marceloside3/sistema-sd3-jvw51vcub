@@ -166,7 +166,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
@@ -346,10 +346,10 @@ export const Constants = {
 
 // --- CONSTRAINTS ---
 // Table: area_responsibles
-//   FOREIGN KEY area_responsibles_area_id_fkey: FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
+//   FOREIGN KEY area_responsibles_area_id_fkey: FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE RESTRICT
 //   PRIMARY KEY area_responsibles_pkey: PRIMARY KEY (id)
-//   UNIQUE area_responsibles_user_area_key: UNIQUE (user_id, area_id)
 //   FOREIGN KEY area_responsibles_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+//   UNIQUE uq_user_area: UNIQUE (user_id, area_id)
 // Table: areas
 //   UNIQUE areas_code_key: UNIQUE (code)
 //   PRIMARY KEY areas_pkey: PRIMARY KEY (id)
@@ -364,25 +364,67 @@ export const Constants = {
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: area_responsibles
-//   Policy "authenticated_select_area_responsibles" (SELECT, PERMISSIVE) roles={authenticated}
+//   Policy "area_responsibles_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//   Policy "area_responsibles_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: is_admin()
+//   Policy "area_responsibles_select" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "area_responsibles_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//     WITH CHECK: is_admin()
 // Table: areas
-//   Policy "authenticated_select_areas" (SELECT, PERMISSIVE) roles={authenticated}
+//   Policy "areas_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//   Policy "areas_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: is_admin()
+//   Policy "areas_select" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "areas_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//     WITH CHECK: is_admin()
 // Table: profiles
-//   Policy "authenticated_select_profiles" (SELECT, PERMISSIVE) roles={authenticated}
+//   Policy "profiles_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//   Policy "profiles_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: is_admin()
+//   Policy "profiles_select" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "profiles_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//     WITH CHECK: is_admin()
 // Table: users
-//   Policy "authenticated_select_users" (SELECT, PERMISSIVE) roles={authenticated}
+//   Policy "users_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: is_admin()
+//   Policy "users_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: is_admin()
+//   Policy "users_select" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
-//   Policy "users_update_own" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: (id = auth.uid())
-//     WITH CHECK: (id = auth.uid())
+//   Policy "users_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: ((id = auth.uid()) OR is_admin())
+//     WITH CHECK: ((id = auth.uid()) OR is_admin())
+
+// --- DATABASE FUNCTIONS ---
+// FUNCTION is_admin()
+//   CREATE OR REPLACE FUNCTION public.is_admin()
+//    RETURNS boolean
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     RETURN EXISTS (
+//       SELECT 1 FROM public.users u
+//       JOIN public.profiles p ON u.profile_id = p.id
+//       WHERE u.id = auth.uid() AND p.is_admin = true
+//     );
+//   END;
+//   $function$
+//
 
 // --- INDEXES ---
 // Table: area_responsibles
-//   CREATE UNIQUE INDEX area_responsibles_user_area_key ON public.area_responsibles USING btree (user_id, area_id)
 //   CREATE UNIQUE INDEX unique_principal_per_area ON public.area_responsibles USING btree (area_id) WHERE (is_principal = true)
+//   CREATE UNIQUE INDEX uq_user_area ON public.area_responsibles USING btree (user_id, area_id)
 // Table: areas
 //   CREATE UNIQUE INDEX areas_code_key ON public.areas USING btree (code)
 // Table: profiles
