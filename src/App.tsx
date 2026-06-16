@@ -6,6 +6,7 @@ import { Navigate } from 'react-router-dom'
 import Index from './pages/Index'
 import ProjectDetails from './pages/ProjectDetails'
 import AreaPage from './pages/AreaPage'
+import AuditReport from './pages/AuditReport'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/dashboard" element={<Index />} />
             <Route path="/projeto/:id" element={<ProjectDetails />} />
             <Route path="/area/:area_slug" element={<AreaPage />} />
+            <Route path="/auditoria" element={<AuditReport />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

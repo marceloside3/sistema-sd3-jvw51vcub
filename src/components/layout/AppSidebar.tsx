@@ -83,8 +83,13 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4 group-data-[collapsible=icon]:hidden">
-        <div className="text-xs text-sidebar-foreground/50 text-center">
-          Manual de Processos v2.0
+        <div className="flex flex-col gap-2">
+          <Link to="/auditoria" className="text-xs text-primary hover:underline text-center">
+            Relatório de Auditoria
+          </Link>
+          <div className="text-xs text-sidebar-foreground/50 text-center">
+            Manual de Processos v2.0
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>
