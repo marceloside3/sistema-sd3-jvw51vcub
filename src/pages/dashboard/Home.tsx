@@ -22,6 +22,12 @@ export default function Home() {
 
   const { user, profile, areas } = data
 
+  const sortedAreas = [...areas].sort((a, b) => {
+    if (a.is_principal) return -1
+    if (b.is_principal) return 1
+    return 0
+  })
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
@@ -87,21 +93,24 @@ export default function Home() {
           <CardContent>
             {areas.length > 0 ? (
               <ul className="space-y-3">
-                {areas.map((area) => (
+                {sortedAreas.map((area) => (
                   <li
                     key={area.id}
                     className="flex items-center justify-between border-b border-gray-50 last:border-0 pb-2 last:pb-0"
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{area.name}</span>
-                      {area.is_hub && (
-                        <span className="text-xs text-green-600 font-medium">HUB</span>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{area.is_principal ? '⭐' : '•'}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">{area.name}</span>
+                        {area.is_hub && (
+                          <span className="text-xs text-green-600 font-medium">HUB</span>
+                        )}
+                      </div>
                     </div>
                     {area.is_principal && (
-                      <Badge variant="outline" className="text-xs bg-gray-50 font-normal">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
                         Principal
-                      </Badge>
+                      </span>
                     )}
                   </li>
                 ))}
