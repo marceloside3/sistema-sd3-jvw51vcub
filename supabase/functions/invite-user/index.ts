@@ -42,8 +42,11 @@ Deno.serve(async (req: Request) => {
     const { email, full_name, profile_id, areas } = await req.json()
 
     // 1. Invite user
+    const siteUrl =
+      Deno.env.get('SITE_URL') ?? 'https://sistema-operacional-sd3-99b62--preview.goskip.app'
     const { data: inviteData, error: inviteError } =
       await supabaseClient.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${siteUrl}/auth/set-password`,
         data: { full_name, profile_id },
       })
 
