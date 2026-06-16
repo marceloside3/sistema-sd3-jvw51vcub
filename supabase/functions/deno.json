@@ -1,6 +1,6 @@
 {
   "_versions": {
-    "validate-password": 4,
-    "invite-user": 4
+    "validate-password": 5,
+    "invite-user": 5
   }
 }
