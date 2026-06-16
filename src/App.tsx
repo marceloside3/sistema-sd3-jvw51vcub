@@ -1,56 +1,50 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { Navigate } from 'react-router-dom'
-import Index from './pages/Index'
+import { AuthProvider } from '@/hooks/use-auth'
+import { CurrentUserProvider } from '@/hooks/use-current-user'
+
+import Login from './pages/auth/Login'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import Home from './pages/dashboard/Home'
+import { AppShell } from './components/layout/AppShell'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+
 import ProjectDetails from './pages/ProjectDetails'
 import AreaPage from './pages/AreaPage'
 import AuditReport from './pages/AuditReport'
-import NotFound from './pages/NotFound'
-import Layout from './components/Layout'
-import Login from './pages/Login'
-import { AuthProvider, useAuth } from '@/hooks/use-auth'
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { session, loading } = useAuth()
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>
-  }
-
-  if (!session) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <>{children}</>
-}
 
 const App = () => (
   <AuthProvider>
-    <BrowserRouter>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Index />} />
-            <Route path="/projeto/:id" element={<ProjectDetails />} />
-            <Route path="/area/:area_slug" element={<AreaPage />} />
-            <Route path="/auditoria" element={<AuditReport />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </BrowserRouter>
+    <CurrentUserProvider>
+      <BrowserRouter>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<Home />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/projeto/:id" element={<ProjectDetails />} />
+              <Route path="/area/:area_slug" element={<AreaPage />} />
+              <Route path="/auditoria" element={<AuditReport />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </TooltipProvider>
+      </BrowserRouter>
+    </CurrentUserProvider>
   </AuthProvider>
 )
 

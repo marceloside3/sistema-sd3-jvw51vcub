@@ -373,6 +373,9 @@ export const Constants = {
 //   Policy "area_responsibles_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: is_admin()
 //     WITH CHECK: is_admin()
+//   Policy "service_role_area_responsibles" (ALL, PERMISSIVE) roles={service_role}
+//     USING: true
+//     WITH CHECK: true
 // Table: areas
 //   Policy "areas_delete" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: is_admin()
@@ -383,6 +386,9 @@ export const Constants = {
 //   Policy "areas_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: is_admin()
 //     WITH CHECK: is_admin()
+//   Policy "service_role_areas" (ALL, PERMISSIVE) roles={service_role}
+//     USING: true
+//     WITH CHECK: true
 // Table: profiles
 //   Policy "profiles_delete" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: is_admin()
@@ -393,7 +399,13 @@ export const Constants = {
 //   Policy "profiles_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: is_admin()
 //     WITH CHECK: is_admin()
+//   Policy "service_role_profiles" (ALL, PERMISSIVE) roles={service_role}
+//     USING: true
+//     WITH CHECK: true
 // Table: users
+//   Policy "service_role_users" (ALL, PERMISSIVE) roles={service_role}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "users_delete" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: is_admin()
 //   Policy "users_insert" (INSERT, PERMISSIVE) roles={authenticated}
@@ -412,10 +424,13 @@ export const Constants = {
 //    SECURITY DEFINER
 //   AS $function$
 //   BEGIN
-//     RETURN EXISTS (
-//       SELECT 1 FROM public.users u
-//       JOIN public.profiles p ON u.profile_id = p.id
-//       WHERE u.id = auth.uid() AND p.is_admin = true
+//     RETURN (
+//       current_setting('role') = 'service_role' OR
+//       EXISTS (
+//         SELECT 1 FROM public.users u
+//         JOIN public.profiles p ON u.profile_id = p.id
+//         WHERE u.id = auth.uid() AND p.is_admin = true
+//       )
 //     );
 //   END;
 //   $function$

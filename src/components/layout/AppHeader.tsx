@@ -1,44 +1,51 @@
-import { Bell, Search, UserCircle } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/stores/use-app-store'
-import { MACRO_AREAS } from '@/lib/types'
+import { useAuth } from '@/hooks/use-auth'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 
 export function AppHeader() {
-  const { current_user, alerts } = useAppStore()
-  const areaName = MACRO_AREAS.find((a) => a.id === current_user.area_id)?.name
+  const { signOut } = useAuth()
+  const { data, clearCache } = useCurrentUser()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    clearCache()
+    await signOut()
+    navigate('/login', { replace: true })
+  }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="flex items-center justify-between h-16 px-4 border-b bg-white shrink-0 sticky top-0 z-10">
       <div className="flex items-center gap-4">
-        <SidebarTrigger />
-        <div className="hidden md:flex relative w-64 lg:w-96">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar projetos ou clientes..."
-            className="pl-8 bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+        <SidebarTrigger className="md:hidden" />
+        <div className="flex items-center gap-2">
+          <img
+            src="https://img.usecurling.com/i?q=cube&color=blue&shape=fill"
+            alt="SD3 Logo"
+            className="w-8 h-8 rounded-md"
           />
+          <span className="font-bold text-xl text-blue-900 hidden md:block">SD3 OS</span>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-foreground/80" />
-          {alerts.length > 0 && (
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-          )}
-        </Button>
-
-        <div className="hidden md:flex items-center gap-3 border-l pl-4">
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-semibold leading-none">{current_user.name}</span>
-            <span className="text-xs text-muted-foreground mt-1">
-              {current_user.profile_id === 1 ? 'Diretor' : 'Analista'} • {areaName}
-            </span>
+        {data && (
+          <div className="flex flex-col items-end hidden sm:flex">
+            <span className="text-sm font-semibold text-gray-900">{data.user.full_name}</span>
+            <span className="text-xs text-gray-500">{data.profile?.name || 'Sem perfil'}</span>
           </div>
-          <UserCircle className="h-8 w-8 text-muted-foreground" />
-        </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          title="Sair"
+          className="text-gray-500 hover:text-red-600 hover:bg-red-50"
+        >
+          <LogOut className="w-5 h-5" />
+        </Button>
       </div>
     </header>
   )
