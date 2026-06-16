@@ -435,6 +435,24 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION sync_last_login()
+//   CREATE OR REPLACE FUNCTION public.sync_last_login()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//    SET search_path TO 'public', 'auth'
+//   AS $function$
+//   BEGIN
+//     -- Quando last_sign_in_at é atualizado em auth.users, copia para public.users
+//     IF NEW.last_sign_in_at IS DISTINCT FROM OLD.last_sign_in_at THEN
+//       UPDATE public.users
+//       SET last_login_at = NEW.last_sign_in_at
+//       WHERE id = NEW.id;
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 
 // --- INDEXES ---
 // Table: area_responsibles
