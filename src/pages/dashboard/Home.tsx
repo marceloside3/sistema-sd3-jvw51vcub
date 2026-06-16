@@ -53,7 +53,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-2">
                 {profile?.is_admin && (
                   <Badge variant="default" className="bg-blue-600">
-                    Admin
+                    🛡️ Admin
                   </Badge>
                 )}
                 {profile?.is_director && (
@@ -61,7 +61,7 @@ export default function Home() {
                     variant="secondary"
                     className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none"
                   >
-                    Diretor
+                    👔 Diretor
                   </Badge>
                 )}
                 {!profile?.is_admin && !profile?.is_director && (

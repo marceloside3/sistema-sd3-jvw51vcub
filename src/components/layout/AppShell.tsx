@@ -54,15 +54,15 @@ function AppHeader() {
   }
 
   return (
-    <header className="h-16 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 md:px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="md:hidden" />
-        <span className="text-xl font-bold text-blue-600 md:hidden tracking-tight">SD3</span>
+        <SidebarTrigger />
+        <span className="text-xl font-bold text-blue-600 tracking-tight">SD3</span>
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
         {data && (
-          <div className="hidden md:flex flex-col items-end">
+          <div className="flex flex-col items-end">
             <span className="text-sm font-medium text-gray-900 leading-none">
               {data.user.full_name}
             </span>

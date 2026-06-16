@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from './use-auth'
 
@@ -44,31 +44,34 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   const [data, setData] = useState<CurrentUserContextType['data']>(null)
   const [loading, setLoading] = useState(true)
 
-  const clearCache = () => {
+  const clearCache = useCallback(() => {
     setData(null)
-  }
+  }, [])
 
   useEffect(() => {
     let isMounted = true
 
     async function fetchUser() {
-      if (!session?.user?.id) {
-        if (isMounted) {
-          setData(null)
-          setLoading(false)
-        }
-        return
-      }
-
       setLoading(true)
       try {
+        const { data: authData, error: authError } = await supabase.auth.getUser()
+        if (authError || !authData?.user) {
+          if (isMounted) {
+            setData(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        const userId = authData.user.id
+
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select(`
             id, email, full_name, is_active, last_login_at,
             profile:profiles(id, code, name, is_director, is_admin, is_system)
           `)
-          .eq('id', session.user.id)
+          .eq('id', userId)
           .single()
 
         if (userError) throw userError
@@ -80,7 +83,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
             is_principal,
             areas(id, code, name, is_hub)
           `)
-          .eq('user_id', session.user.id)
+          .eq('user_id', userId)
 
         if (areasError) throw areasError
 
@@ -101,10 +104,10 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
             },
             profile: profileData as Profile | null,
             areas: (areasData || []).map((a: any) => ({
-              id: a.areas.id,
-              code: a.areas.code,
-              name: a.areas.name,
-              is_hub: a.areas.is_hub,
+              id: a.areas?.id,
+              code: a.areas?.code,
+              name: a.areas?.name,
+              is_hub: a.areas?.is_hub,
               is_principal: a.is_principal,
             })),
           })
@@ -116,12 +119,19 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
       }
     }
 
-    fetchUser()
+    if (session) {
+      fetchUser()
+    } else {
+      if (isMounted) {
+        setData(null)
+        setLoading(false)
+      }
+    }
 
     return () => {
       isMounted = false
     }
-  }, [session?.user?.id])
+  }, [session])
 
   return React.createElement(
     CurrentUserContext.Provider,
