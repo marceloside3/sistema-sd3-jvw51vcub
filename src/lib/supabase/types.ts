@@ -399,7 +399,7 @@ export const Constants = {
 //   Policy "users_insert" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: is_admin()
 //   Policy "users_select" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: true
+//     USING: ((id = auth.uid()) OR is_admin())
 //   Policy "users_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: ((id = auth.uid()) OR is_admin())
 //     WITH CHECK: ((id = auth.uid()) OR is_admin())
