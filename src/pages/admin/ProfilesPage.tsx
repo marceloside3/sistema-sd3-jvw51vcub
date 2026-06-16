@@ -79,7 +79,7 @@ export default function ProfilesPage() {
         await updateProfile(editingProfile.id, formData)
         toast({ title: 'Perfil atualizado' })
       } else {
-        await createProfile(formData)
+        await createProfile({ ...formData, is_system: false })
         toast({ title: 'Perfil criado' })
       }
       setIsModalOpen(false)

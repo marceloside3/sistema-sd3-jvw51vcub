@@ -51,6 +51,7 @@ export default function UsersPage() {
 
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState('')
   const [profileFilter, setProfileFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -73,8 +74,9 @@ export default function UsersPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const { data } = await getUsers(page, 25, search, profileFilter, statusFilter)
-      setUsers(data || [])
+      const res = await getUsers(page, 25, search, profileFilter, statusFilter)
+      setUsers(res.data || [])
+      setTotalPages(res.totalPages || 1)
     } catch (error) {
       toast({ title: 'Erro ao carregar usuários', variant: 'destructive' })
     }
@@ -112,7 +114,7 @@ export default function UsersPage() {
       return toast({ title: 'Preencha todos os campos obrigatórios', variant: 'destructive' })
     }
     const principalAreas = formData.areas.filter((a) => a.is_principal)
-    if (principalAreas.length !== 1) {
+    if (principalAreas.length !== 1 && formData.areas.length > 0) {
       return toast({
         title: 'Selecione exatamente uma área como principal',
         variant: 'destructive',
@@ -314,6 +316,30 @@ export default function UsersPage() {
         </Table>
       </div>
 
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          Página {page} de {totalPages || 1}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || loading}
+          >
+            Próximo
+          </Button>
+        </div>
+      </div>
+
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -348,6 +374,7 @@ export default function UsersPage() {
               <Select
                 value={formData.profile_id}
                 onValueChange={(v) => setFormData({ ...formData, profile_id: v })}
+                disabled={!!editingUser && editingUser.id === currentUser?.user.id}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />

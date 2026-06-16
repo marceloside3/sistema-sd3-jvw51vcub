@@ -1,149 +1,153 @@
 import { supabase } from '@/lib/supabase/client'
 
-// USERS
-export async function getUsers(page = 1, pageSize = 25, search = '', profileId = '', status = '') {
+export const getUsers = async (
+  page = 1,
+  limit = 25,
+  search = '',
+  profileFilter = 'all',
+  statusFilter = 'all',
+) => {
   let query = supabase.from('users').select(
     `
-      *,
-      profile:profiles(id, name),
-      areas:area_responsibles(
-        is_principal,
-        area:areas(id, name)
-      )
-    `,
+    id, full_name, email, is_active, last_login_at, profile_id,
+    profile:profiles(id, name, is_admin),
+    areas:area_responsibles(is_principal, area:areas(id, name))
+  `,
     { count: 'exact' },
   )
 
-  if (search) {
-    query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
-  }
-  if (profileId && profileId !== 'all') {
-    query = query.eq('profile_id', profileId)
-  }
-  if (status === 'active') {
-    query = query.eq('is_active', true)
-  } else if (status === 'inactive') {
-    query = query.eq('is_active', false)
-  }
+  if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
+  if (profileFilter !== 'all') query = query.eq('profile_id', profileFilter)
+  if (statusFilter !== 'all') query = query.eq('is_active', statusFilter === 'active')
 
-  const from = (page - 1) * pageSize
-  const to = from + pageSize - 1
+  const from = (page - 1) * limit
+  const to = from + limit - 1
 
   const { data, count, error } = await query
-    .range(from, to)
     .order('created_at', { ascending: false })
-
+    .range(from, to)
   if (error) throw error
-  return { data, count }
+
+  return {
+    data,
+    total: count || 0,
+    totalPages: Math.ceil((count || 0) / limit),
+  }
 }
 
-export async function inviteUser(payload: {
-  email: string
-  full_name: string
-  profile_id: string
-  areas: any[]
-}) {
+export const inviteUser = async (payload: any) => {
   const { data, error } = await supabase.functions.invoke('invite-user', {
     body: payload,
   })
   if (error) throw error
+  if (data?.error) throw new Error(data.error)
   return data
 }
 
-export async function updateUser(id: string, payload: any) {
+export const updateUser = async (id: string, payload: any) => {
+  const { full_name, profile_id, is_active, areas } = payload
+
   const { error: userError } = await supabase
     .from('users')
     .update({
-      full_name: payload.full_name,
-      profile_id: payload.profile_id,
-      is_active: payload.is_active,
+      full_name,
+      profile_id,
+      is_active,
     })
     .eq('id', id)
-
   if (userError) throw userError
 
-  const { error: delError } = await supabase.from('area_responsibles').delete().eq('user_id', id)
-
-  if (delError) throw delError
-
-  if (payload.areas?.length > 0) {
-    const areasToInsert = payload.areas.map((a: any) => ({
-      user_id: id,
-      area_id: a.area_id,
-      is_principal: a.is_principal,
-    }))
-    const { error: insError } = await supabase.from('area_responsibles').insert(areasToInsert)
-
-    if (insError) throw insError
+  if (areas) {
+    await supabase.from('area_responsibles').delete().eq('user_id', id)
+    if (areas.length > 0) {
+      const { error: areaError } = await supabase.from('area_responsibles').insert(
+        areas.map((a: any) => ({
+          user_id: id,
+          area_id: a.area_id,
+          is_principal: a.is_principal,
+        })),
+      )
+      if (areaError) throw areaError
+    }
   }
+  return true
 }
 
-export async function countActiveAdmins() {
+export const countActiveAdmins = async () => {
   const { count, error } = await supabase
     .from('users')
-    .select('id, profiles!inner(is_admin)', { count: 'exact' })
+    .select('id, profile:profiles!inner(is_admin)', { count: 'exact', head: true })
     .eq('is_active', true)
-    .eq('profiles.is_admin', true)
+    .eq('profile.is_admin', true)
   if (error) throw error
   return count || 0
 }
 
-// AREAS
-export async function getAreas() {
-  const { data, error } = await supabase
-    .from('areas')
-    .select(`
-      *,
-      responsibles:area_responsibles(count)
-    `)
-    .order('display_order')
-  if (error) throw error
-  return data
-}
-
-export async function createArea(payload: any) {
-  const { error } = await supabase.from('areas').insert([payload])
-  if (error) throw error
-}
-
-export async function updateArea(id: string, payload: any) {
-  const { error } = await supabase.from('areas').update(payload).eq('id', id)
-  if (error) throw error
-}
-
-export async function countAreaUsers(areaId: string) {
-  const { count, error } = await supabase
-    .from('area_responsibles')
-    .select('id, users!inner(is_active)', { count: 'exact' })
-    .eq('area_id', areaId)
-    .eq('users.is_active', true)
-  if (error) throw error
-  return count || 0
-}
-
-// PROFILES
-export async function getProfiles() {
+export const getProfiles = async () => {
   const { data, error } = await supabase.from('profiles').select('*').order('name')
   if (error) throw error
   return data
 }
 
-export async function createProfile(payload: any) {
-  const { error } = await supabase.from('profiles').insert([{ ...payload, is_system: false }])
+export const createProfile = async (payload: any) => {
+  const { error } = await supabase.from('profiles').insert([payload])
   if (error) throw error
+  return true
 }
 
-export async function updateProfile(id: string, payload: any) {
+export const updateProfile = async (id: string, payload: any) => {
   const { error } = await supabase.from('profiles').update(payload).eq('id', id)
   if (error) throw error
+  return true
 }
 
-export async function countProfileUsers(profileId: string) {
+export const countProfileUsers = async (id: string) => {
   const { count, error } = await supabase
     .from('users')
-    .select('id', { count: 'exact' })
-    .eq('profile_id', profileId)
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', id)
     .eq('is_active', true)
+  if (error) throw error
+  return count || 0
+}
+
+export const getAreas = async () => {
+  const { data, error } = await supabase.from('areas').select(`*`).order('display_order')
+  if (error) throw error
+
+  const { data: responsibles, error: respError } = await supabase
+    .from('area_responsibles')
+    .select('area_id')
+  if (respError) throw respError
+
+  const countMap: Record<string, number> = {}
+  for (const r of responsibles || []) {
+    countMap[r.area_id] = (countMap[r.area_id] || 0) + 1
+  }
+
+  return data.map((a: any) => ({
+    ...a,
+    responsibles: [{ count: countMap[a.id] || 0 }],
+  }))
+}
+
+export const createArea = async (payload: any) => {
+  const { error } = await supabase.from('areas').insert([payload])
+  if (error) throw error
+  return true
+}
+
+export const updateArea = async (id: string, payload: any) => {
+  const { error } = await supabase.from('areas').update(payload).eq('id', id)
+  if (error) throw error
+  return true
+}
+
+export const countAreaUsers = async (id: string) => {
+  const { count, error } = await supabase
+    .from('area_responsibles')
+    .select('id', { count: 'exact', head: true })
+    .eq('area_id', id)
   if (error) throw error
   return count || 0
 }
