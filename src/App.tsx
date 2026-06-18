@@ -11,7 +11,7 @@ import Home from './pages/dashboard/Home'
 import { AppShell } from './components/layout/AppShell'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
-import ProjectDetails from './pages/ProjectDetails'
+import ProjetoDetalhePage from './pages/projects/ProjetoDetalhePage'
 import ProjetosListPage from './pages/projects/ProjetosListPage'
 import ProjectFormPage from './pages/projects/ProjectFormPage'
 import DemandFormPage from './pages/demands/DemandFormPage'
@@ -52,7 +52,7 @@ const App = () => (
 
               <Route path="/projetos" element={<ProjetosListPage />} />
               <Route path="/projetos/novo" element={<ProjectFormPage />} />
-              <Route path="/projetos/:id" element={<ProjectDetails />} />
+              <Route path="/projetos/:id" element={<ProjetoDetalhePage />} />
               <Route path="/projetos/:id/demandas/nova" element={<DemandFormPage />} />
 
               <Route path="/demandas/:id" element={<DemandDetailsPage />} />
