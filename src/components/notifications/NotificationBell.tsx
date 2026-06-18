@@ -47,8 +47,9 @@ export function NotificationBell() {
   const handleRead = async (n: any) => {
     if (!n.is_read) {
       await markAsRead(n.id)
-      setUnreadCount((prev) => Math.max(0, prev - 1))
-      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
+      const fresh = await getNotifications(userCtx!.user!.id, 10)
+      setNotifications(fresh || [])
+      setUnreadCount((fresh || []).filter((x: any) => !x.is_read).length)
     }
     if (n.link_to) navigate(n.link_to)
   }
