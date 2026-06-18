@@ -107,7 +107,7 @@ BEGIN
   v_project_code := v_client_code || '-' || v_year || '-' || LPAD((v_count + 1)::TEXT, 3, '0');
   RETURN v_project_code;
 END;
-$;
+$$;
 
 -- View Permission Function (Security Definer to bypass RLS recursion)
 CREATE OR REPLACE FUNCTION public.can_view_project(p_project_id UUID)
@@ -132,7 +132,7 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
     EXISTS (
       SELECT 1 FROM public.projects p WHERE p.id = p_project_id AND p.created_by = auth.uid()
     );
-$;
+$$;
 
 -- Triggers for Updated At
 DROP TRIGGER IF EXISTS set_projects_updated_at ON public.projects;
