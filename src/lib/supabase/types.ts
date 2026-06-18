@@ -519,6 +519,7 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: boolean
       }
+      user_can_see_project: { Args: { p_project_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

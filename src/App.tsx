@@ -12,7 +12,7 @@ import { AppShell } from './components/layout/AppShell'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
 import ProjectDetails from './pages/ProjectDetails'
-import ProjectListPage from './pages/projects/ProjectListPage'
+import ProjetosListPage from './pages/projects/ProjetosListPage'
 import ProjectFormPage from './pages/projects/ProjectFormPage'
 import DemandFormPage from './pages/demands/DemandFormPage'
 import DemandDetailsPage from './pages/demands/DemandDetailsPage'
@@ -50,7 +50,7 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
-              <Route path="/projetos" element={<ProjectListPage />} />
+              <Route path="/projetos" element={<ProjetosListPage />} />
               <Route path="/projetos/novo" element={<ProjectFormPage />} />
               <Route path="/projetos/:id" element={<ProjectDetails />} />
               <Route path="/projetos/:id/demandas/nova" element={<DemandFormPage />} />
