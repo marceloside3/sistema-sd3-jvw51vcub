@@ -277,8 +277,9 @@ export type Database = {
           created_at: string
           id: string
           is_read: boolean
-          link: string | null
+          link_to: string | null
           message: string
+          should_send_email: boolean
           title: string
           type: string
           user_id: string
@@ -287,8 +288,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
-          link?: string | null
+          link_to?: string | null
           message: string
+          should_send_email?: boolean
           title: string
           type: string
           user_id: string
@@ -297,8 +299,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
-          link?: string | null
+          link_to?: string | null
           message?: string
+          should_send_email?: boolean
           title?: string
           type?: string
           user_id?: string
