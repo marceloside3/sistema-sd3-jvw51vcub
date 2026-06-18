@@ -13,6 +13,7 @@ import {
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { format } from 'date-fns'
 import { useToast } from '@/components/ui/use-toast'
+import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import {
   Select,
   SelectContent,
@@ -224,6 +225,10 @@ export default function DemandaDetalhePage() {
           <div className="bg-white p-6 rounded-lg border shadow-sm">
             <h3 className="font-semibold mb-4">Descrição da Demanda</h3>
             <div className="whitespace-pre-wrap text-gray-700 text-sm">{demand.description}</div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <AttachmentsSection type="demand" entityId={demand.id} />
           </div>
 
           <div className="bg-white p-6 rounded-lg border shadow-sm flex flex-col h-[500px]">
