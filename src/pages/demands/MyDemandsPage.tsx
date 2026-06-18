@@ -20,10 +20,29 @@ export default function MyDemandsPage() {
   const [demands, setDemands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [counts, setCounts] = useState({ received: 0, sent: 0, completed: 0 })
 
   useEffect(() => {
     if (userCtx?.user?.id) fetchDemands()
   }, [activeTab, userCtx?.user?.id, statusFilter])
+
+  useEffect(() => {
+    if (!userCtx?.user?.id) return
+
+    Promise.all([
+      getMyDemands(userCtx.user.id, 'received', { status: 'all' }),
+      getMyDemands(userCtx.user.id, 'sent', { status: 'all' }),
+      getMyDemands(userCtx.user.id, 'completed', { status: 'all' }),
+    ])
+      .then(([received, sent, completed]) => {
+        setCounts({
+          received: received?.length || 0,
+          sent: sent?.length || 0,
+          completed: completed?.length || 0,
+        })
+      })
+      .catch(console.error)
+  }, [userCtx?.user?.id, demands])
 
   async function fetchDemands() {
     setLoading(true)
@@ -98,9 +117,9 @@ export default function MyDemandsPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="received">Recebidas</TabsTrigger>
-          <TabsTrigger value="sent">Enviadas</TabsTrigger>
-          <TabsTrigger value="completed">Concluídas</TabsTrigger>
+          <TabsTrigger value="received">Recebidas ({counts.received})</TabsTrigger>
+          <TabsTrigger value="sent">Enviadas ({counts.sent})</TabsTrigger>
+          <TabsTrigger value="completed">Concluídas ({counts.completed})</TabsTrigger>
         </TabsList>
 
         <div className="space-y-4">
