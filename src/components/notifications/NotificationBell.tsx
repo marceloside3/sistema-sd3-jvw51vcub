@@ -30,28 +30,17 @@ export function NotificationBell() {
 
     loadNotifications()
 
-    const channel = supabase
-      .channel(`notifications_bell_component:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          if (isMounted) {
-            setNotifications((prev) => [payload.new, ...prev].slice(0, 10))
-            setUnreadCount((prev) => prev + 1)
-          }
-        },
-      )
-      .subscribe()
+    const intervalId = setInterval(loadNotifications, 30000)
+
+    const onFocus = () => {
+      loadNotifications()
+    }
+    window.addEventListener('focus', onFocus)
 
     return () => {
       isMounted = false
-      supabase.removeChannel(channel)
+      clearInterval(intervalId)
+      window.removeEventListener('focus', onFocus)
     }
   }, [userCtx?.user?.id])
 

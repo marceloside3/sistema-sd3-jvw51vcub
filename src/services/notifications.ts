@@ -12,17 +12,14 @@ export const getNotifications = async (userId: string, limit = 50) => {
 }
 
 export const markAsRead = async (id: string) => {
-  const { error } = await supabase
-    .from('notifications')
-    .update({ is_read: true, read_at: new Date().toISOString() })
-    .eq('id', id)
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id)
   if (error) throw error
 }
 
 export const markAllAsRead = async (userId: string) => {
   const { error } = await supabase
     .from('notifications')
-    .update({ is_read: true, read_at: new Date().toISOString() })
+    .update({ is_read: true })
     .eq('user_id', userId)
     .eq('is_read', false)
   if (error) throw error
