@@ -109,7 +109,7 @@ export default function ProjetoDetalhePage() {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">Demandas do Projeto</h3>
             <Button asChild size="sm">
-              <Link to={`/demandas/nova?projectId=${project.id}`}>
+              <Link to={`/projetos/${project.id}/demandas/nova`}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Demanda
               </Link>
