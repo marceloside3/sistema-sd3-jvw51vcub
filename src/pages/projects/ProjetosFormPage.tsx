@@ -70,13 +70,28 @@ export default function ProjetosFormPage() {
     }
     setLoading(true)
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      if (userError || !userData?.user) {
+        throw new Error('Usuário não autenticado.')
+      }
+
+      const { data: projectCode, error: rpcError } = await supabase.rpc('generate_project_code', {
+        p_client_id: formData.client_id,
+      })
+
+      if (rpcError) {
+        throw new Error(`Erro ao gerar código do projeto: ${rpcError.message}`)
+      }
+
       const payload = {
+        project_code: projectCode,
         client_id: formData.client_id,
         name: formData.name,
         description: formData.description,
         start_date: formData.start_date,
         end_date: formData.end_date || null,
         status: 'active',
+        created_by: userData.user.id,
       }
       const mappedAreas = formData.selected_areas.map((id) => ({
         area_id: id,

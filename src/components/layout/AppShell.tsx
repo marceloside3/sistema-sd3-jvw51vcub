@@ -11,6 +11,7 @@ import {
   Briefcase,
   FolderKanban,
   CheckSquare,
+  Bell,
 } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
@@ -91,42 +92,29 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
             </Link>
 
             <Link
-              to="/"
+              to="/minhas-demandas"
               onClick={() => setIsOpen(false)}
               className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname === '/' || location.pathname === '/dashboard'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <Home className="w-4 h-4 mr-3" />
-              Início
-            </Link>
-
-            <Link
-              to="/projetos"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname.startsWith('/projetos')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <Briefcase className="w-4 h-4 mr-3" />
-              Projetos
-            </Link>
-
-            <Link
-              to="/demandas"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname.startsWith('/demandas')
+                location.pathname.startsWith('/minhas-demandas')
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
               <CheckSquare className="w-4 h-4 mr-3" />
               Minhas Demandas
+            </Link>
+
+            <Link
+              to="/notificacoes"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location.pathname.startsWith('/notificacoes')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Bell className="w-4 h-4 mr-3" />
+              Notificações
             </Link>
 
             {canSeeAdmin && (
@@ -217,7 +205,6 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
-        <NotificationBell />
         <NotificationBell />
         {data && (
           <div className="flex flex-col items-end">
