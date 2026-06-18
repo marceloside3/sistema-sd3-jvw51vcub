@@ -48,11 +48,37 @@ export async function createProject(
   payload: any,
   areaIds: { area_id: string; is_lead: boolean }[],
 ) {
-  const { data, error } = await supabase.from('projects').insert([payload]).select().single()
+  if (!payload.client_id) {
+    throw new Error('Client ID is required to create a project.')
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+  if (authError || !user) {
+    throw new Error('User is not authenticated.')
+  }
+
+  const { data: projectCode, error: rpcError } = await supabase.rpc('generate_project_code', {
+    p_client_id: payload.client_id,
+  })
+
+  if (rpcError) {
+    throw rpcError
+  }
+
+  const projectPayload = {
+    ...payload,
+    project_code: projectCode,
+    created_by: user.id,
+  }
+
+  const { data, error } = await supabase.from('projects').insert([projectPayload]).select().single()
 
   if (error) throw error
 
-  if (areaIds.length > 0) {
+  if (areaIds && areaIds.length > 0) {
     const areasPayload = areaIds.map((a) => ({
       project_id: data.id,
       area_id: a.area_id,
