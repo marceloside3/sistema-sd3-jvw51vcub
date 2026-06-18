@@ -113,7 +113,15 @@ export default function ProjetosListPage() {
             ) : (
               filtered.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-mono text-sm">{p.project_code || '-'}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {p.project_code ? (
+                      <Link to={`/projetos/${p.id}`} className="text-blue-600 hover:underline">
+                        {p.project_code}
+                      </Link>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Link
                       to={`/projetos/${p.id}`}
