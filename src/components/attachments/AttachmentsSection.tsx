@@ -1,28 +1,29 @@
 import { useState } from 'react'
-import { AttachmentType } from '@/services/attachments'
+import { AttachmentKind } from '@/services/attachments'
 import { FileUploader } from './FileUploader'
 import { AttachmentList } from './AttachmentList'
 
 interface AttachmentsSectionProps {
-  type: AttachmentType
+  type?: AttachmentKind // for backwards compatibility
+  kind?: AttachmentKind
   entityId: string
-  title?: string
 }
 
-export function AttachmentsSection({ type, entityId, title = 'Anexos' }: AttachmentsSectionProps) {
+export function AttachmentsSection({ type, kind, entityId }: AttachmentsSectionProps) {
   const [refreshKey, setRefreshKey] = useState(0)
-
-  const handleUploaded = () => {
-    setRefreshKey((prev) => prev + 1)
-  }
+  const effectiveKind = (kind || type || 'project') as AttachmentKind
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b pb-2">
-        <h3 className="font-semibold">{title}</h3>
-        <FileUploader type={type} entityId={entityId} onUploaded={handleUploaded} />
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium text-gray-900">Anexos</h3>
+        <FileUploader
+          kind={effectiveKind}
+          entityId={entityId}
+          onUploaded={() => setRefreshKey((k) => k + 1)}
+        />
       </div>
-      <AttachmentList type={type} entityId={entityId} refreshKey={refreshKey} />
+      <AttachmentList kind={effectiveKind} entityId={entityId} refreshKey={refreshKey} />
     </div>
   )
 }

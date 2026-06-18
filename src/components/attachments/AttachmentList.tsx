@@ -2,20 +2,20 @@ import { useEffect, useState } from 'react'
 import {
   listAttachments,
   deleteAttachment,
-  downloadAttachment,
-  AttachmentType,
+  getDownloadUrl,
+  AttachmentKind,
   Attachment,
 } from '@/services/attachments'
-import { File, Download, Trash2, Loader2 } from 'lucide-react'
+import { File as FileIcon, Download, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { useCurrentUser } from '@/hooks/use-current-user'
 
 interface AttachmentListProps {
-  type: AttachmentType
+  kind: AttachmentKind
   entityId: string
-  refreshKey: number
+  refreshKey?: number
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -27,7 +27,7 @@ function formatBytes(bytes: number, decimals = 2) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
 
-export function AttachmentList({ type, entityId, refreshKey }: AttachmentListProps) {
+export function AttachmentList({ kind, entityId, refreshKey = 0 }: AttachmentListProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
@@ -37,7 +37,7 @@ export function AttachmentList({ type, entityId, refreshKey }: AttachmentListPro
   const loadAttachments = async () => {
     try {
       setIsLoading(true)
-      const data = await listAttachments(type, entityId)
+      const data = await listAttachments(kind, entityId)
       setAttachments(data)
     } catch (error: any) {
       toast.error('Erro ao carregar anexos')
@@ -48,12 +48,12 @@ export function AttachmentList({ type, entityId, refreshKey }: AttachmentListPro
 
   useEffect(() => {
     loadAttachments()
-  }, [type, entityId, refreshKey])
+  }, [kind, entityId, refreshKey])
 
   const handleDownload = async (attachment: Attachment) => {
     try {
       setIsDownloading(attachment.id)
-      const url = await downloadAttachment(type, attachment.storage_path)
+      const url = await getDownloadUrl(kind, attachment.storage_path)
       const a = document.createElement('a')
       a.href = url
       a.download = attachment.file_name
@@ -73,7 +73,7 @@ export function AttachmentList({ type, entityId, refreshKey }: AttachmentListPro
 
     try {
       setIsDeleting(attachment.id)
-      await deleteAttachment(type, attachment.id, attachment.storage_path)
+      await deleteAttachment(kind, attachment.id, attachment.storage_path)
       toast.success('Anexo removido')
       loadAttachments()
     } catch (error: any) {
@@ -110,7 +110,7 @@ export function AttachmentList({ type, entityId, refreshKey }: AttachmentListPro
           className="flex items-center justify-between p-3 bg-gray-50 border rounded-md"
         >
           <div className="flex items-center space-x-3 overflow-hidden">
-            <File className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <FileIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <div className="min-w-0">
               <p
                 className="text-sm font-medium text-gray-900 truncate"

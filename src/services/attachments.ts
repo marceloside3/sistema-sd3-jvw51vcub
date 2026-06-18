@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 
-export type AttachmentType = 'project' | 'demand'
+export type AttachmentKind = 'project' | 'demand'
+export type AttachmentType = AttachmentKind // Backwards compatibility
 
 export interface Attachment {
   id: string
@@ -16,23 +17,23 @@ export interface Attachment {
 const MAX_FILE_SIZE = 52428800 // 50MB
 
 function sanitizeFileName(fileName: string): string {
-  return fileName.replace(/[^a-zA-Z0-9.\-_]/g, '')
+  return fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')
 }
 
-function getBucketName(type: AttachmentType): string {
-  return type === 'project' ? 'project-files' : 'demand-files'
+function getBucketName(kind: AttachmentKind): string {
+  return kind === 'project' ? 'project-files' : 'demand-files'
 }
 
-function getTableName(type: AttachmentType): string {
-  return type === 'project' ? 'project_attachments' : 'demand_attachments'
+function getTableName(kind: AttachmentKind): string {
+  return kind === 'project' ? 'project_attachments' : 'demand_attachments'
 }
 
-function getEntityColumnName(type: AttachmentType): string {
-  return type === 'project' ? 'project_id' : 'demand_id'
+function getEntityColumnName(kind: AttachmentKind): string {
+  return kind === 'project' ? 'project_id' : 'demand_id'
 }
 
 export async function uploadAttachment(
-  type: AttachmentType,
+  kind: AttachmentKind,
   entityId: string,
   file: File,
   userId: string,
@@ -48,9 +49,9 @@ export async function uploadAttachment(
   const sanitizedFileName = sanitizeFileName(file.name)
   const timestamp = Date.now()
   const storagePath = `${entityId}/${timestamp}_${sanitizedFileName}`
-  const bucketName = getBucketName(type)
-  const tableName = getTableName(type)
-  const entityColumnName = getEntityColumnName(type)
+  const bucketName = getBucketName(kind)
+  const tableName = getTableName(kind)
+  const entityColumnName = getEntityColumnName(kind)
 
   // Upload to storage
   const { error: storageError } = await supabase.storage
@@ -104,11 +105,11 @@ export async function uploadAttachment(
 }
 
 export async function listAttachments(
-  type: AttachmentType,
+  kind: AttachmentKind,
   entityId: string,
 ): Promise<Attachment[]> {
-  const tableName = getTableName(type)
-  const entityColumnName = getEntityColumnName(type)
+  const tableName = getTableName(kind)
+  const entityColumnName = getEntityColumnName(kind)
 
   const { data, error } = await supabase
     .from(tableName)
@@ -136,12 +137,12 @@ export async function listAttachments(
 }
 
 export async function deleteAttachment(
-  type: AttachmentType,
+  kind: AttachmentKind,
   attachmentId: string,
   storagePath: string,
 ): Promise<void> {
-  const tableName = getTableName(type)
-  const bucketName = getBucketName(type)
+  const tableName = getTableName(kind)
+  const bucketName = getBucketName(kind)
 
   // Remove DB record first
   const { error: dbError } = await supabase.from(tableName).delete().eq('id', attachmentId)
@@ -158,11 +159,8 @@ export async function deleteAttachment(
   }
 }
 
-export async function downloadAttachment(
-  type: AttachmentType,
-  storagePath: string,
-): Promise<string> {
-  const bucketName = getBucketName(type)
+export async function getDownloadUrl(kind: AttachmentKind, storagePath: string): Promise<string> {
+  const bucketName = getBucketName(kind)
 
   const { data, error } = await supabase.storage.from(bucketName).createSignedUrl(storagePath, 300) // 300 seconds = 5 minutes
 

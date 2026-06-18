@@ -2,16 +2,16 @@ import React, { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Paperclip, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { uploadAttachment, AttachmentType } from '@/services/attachments'
+import { uploadAttachment, AttachmentKind } from '@/services/attachments'
 import { useCurrentUser } from '@/hooks/use-current-user'
 
 interface FileUploaderProps {
-  type: AttachmentType
+  kind: AttachmentKind
   entityId: string
-  onUploaded: () => void
+  onUploaded?: () => void
 }
 
-export function FileUploader({ type, entityId, onUploaded }: FileUploaderProps) {
+export function FileUploader({ kind, entityId, onUploaded }: FileUploaderProps) {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: currentUser } = useCurrentUser()
@@ -28,13 +28,13 @@ export function FileUploader({ type, entityId, onUploaded }: FileUploaderProps) 
     let uploadedCount = 0
 
     for (const file of files) {
-      if (file.size > 50 * 1024 * 1024) {
+      if (file.size > 52428800) {
         toast.error(`${file.name}: excede o limite de 50MB`)
         continue
       }
 
       try {
-        await uploadAttachment(type, entityId, file, currentUser.user.id)
+        await uploadAttachment(kind, entityId, file, currentUser.user.id)
         toast.success(`${file.name} enviado com sucesso`)
         uploadedCount++
       } catch (error: any) {
@@ -47,7 +47,7 @@ export function FileUploader({ type, entityId, onUploaded }: FileUploaderProps) 
       fileInputRef.current.value = ''
     }
 
-    if (uploadedCount > 0) {
+    if (uploadedCount > 0 && onUploaded) {
       onUploaded()
     }
   }
