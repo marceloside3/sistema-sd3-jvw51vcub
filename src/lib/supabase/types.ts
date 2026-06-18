@@ -143,6 +143,176 @@ export type Database = {
           },
         ]
       }
+      demand_comments: {
+        Row: {
+          content: string
+          created_at: string
+          demand_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          demand_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          demand_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'demand_comments_demand_id_fkey'
+            columns: ['demand_id']
+            isOneToOne: false
+            referencedRelation: 'demands'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demand_comments_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      demands: {
+        Row: {
+          cancellation_reason: string | null
+          completed_at: string | null
+          created_at: string
+          description: string
+          due_date: string | null
+          from_area_id: string | null
+          from_user_id: string
+          id: string
+          priority: string
+          project_id: string
+          status: string
+          title: string
+          to_area_id: string
+          to_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description: string
+          due_date?: string | null
+          from_area_id?: string | null
+          from_user_id: string
+          id?: string
+          priority?: string
+          project_id: string
+          status?: string
+          title: string
+          to_area_id: string
+          to_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          from_area_id?: string | null
+          from_user_id?: string
+          id?: string
+          priority?: string
+          project_id?: string
+          status?: string
+          title?: string
+          to_area_id?: string
+          to_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'demands_from_area_id_fkey'
+            columns: ['from_area_id']
+            isOneToOne: false
+            referencedRelation: 'areas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demands_from_user_id_fkey'
+            columns: ['from_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demands_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demands_to_area_id_fkey'
+            columns: ['to_area_id']
+            isOneToOne: false
+            referencedRelation: 'areas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demands_to_user_id_fkey'
+            columns: ['to_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           code: string
@@ -176,6 +346,123 @@ export type Database = {
           is_system?: boolean
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      project_areas: {
+        Row: {
+          area_id: string
+          created_at: string
+          id: string
+          is_lead: boolean
+          project_id: string
+        }
+        Insert: {
+          area_id: string
+          created_at?: string
+          id?: string
+          is_lead?: boolean
+          project_id: string
+        }
+        Update: {
+          area_id?: string
+          created_at?: string
+          id?: string
+          is_lead?: boolean
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'project_areas_area_id_fkey'
+            columns: ['area_id']
+            isOneToOne: false
+            referencedRelation: 'areas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_areas_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          project_code: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          project_code?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          project_code?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'projects_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'projects_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      system_config: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }
@@ -225,7 +512,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_project: { Args: { p_project_id: string }; Returns: boolean }
+      generate_project_code: { Args: { p_client_id: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      user_can_access_project: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

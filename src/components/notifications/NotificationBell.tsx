@@ -15,18 +15,26 @@ export function NotificationBell() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!userCtx?.user?.id) return
+    const userId = userCtx?.user?.id
+    if (!userId) return
+
+    async function loadNotifications() {
+      const data = await getNotifications(userId, 10)
+      setNotifications(data)
+      setUnreadCount(data.filter((n: any) => !n.is_read).length)
+    }
+
     loadNotifications()
 
     const channel = supabase
-      .channel('notifications_channel')
+      .channel(`notifications:${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${userCtx.user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev].slice(0, 10))
@@ -39,13 +47,6 @@ export function NotificationBell() {
       supabase.removeChannel(channel)
     }
   }, [userCtx?.user?.id])
-
-  async function loadNotifications() {
-    if (!userCtx?.user?.id) return
-    const data = await getNotifications(userCtx.user.id, 10)
-    setNotifications(data)
-    setUnreadCount(data.filter((n: any) => !n.is_read).length)
-  }
 
   const handleRead = async (n: any) => {
     if (!n.is_read) {

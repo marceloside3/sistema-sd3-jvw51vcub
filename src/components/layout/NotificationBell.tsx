@@ -13,7 +13,8 @@ export function NotificationBell() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!data?.user?.id) return
+    const userId = data?.user?.id
+    if (!userId) return
 
     let isMounted = true
 
@@ -21,7 +22,7 @@ export function NotificationBell() {
       const { data: notifs } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', data.user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10)
 
@@ -34,14 +35,14 @@ export function NotificationBell() {
     fetchNotifications()
 
     const channel = supabase
-      .channel('notifications_changes')
+      .channel(`notifications:${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${data.user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           if (isMounted) {
