@@ -84,6 +84,65 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          cnpj: string | null
+          code: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          has_lpu: boolean
+          honorario_percentage: number | null
+          id: string
+          name: string
+          segment: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          code: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          has_lpu?: boolean
+          honorario_percentage?: number | null
+          id?: string
+          name: string
+          segment?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          code?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          has_lpu?: boolean
+          honorario_percentage?: number | null
+          id?: string
+          name?: string
+          segment?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'clients_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           code: string

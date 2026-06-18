@@ -12,6 +12,12 @@ import { AppShell } from './components/layout/AppShell'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
 import ProjectDetails from './pages/ProjectDetails'
+import ProjectListPage from './pages/projects/ProjectListPage'
+import ProjectFormPage from './pages/projects/ProjectFormPage'
+import DemandFormPage from './pages/demands/DemandFormPage'
+import DemandDetailsPage from './pages/demands/DemandDetailsPage'
+import MyDemandsPage from './pages/demands/MyDemandsPage'
+import NotificationsPage from './pages/notifications/NotificationsPage'
 import AreaPage from './pages/AreaPage'
 import AuditReport from './pages/AuditReport'
 import { AdminGuard } from './components/auth/AdminGuard'
@@ -43,7 +49,16 @@ const App = () => (
             >
               <Route path="/" element={<Home />} />
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
-              <Route path="/projeto/:id" element={<ProjectDetails />} />
+
+              <Route path="/projetos" element={<ProjectListPage />} />
+              <Route path="/projetos/novo" element={<ProjectFormPage />} />
+              <Route path="/projetos/:id" element={<ProjectDetails />} />
+              <Route path="/projetos/:id/demandas/nova" element={<DemandFormPage />} />
+
+              <Route path="/demandas/:id" element={<DemandDetailsPage />} />
+              <Route path="/minhas-demandas" element={<MyDemandsPage />} />
+              <Route path="/notificacoes" element={<NotificationsPage />} />
+
               <Route path="/area/:area_slug" element={<AreaPage />} />
               <Route path="/auditoria" element={<AuditReport />} />
 

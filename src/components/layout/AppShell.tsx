@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, LogOut, Menu, X, Users, Map, Shield, Briefcase } from 'lucide-react'
+import {
+  Home,
+  LogOut,
+  Menu,
+  X,
+  Users,
+  Map,
+  Shield,
+  Briefcase,
+  FolderKanban,
+  CheckSquare,
+} from 'lucide-react'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
@@ -63,6 +75,58 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
             >
               <Home className="w-4 h-4 mr-3" />
               Início
+            </Link>
+
+            <Link
+              to="/projetos"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location.pathname.startsWith('/projetos')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <FolderKanban className="w-4 h-4 mr-3" />
+              Projetos
+            </Link>
+
+            <Link
+              to="/"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location.pathname === '/' || location.pathname === '/dashboard'
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Home className="w-4 h-4 mr-3" />
+              Início
+            </Link>
+
+            <Link
+              to="/projetos"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location.pathname.startsWith('/projetos')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Briefcase className="w-4 h-4 mr-3" />
+              Projetos
+            </Link>
+
+            <Link
+              to="/demandas"
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location.pathname.startsWith('/demandas')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <CheckSquare className="w-4 h-4 mr-3" />
+              Minhas Demandas
             </Link>
 
             {canSeeAdmin && (
@@ -153,6 +217,8 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
+        <NotificationBell />
+        <NotificationBell />
         {data && (
           <div className="flex flex-col items-end">
             <span className="text-sm font-medium text-gray-900 leading-none">
