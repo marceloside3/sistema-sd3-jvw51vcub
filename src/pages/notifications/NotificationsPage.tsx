@@ -1,87 +1,118 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { format } from 'date-fns'
-import { CheckCheck, Bell } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { getNotifications, markAllAsRead, markAsRead } from '@/services/notifications'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
 import { useCurrentUser } from '@/hooks/use-current-user'
+import { getNotifications, markAsRead, markAllAsRead } from '@/services/notifications'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { format } from 'date-fns'
 
 export default function NotificationsPage() {
   const { data: userCtx } = useCurrentUser()
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (userCtx?.user?.id) fetchNotifications()
+    const userId = userCtx?.user?.id
+    if (!userId) return
+
+    let isMounted = true
+
+    async function loadNotifications() {
+      try {
+        const data = await getNotifications(userId, 50)
+        if (isMounted) {
+          setNotifications(data || [])
+          setLoading(false)
+        }
+      } catch (err) {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    loadNotifications()
+
+    const channel = supabase
+      .channel(`notifications_page:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (isMounted) {
+            setNotifications((prev) => [payload.new, ...prev])
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
   }, [userCtx?.user?.id])
 
-  async function fetchNotifications() {
-    try {
-      const data = await getNotifications(userCtx!.user.id, 100)
-      setNotifications(data)
-    } finally {
-      setLoading(false)
+  const handleRead = async (n: any) => {
+    if (!n.is_read) {
+      await markAsRead(n.id)
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
     }
+    if (n.link) navigate(n.link)
   }
 
   const handleMarkAll = async () => {
-    await markAllAsRead(userCtx!.user.id)
-    setNotifications(notifications.map((n) => ({ ...n, is_read: true })))
-  }
-
-  const handleRead = async (id: string, isRead: boolean) => {
-    if (!isRead) {
-      await markAsRead(id)
-      setNotifications(notifications.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
-    }
+    const userId = userCtx?.user?.id
+    if (!userId) return
+    await markAllAsRead(userId)
+    setNotifications((prev) => prev.map((x) => ({ ...x, is_read: true })))
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Bell className="w-6 h-6 text-gray-400" />
-          <h1 className="text-2xl font-bold">Todas as Notificações</h1>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleMarkAll}>
-          <CheckCheck className="w-4 h-4 mr-2" /> Marcar todas como lidas
+    <div className="container mx-auto p-6 max-w-4xl animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Notificações</h1>
+        <Button onClick={handleMarkAll} variant="outline" size="sm">
+          Marcar todas como lidas
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg border shadow-sm divide-y">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Carregando...</div>
-        ) : notifications.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Nenhuma notificação encontrada.</div>
-        ) : (
-          notifications.map((n) => (
-            <div key={n.id} className={`p-4 transition-colors ${n.is_read ? '' : 'bg-blue-50/30'}`}>
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    {!n.is_read && <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0" />}
-                    <h4 className="font-medium text-gray-900">{n.title}</h4>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{n.message}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-400">
-                    <span>{format(new Date(n.created_at), "dd/MM/yyyy 'às' HH:mm")}</span>
+      <Card>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {loading ? (
+              <div className="p-8 text-center text-gray-500">Carregando notificações...</div>
+            ) : notifications.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">Nenhuma notificação no momento</div>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => handleRead(n)}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-start ${
+                    !n.is_read ? 'bg-blue-50/50' : ''
+                  }`}
+                >
+                  <div>
+                    <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                      {n.title}
+                      {!n.is_read && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">{n.message}</p>
+                    <span className="text-xs text-gray-400 mt-2 block">
+                      {format(new Date(n.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                    </span>
                   </div>
                 </div>
-                {n.link && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    asChild
-                    onClick={() => handleRead(n.id, n.is_read)}
-                  >
-                    <Link to={n.link}>Acessar</Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

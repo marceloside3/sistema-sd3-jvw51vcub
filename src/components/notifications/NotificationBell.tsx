@@ -18,16 +18,20 @@ export function NotificationBell() {
     const userId = userCtx?.user?.id
     if (!userId) return
 
+    let isMounted = true
+
     async function loadNotifications() {
       const data = await getNotifications(userId, 10)
-      setNotifications(data)
-      setUnreadCount(data.filter((n: any) => !n.is_read).length)
+      if (isMounted) {
+        setNotifications(data || [])
+        setUnreadCount((data || []).filter((n: any) => !n.is_read).length)
+      }
     }
 
     loadNotifications()
 
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(`notifications_bell_component:${userId}`)
       .on(
         'postgres_changes',
         {
@@ -37,13 +41,16 @@ export function NotificationBell() {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new, ...prev].slice(0, 10))
-          setUnreadCount((prev) => prev + 1)
+          if (isMounted) {
+            setNotifications((prev) => [payload.new, ...prev].slice(0, 10))
+            setUnreadCount((prev) => prev + 1)
+          }
         },
       )
       .subscribe()
 
     return () => {
+      isMounted = false
       supabase.removeChannel(channel)
     }
   }, [userCtx?.user?.id])
