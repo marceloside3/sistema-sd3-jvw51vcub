@@ -10,6 +10,7 @@ export interface Attachment {
   storage_path: string
   created_at: string
   uploader_name?: string
+  uploaded_by?: string
 }
 
 const MAX_FILE_SIZE = 52428800 // 50MB
@@ -34,16 +35,15 @@ export async function uploadAttachment(
   type: AttachmentType,
   entityId: string,
   file: File,
+  userId: string,
 ): Promise<Attachment> {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error('File size exceeds the 50MB limit.')
   }
 
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) {
+  if (!userId) {
     throw new Error('User not authenticated.')
   }
-  const userId = userData.user.id
 
   const sanitizedFileName = sanitizeFileName(file.name)
   const timestamp = Date.now()
@@ -99,6 +99,7 @@ export async function uploadAttachment(
     storage_path: dbDataAny.storage_path,
     created_at: dbDataAny.created_at,
     uploader_name: dbDataAny.profiles?.name,
+    uploaded_by: dbDataAny.uploaded_by,
   }
 }
 
@@ -130,6 +131,7 @@ export async function listAttachments(
     storage_path: item.storage_path,
     created_at: item.created_at,
     uploader_name: item.profiles?.name,
+    uploaded_by: item.uploaded_by,
   }))
 }
 

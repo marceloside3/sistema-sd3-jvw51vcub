@@ -10,10 +10,10 @@ interface AttachmentsSectionProps {
 }
 
 export function AttachmentsSection({ type, entityId, title = 'Anexos' }: AttachmentsSectionProps) {
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const handleUploaded = () => {
-    setRefreshTrigger((prev) => prev + 1)
+    setRefreshKey((prev) => prev + 1)
   }
 
   return (
@@ -22,7 +22,7 @@ export function AttachmentsSection({ type, entityId, title = 'Anexos' }: Attachm
         <h3 className="font-semibold">{title}</h3>
         <FileUploader type={type} entityId={entityId} onUploaded={handleUploaded} />
       </div>
-      <AttachmentList type={type} entityId={entityId} refreshTrigger={refreshTrigger} />
+      <AttachmentList type={type} entityId={entityId} refreshKey={refreshKey} />
     </div>
   )
 }

@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Paperclip, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { uploadAttachment, AttachmentType } from '@/services/attachments'
+import { useCurrentUser } from '@/hooks/use-current-user'
 
 interface FileUploaderProps {
   type: AttachmentType
@@ -13,38 +14,31 @@ interface FileUploaderProps {
 export function FileUploader({ type, entityId, onUploaded }: FileUploaderProps) {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
+  const { data: currentUser } = useCurrentUser()
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
+    if (!currentUser?.user?.id) {
+      toast.error('Usuário não autenticado.')
+      return
+    }
 
     setIsUploading(true)
     let uploadedCount = 0
 
     for (const file of files) {
       if (file.size > 50 * 1024 * 1024) {
-        toast({
-          title: 'Erro',
-          description: `${file.name}: excede 50MB`,
-          variant: 'destructive',
-        })
+        toast.error(`${file.name}: excede o limite de 50MB`)
         continue
       }
 
       try {
-        await uploadAttachment(type, entityId, file)
-        toast({
-          title: 'Sucesso',
-          description: `${file.name} enviado`,
-        })
+        await uploadAttachment(type, entityId, file, currentUser.user.id)
+        toast.success(`${file.name} enviado com sucesso`)
         uploadedCount++
       } catch (error: any) {
-        toast({
-          title: 'Erro no envio',
-          description: error.message || `Erro ao enviar ${file.name}`,
-          variant: 'destructive',
-        })
+        toast.error(error.message || `Erro ao enviar ${file.name}`)
       }
     }
 
@@ -78,7 +72,7 @@ export function FileUploader({ type, entityId, onUploaded }: FileUploaderProps) 
         ) : (
           <Paperclip className="w-4 h-4 mr-2" />
         )}
-        {isUploading ? 'Enviando...' : 'Anexar'}
+        {isUploading ? 'Enviando...' : 'Anexar arquivo'}
       </Button>
     </>
   )

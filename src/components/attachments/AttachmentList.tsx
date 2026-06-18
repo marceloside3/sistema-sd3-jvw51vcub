@@ -9,12 +9,13 @@ import {
 import { File, Download, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
+import { useCurrentUser } from '@/hooks/use-current-user'
 
 interface AttachmentListProps {
   type: AttachmentType
   entityId: string
-  refreshTrigger: number
+  refreshKey: number
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -26,12 +27,12 @@ function formatBytes(bytes: number, decimals = 2) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
 
-export function AttachmentList({ type, entityId, refreshTrigger }: AttachmentListProps) {
+export function AttachmentList({ type, entityId, refreshKey }: AttachmentListProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState<string | null>(null)
-  const { toast } = useToast()
+  const { data: currentUser } = useCurrentUser()
 
   const loadAttachments = async () => {
     try {
@@ -39,11 +40,7 @@ export function AttachmentList({ type, entityId, refreshTrigger }: AttachmentLis
       const data = await listAttachments(type, entityId)
       setAttachments(data)
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar anexos',
-        variant: 'destructive',
-      })
+      toast.error('Erro ao carregar anexos')
     } finally {
       setIsLoading(false)
     }
@@ -51,7 +48,7 @@ export function AttachmentList({ type, entityId, refreshTrigger }: AttachmentLis
 
   useEffect(() => {
     loadAttachments()
-  }, [type, entityId, refreshTrigger])
+  }, [type, entityId, refreshKey])
 
   const handleDownload = async (attachment: Attachment) => {
     try {
@@ -65,48 +62,44 @@ export function AttachmentList({ type, entityId, refreshTrigger }: AttachmentLis
       a.click()
       document.body.removeChild(a)
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao baixar o anexo',
-        variant: 'destructive',
-      })
+      toast.error('Erro ao baixar o anexo')
     } finally {
       setIsDownloading(null)
     }
   }
 
   const handleDelete = async (attachment: Attachment) => {
-    if (!window.confirm(`Tem certeza que deseja excluir ${attachment.file_name}?`)) return
+    if (!window.confirm(`Remover ${attachment.file_name}?`)) return
 
     try {
       setIsDeleting(attachment.id)
       await deleteAttachment(type, attachment.id, attachment.storage_path)
-      toast({
-        title: 'Sucesso',
-        description: 'Anexo removido',
-      })
+      toast.success('Anexo removido')
       loadAttachments()
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao excluir o anexo',
-        variant: 'destructive',
-      })
+      toast.error('Erro ao excluir o anexo')
     } finally {
       setIsDeleting(null)
     }
   }
 
+  const canDelete = (attachment: Attachment) => {
+    if (!currentUser) return false
+    if (currentUser.profile?.is_admin || currentUser.profile?.is_director) return true
+    return attachment.uploaded_by === currentUser.user.id
+  }
+
   if (isLoading) {
     return (
-      <div className="flex justify-center p-4">
-        <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+      <div className="flex flex-col items-center justify-center p-6 space-y-2">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+        <span className="text-sm text-gray-500">Carregando anexos...</span>
       </div>
     )
   }
 
   if (attachments.length === 0) {
-    return <p className="text-sm text-gray-500 py-4 text-center">Nenhum anexo encontrado.</p>
+    return <p className="text-sm text-gray-500 py-4 text-center">Nenhum anexo.</p>
   }
 
   return (
@@ -153,20 +146,22 @@ export function AttachmentList({ type, entityId, refreshTrigger }: AttachmentLis
                 <Download className="w-4 h-4" />
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => handleDelete(attachment)}
-              disabled={isDeleting === attachment.id}
-              title="Excluir"
-            >
-              {isDeleting === attachment.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-            </Button>
+            {canDelete(attachment) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => handleDelete(attachment)}
+                disabled={isDeleting === attachment.id}
+                title="Excluir"
+              >
+                {isDeleting === attachment.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            )}
           </div>
         </li>
       ))}
