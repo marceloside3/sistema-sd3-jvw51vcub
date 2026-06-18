@@ -13,6 +13,22 @@ export async function getProjects() {
   return data
 }
 
+export async function getProjectDetails(id: string) {
+  const { data, error } = await supabase
+    .from('projects')
+    .select(`
+      *,
+      client:clients(*),
+      project_areas(id, is_lead, area:areas(*)),
+      demands(*, to_area:areas!demands_to_area_id_fkey(*))
+    `)
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function getProjectById(id: string) {
   const { data, error } = await supabase
     .from('projects')

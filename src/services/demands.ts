@@ -12,6 +12,7 @@ export async function getDemands(filters?: {
       project:projects(id, name, project_code),
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
+      from_area:areas!demands_from_area_id_fkey(id, name),
       to_area:areas!demands_to_area_id_fkey(id, name)
     `)
     .order('created_at', { ascending: false })
@@ -44,6 +45,7 @@ export async function getProjectDemands(projectId: string) {
       *,
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
+      from_area:areas!demands_from_area_id_fkey(id, name),
       to_area:areas!demands_to_area_id_fkey(id, name)
     `)
     .eq('project_id', projectId)
@@ -61,6 +63,7 @@ export async function getDemandById(id: string) {
       project:projects(id, name, project_code),
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
+      from_area:areas!demands_from_area_id_fkey(id, name),
       to_area:areas!demands_to_area_id_fkey(id, name)
     `)
     .eq('id', id)
@@ -108,4 +111,28 @@ export async function createDemandComment(payload: any) {
 
   if (error) throw error
   return data
+}
+
+export const getDemandDetails = getDemandById
+
+export async function addDemandComment(demandId: string, userId: string, content: string) {
+  return createDemandComment({ demand_id: demandId, user_id: userId, content })
+}
+
+export async function updateDemandStatus(id: string, status: string, cancellation_reason?: string) {
+  const payload: any = { status }
+  if (cancellation_reason) payload.cancellation_reason = cancellation_reason
+  return updateDemand(id, payload)
+}
+
+export async function getMyDemands(
+  userId: string,
+  type: 'sent' | 'received' | 'completed',
+  filters?: { status?: string },
+) {
+  const queryFilters: any = { userId, type }
+  if (filters?.status && filters.status !== 'all') {
+    queryFilters.status = filters.status
+  }
+  return getDemands(queryFilters)
 }
