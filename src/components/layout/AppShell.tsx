@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, LogOut, Menu, X, Users, Map, Shield } from 'lucide-react'
+import { Home, LogOut, Menu, X, Users, Map, Shield, Briefcase } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
@@ -108,6 +108,18 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                   >
                     <Shield className="w-4 h-4 mr-3" />
                     Perfis
+                  </Link>
+                  <Link
+                    to="/admin/clientes"
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      location.pathname.startsWith('/admin/clientes')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <Briefcase className="w-4 h-4 mr-3" />
+                    Clientes
                   </Link>
                 </div>
               </div>

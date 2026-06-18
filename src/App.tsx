@@ -19,6 +19,8 @@ import UsersPage from './pages/admin/UsersPage'
 import AreasPage from './pages/admin/AreasPage'
 import ProfilesPage from './pages/admin/ProfilesPage'
 import SetPassword from './pages/auth/SetPassword'
+import ClientsPage from './pages/admin/ClientsPage'
+import ClientFormPage from './pages/admin/ClientFormPage'
 
 const App = () => (
   <AuthProvider>
@@ -56,6 +58,9 @@ const App = () => (
                 <Route path="usuarios" element={<UsersPage />} />
                 <Route path="areas" element={<AreasPage />} />
                 <Route path="perfis" element={<ProfilesPage />} />
+                <Route path="clientes" element={<ClientsPage />} />
+                <Route path="clientes/novo" element={<ClientFormPage />} />
+                <Route path="clientes/:id" element={<ClientFormPage />} />
               </Route>
             </Route>
 
