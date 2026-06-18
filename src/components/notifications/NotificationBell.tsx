@@ -50,7 +50,7 @@ export function NotificationBell() {
       setUnreadCount((prev) => Math.max(0, prev - 1))
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
     }
-    if (n.link) navigate(n.link)
+    if (n.link_to) navigate(n.link_to)
   }
 
   return (
