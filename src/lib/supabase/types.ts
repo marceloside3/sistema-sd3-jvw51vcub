@@ -186,7 +186,7 @@ export type Database = {
             foreignKeyName: 'demand_attachments_uploaded_by_fkey'
             columns: ['uploaded_by']
             isOneToOne: false
-            referencedRelation: 'profiles'
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]
@@ -482,7 +482,7 @@ export type Database = {
             foreignKeyName: 'project_attachments_uploaded_by_fkey'
             columns: ['uploaded_by']
             isOneToOne: false
-            referencedRelation: 'profiles'
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]

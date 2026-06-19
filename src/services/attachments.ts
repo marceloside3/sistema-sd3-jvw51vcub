@@ -52,6 +52,10 @@ export async function uploadAttachment(
   const bucketName = getBucketName(kind)
   const tableName = getTableName(kind)
   const entityColumnName = getEntityColumnName(kind)
+  const fkName =
+    kind === 'project'
+      ? 'project_attachments_uploaded_by_fkey'
+      : 'demand_attachments_uploaded_by_fkey'
 
   // Upload to storage
   const { error: storageError } = await supabase.storage
@@ -78,10 +82,9 @@ export async function uploadAttachment(
   const { data: dbData, error: dbError } = await supabase
     .from(tableName)
     .insert([dbPayload])
-    .select(`
-      *,
-      profiles(name)
-    `)
+    .select(
+      `id, file_name, file_size, mime_type, storage_path, uploaded_by, created_at, uploader:users!${fkName}(full_name)`,
+    )
     .single()
 
   if (dbError) {
@@ -99,7 +102,7 @@ export async function uploadAttachment(
     mime_type: dbDataAny.mime_type,
     storage_path: dbDataAny.storage_path,
     created_at: dbDataAny.created_at,
-    uploader_name: dbDataAny.profiles?.name,
+    uploader_name: dbDataAny.uploader?.full_name,
     uploaded_by: dbDataAny.uploaded_by,
   }
 }
@@ -110,13 +113,16 @@ export async function listAttachments(
 ): Promise<Attachment[]> {
   const tableName = getTableName(kind)
   const entityColumnName = getEntityColumnName(kind)
+  const fkName =
+    kind === 'project'
+      ? 'project_attachments_uploaded_by_fkey'
+      : 'demand_attachments_uploaded_by_fkey'
 
   const { data, error } = await supabase
     .from(tableName)
-    .select(`
-      *,
-      profiles(name)
-    `)
+    .select(
+      `id, file_name, file_size, mime_type, storage_path, uploaded_by, created_at, uploader:users!${fkName}(full_name)`,
+    )
     .eq(entityColumnName, entityId)
     .order('created_at', { ascending: false })
 
@@ -131,7 +137,7 @@ export async function listAttachments(
     mime_type: item.mime_type,
     storage_path: item.storage_path,
     created_at: item.created_at,
-    uploader_name: item.profiles?.name,
+    uploader_name: item.uploader?.full_name,
     uploaded_by: item.uploaded_by,
   }))
 }
