@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { notifyProjectStatusChange } from './notifications'
 
 export async function getProjects() {
   const { data, error } = await supabase
@@ -101,5 +102,27 @@ export async function updateProject(id: string, payload: any) {
     .single()
 
   if (error) throw error
+  return data
+}
+
+export async function updateProjectStatus(
+  id: string,
+  newStatus: string,
+  projectName: string,
+  actorId: string,
+  actorName: string,
+) {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  // best-effort task
+  notifyProjectStatusChange(id, projectName, newStatus, actorId, actorName).catch(console.error)
+
   return data
 }

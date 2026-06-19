@@ -493,7 +493,7 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
-          end_date: string | null
+          end_date: string
           id: string
           name: string
           project_code: string | null
@@ -506,7 +506,7 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
-          end_date?: string | null
+          end_date: string
           id?: string
           name: string
           project_code?: string | null
@@ -519,7 +519,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
-          end_date?: string | null
+          end_date?: string
           id?: string
           name?: string
           project_code?: string | null

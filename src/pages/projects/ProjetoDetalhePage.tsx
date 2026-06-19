@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, Calendar, User, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getProjectById } from '@/services/projects'
+import { getProjectById, updateProjectStatus } from '@/services/projects'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { getProjectDemands } from '@/services/demands'
 import { format } from 'date-fns'
@@ -16,9 +16,37 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useCurrentUser } from '@/hooks/use-current-user'
+import { useToast } from '@/components/ui/use-toast'
+
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Ativo',
+  in_progress: 'Em Andamento',
+  overdue: 'Atrasado',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+}
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  active: ['in_progress', 'completed', 'cancelled'],
+  in_progress: ['completed', 'cancelled'],
+  overdue: ['in_progress', 'completed'],
+  completed: [],
+  cancelled: [],
+}
 
 export default function ProjetoDetalhePage() {
   const { id } = useParams()
+  const { data: userCtx } = useCurrentUser()
+  const { toast } = useToast()
+
   const [project, setProject] = useState<any>(null)
   const [demands, setDemands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,10 +61,44 @@ export default function ProjetoDetalhePage() {
       .finally(() => setLoading(false))
   }, [id])
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!project || project.status === newStatus) return
+
+    const confirmed = window.confirm(
+      `Mudar status para "${STATUS_LABELS[newStatus] || newStatus}"? Diretores serão notificados.`,
+    )
+    if (!confirmed) return
+
+    try {
+      const updatedProject = await updateProjectStatus(
+        project.id,
+        newStatus,
+        project.name,
+        userCtx?.user?.id || '',
+        userCtx?.user?.full_name || 'Usuário',
+      )
+      setProject((prev: any) => ({ ...prev, status: newStatus }))
+      toast({ title: 'Sucesso', description: 'Status do projeto atualizado com sucesso.' })
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Falha ao atualizar status.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
   if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
 
   const leadArea = project.areas?.find((a: any) => a.is_lead)?.area?.name
+
+  const isAdmin = userCtx?.profile?.is_admin === true
+  const isCreator = project.created_by === userCtx?.user?.id
+  const canChangeStatus = isAdmin || isCreator
+
+  const availableTransitions = VALID_TRANSITIONS[project.status] || []
+  const showStatusSelect = canChangeStatus && availableTransitions.length > 0
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
@@ -49,12 +111,30 @@ export default function ProjetoDetalhePage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold">{project.name}</h1>
-            <Badge
-              variant={project.status === 'active' ? 'default' : 'secondary'}
-              className="uppercase"
-            >
-              {project.status}
-            </Badge>
+            {showStatusSelect ? (
+              <Select value={project.status} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-[160px] h-8 bg-transparent font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={project.status}>
+                    {STATUS_LABELS[project.status] || project.status}
+                  </SelectItem>
+                  {availableTransitions.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {STATUS_LABELS[t] || t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge
+                variant={project.status === 'active' ? 'default' : 'secondary'}
+                className="uppercase"
+              >
+                {STATUS_LABELS[project.status] || project.status}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-gray-500 font-mono">
             {project.project_code} • {project.client?.name}
