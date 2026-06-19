@@ -32,7 +32,7 @@ export default function ProjectFormPage() {
     description: '',
     start_date: '',
     end_date: '',
-    status: 'draft',
+    status: 'active',
     selectedAreas: [] as string[],
     leadArea: '',
   })
@@ -56,6 +56,11 @@ export default function ProjectFormPage() {
   }
 
   const handleSubmit = async () => {
+    if (!formData.end_date) {
+      alert('Data de Fim Prevista é obrigatória.')
+      return
+    }
+
     if (formData.selectedAreas.length === 0)
       return toast({ title: 'Selecione ao menos uma área', variant: 'destructive' })
     if (!formData.leadArea || !formData.selectedAreas.includes(formData.leadArea))
@@ -156,28 +161,16 @@ export default function ProjectFormPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Data de Fim Prevista</Label>
+                  <Label>
+                    Data de Fim Prevista <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="date"
+                    required
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Status Inicial</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(v) => setFormData({ ...formData, status: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Rascunho</SelectItem>
-                    <SelectItem value="active">Ativo</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           )}
