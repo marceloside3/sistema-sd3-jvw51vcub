@@ -7,6 +7,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 
+const RedirectLink = ({ url }: { url: string }) => {
+  const navigate = useNavigate()
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="ml-4 shrink-0"
+      onClick={(e) => {
+        e.stopPropagation()
+        navigate(url)
+      }}
+    >
+      Acessar
+    </Button>
+  )
+}
+
 export default function NotificationsPage() {
   const { data: userCtx } = useCurrentUser()
   const [notifications, setNotifications] = useState<any[]>([])
@@ -97,6 +114,7 @@ export default function NotificationsPage() {
                       {format(new Date(n.created_at), "dd/MM/yyyy 'às' HH:mm")}
                     </span>
                   </div>
+                  {n.link_to && <RedirectLink url={n.link_to} />}
                 </div>
               ))
             )}
