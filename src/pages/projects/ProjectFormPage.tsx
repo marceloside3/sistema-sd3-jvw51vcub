@@ -53,9 +53,13 @@ export default function ProjectFormPage() {
 
     if (isEditMode && editingId) {
       setIsLoadingProject(true)
-      getProjectById(editingId)
-        .then((proj: any) => {
+      Promise.all([
+        getProjectById(editingId),
+        supabase.from('project_areas').select('area_id, is_lead').eq('project_id', editingId),
+      ])
+        .then(([proj, areasRes]) => {
           if (proj) {
+            const projectAreas = areasRes.data || []
             setFormData({
               client_id: proj.client_id || '',
               name: proj.name || '',
@@ -63,8 +67,8 @@ export default function ProjectFormPage() {
               start_date: proj.start_date ? proj.start_date.split('T')[0] : '',
               end_date: proj.end_date ? proj.end_date.split('T')[0] : '',
               status: proj.status || 'active',
-              selectedAreas: proj.areas?.map((a: any) => a.area_id) || [],
-              leadArea: proj.areas?.find((a: any) => a.is_lead)?.area_id || '',
+              selectedAreas: projectAreas.map((a: any) => a.area_id) || [],
+              leadArea: projectAreas.find((a: any) => a.is_lead)?.area_id || '',
             })
           }
         })
