@@ -29,6 +29,7 @@ import {
 } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
+import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 
 export default function DemandDetailsPage() {
   const { id } = useParams()
@@ -257,6 +258,10 @@ export default function DemandDetailsPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <AttachmentsSection kind="demand" entityId={demand.id} />
       </div>
 
       <Dialog open={cancelReasonOpen} onOpenChange={setCancelReasonOpen}>
