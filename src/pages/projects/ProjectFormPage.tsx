@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,15 +14,20 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { getClients } from '@/services/clients'
-import { createProject } from '@/services/projects'
+import { createProject, getProjectById } from '@/services/projects'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 
 export default function ProjectFormPage() {
+  const { id } = useParams()
+  const isEditMode = !!id
+  const editingId = id
+
   const [step, setStep] = useState(1)
   const [clients, setClients] = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [isLoadingProject, setIsLoadingProject] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -38,14 +43,34 @@ export default function ProjectFormPage() {
   })
 
   useEffect(() => {
-    getClients(1, 100, '', 'active').then((res) => setClients(res.data || []))
+    getClients(1, 100, '', 'active').then((res: any) => setClients(res.data || []))
     supabase
       .from('areas')
       .select('*')
       .eq('is_active', true)
       .order('display_order')
       .then((res) => setAreas(res.data || []))
-  }, [])
+
+    if (isEditMode && editingId) {
+      setIsLoadingProject(true)
+      getProjectById(editingId)
+        .then((proj: any) => {
+          if (proj) {
+            setFormData({
+              client_id: proj.client_id || '',
+              name: proj.name || '',
+              description: proj.description || '',
+              start_date: proj.start_date ? proj.start_date.split('T')[0] : '',
+              end_date: proj.end_date ? proj.end_date.split('T')[0] : '',
+              status: proj.status || 'active',
+              selectedAreas: proj.areas?.map((a: any) => a.area_id) || [],
+              leadArea: proj.areas?.find((a: any) => a.is_lead)?.area_id || '',
+            })
+          }
+        })
+        .finally(() => setIsLoadingProject(false))
+    }
+  }, [isEditMode, editingId])
 
   const handleNext = () => {
     if (step === 1 && !formData.client_id)
@@ -72,25 +97,67 @@ export default function ProjectFormPage() {
         area_id: a,
         is_lead: a === formData.leadArea,
       }))
-      const project = await createProject(
-        {
-          name: formData.name,
-          description: formData.description,
-          start_date: formData.start_date || new Date().toISOString().split('T')[0],
-          end_date: formData.end_date || new Date().toISOString().split('T')[0],
-          client_id: formData.client_id,
-          status: formData.status,
-        },
-        areaPayload,
-      )
 
-      toast({ title: 'Projeto criado com sucesso!' })
-      navigate(`/projetos/${project.id}`)
+      if (isEditMode && editingId) {
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({
+            name: formData.name,
+            description: formData.description,
+            start_date: formData.start_date || null,
+            end_date: formData.end_date,
+            client_id: formData.client_id,
+            status: formData.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingId)
+
+        if (updateError) throw updateError
+
+        const { error: delError } = await supabase
+          .from('project_areas')
+          .delete()
+          .eq('project_id', editingId)
+
+        if (delError) throw delError
+
+        const { error: insError } = await supabase
+          .from('project_areas')
+          .insert(areaPayload.map((a) => ({ ...a, project_id: editingId })))
+
+        if (insError) throw insError
+
+        toast({ title: 'Projeto atualizado com sucesso!' })
+        navigate(`/projetos/${editingId}`)
+      } else {
+        const project = await createProject(
+          {
+            name: formData.name,
+            description: formData.description,
+            start_date: formData.start_date || new Date().toISOString().split('T')[0],
+            end_date: formData.end_date || new Date().toISOString().split('T')[0],
+            client_id: formData.client_id,
+            status: formData.status,
+          },
+          areaPayload,
+        )
+
+        toast({ title: 'Projeto criado com sucesso!' })
+        navigate(`/projetos/${project.id}`)
+      }
     } catch (err: any) {
-      toast({ title: 'Erro ao criar projeto', description: err.message, variant: 'destructive' })
+      toast({
+        title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
+        description: err.message,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
+  }
+
+  if (isLoadingProject) {
+    return <div className="p-8 text-center">Carregando projeto...</div>
   }
 
   return (
@@ -107,11 +174,14 @@ export default function ProjectFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>
+            {isEditMode ? 'Editar Projeto' : 'Novo Projeto'} -{' '}
             {step === 1 && 'Passo 1: Selecione o Cliente'}
             {step === 2 && 'Passo 2: Informações Básicas'}
             {step === 3 && 'Passo 3: Áreas Envolvidas'}
           </CardTitle>
-          <CardDescription>Preencha os dados do novo projeto.</CardDescription>
+          <CardDescription>
+            {isEditMode ? 'Atualize os dados do projeto.' : 'Preencha os dados do novo projeto.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {step === 1 && (
@@ -236,7 +306,15 @@ export default function ProjectFormPage() {
           <div className="flex justify-between pt-6">
             <Button
               variant="outline"
-              onClick={() => (step > 1 ? setStep((s) => s - 1) : navigate('/projetos'))}
+              onClick={() => {
+                if (step > 1) {
+                  setStep((s) => s - 1)
+                } else if (isEditMode && editingId) {
+                  navigate(`/projetos/${editingId}`)
+                } else {
+                  navigate('/projetos')
+                }
+              }}
             >
               {step === 1 ? 'Cancelar' : 'Voltar'}
             </Button>
@@ -244,7 +322,7 @@ export default function ProjectFormPage() {
               <Button onClick={handleNext}>Próximo</Button>
             ) : (
               <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? 'Criando...' : 'Finalizar Projeto'}
+                {loading ? 'Processando...' : isEditMode ? 'Salvar Alterações' : 'Criar Projeto'}
               </Button>
             )}
           </div>

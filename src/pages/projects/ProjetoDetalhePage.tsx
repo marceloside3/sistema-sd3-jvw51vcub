@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Calendar, User, Clock } from 'lucide-react'
+import { ArrowLeft, Plus, Calendar, User, Clock, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -95,6 +95,7 @@ export default function ProjetoDetalhePage() {
 
   const isAdmin = userCtx?.profile?.is_admin === true
   const isCreator = project.created_by === userCtx?.user?.id
+  const canEditProject = isCreator || isAdmin
   const canChangeStatus = isAdmin || isCreator
 
   const availableTransitions = VALID_TRANSITIONS[project.status] || []
@@ -134,6 +135,14 @@ export default function ProjetoDetalhePage() {
               >
                 {STATUS_LABELS[project.status] || project.status}
               </Badge>
+            )}
+            {canEditProject && (
+              <Button variant="outline" size="sm" className="ml-2" asChild>
+                <Link to={`/projetos/${project.id}/editar`}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Editar
+                </Link>
+              </Button>
             )}
           </div>
           <p className="text-sm text-gray-500 font-mono">

@@ -614,6 +614,14 @@ export type Database = {
       can_view_project: { Args: { p_project_id: string }; Returns: boolean }
       generate_project_code: { Args: { p_client_id: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      mark_overdue_projects: {
+        Args: never
+        Returns: {
+          old_status: string
+          project_name: string
+          updated_project_id: string
+        }[]
+      }
       user_can_access_project: {
         Args: { p_project_id: string }
         Returns: boolean
