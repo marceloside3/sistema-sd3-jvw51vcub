@@ -17,6 +17,8 @@ import { supabase } from '@/lib/supabase/client'
 import { createDemand } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { getProjects } from '@/services/projects'
+import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
+import { uploadAttachment } from '@/services/attachments'
 
 export default function NovaDemandaPage() {
   const [searchParams] = useSearchParams()
@@ -40,6 +42,10 @@ export default function NovaDemandaPage() {
     due_date: '',
   })
   const [loading, setLoading] = useState(false)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
+    null,
+  )
 
   useEffect(() => {
     getProjects().then((res) => setProjects(res.filter((p) => p.status === 'active')))
@@ -96,7 +102,37 @@ export default function NovaDemandaPage() {
       }
 
       const newDemand = await createDemand(payload)
-      toast({ title: 'Sucesso', description: 'Demanda criada!' })
+
+      if (pendingFiles.length > 0 && currentUser?.user?.id) {
+        setUploadProgress({ current: 0, total: pendingFiles.length })
+        let successes = 0
+        let failures = 0
+
+        for (let i = 0; i < pendingFiles.length; i++) {
+          try {
+            await uploadAttachment('demand', newDemand.id, pendingFiles[i], currentUser.user.id)
+            successes++
+          } catch (uploadErr) {
+            console.error('Upload error:', uploadErr)
+            failures++
+          }
+          setUploadProgress({ current: i + 1, total: pendingFiles.length })
+        }
+
+        if (failures > 0) {
+          toast({
+            title: 'Demanda criada com ressalvas',
+            description: `${successes} de ${pendingFiles.length} anexos enviados. ${failures} falhou(aram).`,
+            variant: 'destructive',
+          })
+        } else {
+          toast({ title: 'Sucesso', description: 'Demanda e anexos criados!' })
+        }
+        setUploadProgress(null)
+      } else {
+        toast({ title: 'Sucesso', description: 'Demanda criada!' })
+      }
+
       navigate(`/demandas/${newDemand.id}`)
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
@@ -225,7 +261,16 @@ export default function NovaDemandaPage() {
           </div>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="pt-4 border-t">
+          <PendingFilesPicker files={pendingFiles} onChange={setPendingFiles} />
+        </div>
+
+        <div className="flex items-center justify-end gap-4 pt-4 border-t">
+          {uploadProgress && (
+            <span className="text-sm text-muted-foreground">
+              Enviando anexos: {uploadProgress.current} de {uploadProgress.total}...
+            </span>
+          )}
           <Button type="submit" disabled={loading}>
             {loading ? 'Enviando...' : 'Criar Demanda'}
           </Button>
