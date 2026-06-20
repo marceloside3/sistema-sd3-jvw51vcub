@@ -48,7 +48,13 @@ export default function NovaDemandaPage() {
   )
 
   useEffect(() => {
-    getProjects().then((res) => setProjects(res.filter((p) => p.status === 'active')))
+    getProjects().then((res) => {
+      const filtered = res.filter((p) => ['active', 'in_progress'].includes(p.status))
+      setProjects(filtered)
+      if (initialProjectId) {
+        setFormData((prev) => ({ ...prev, project_id: initialProjectId }))
+      }
+    })
     supabase
       .from('areas')
       .select('*')
@@ -152,24 +158,26 @@ export default function NovaDemandaPage() {
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Projeto *</Label>
-            <Select
-              value={formData.project_id}
-              onValueChange={(v) => setFormData({ ...formData, project_id: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o projeto" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.project_code} - {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!initialProjectId && (
+            <div className="space-y-2">
+              <Label>Projeto *</Label>
+              <Select
+                value={formData.project_id}
+                onValueChange={(v) => setFormData({ ...formData, project_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.project_code} - {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Título *</Label>
