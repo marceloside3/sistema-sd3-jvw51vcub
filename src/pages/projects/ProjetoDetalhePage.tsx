@@ -95,11 +95,23 @@ export default function ProjetoDetalhePage() {
 
   const isAdmin = userCtx?.profile?.is_admin === true
   const isCreator = project.created_by === userCtx?.user?.id
-  const canEditProject = isCreator || isAdmin
+  const isCompleted = project.status === 'completed'
+  const canEditProject = isAdmin || (isCreator && !isCompleted)
   const canChangeStatus = isAdmin || isCreator
 
   const availableTransitions = VALID_TRANSITIONS[project.status] || []
   const showStatusSelect = canChangeStatus && availableTransitions.length > 0
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    if (isCompleted) {
+      const confirmed = window.confirm(
+        'ATENÇÃO: Este projeto está CONCLUÍDO.\n\nA edição de projetos concluídos é uma ação de exceção e fica registrada. Apenas campos não-críticos podem ser alterados.\n\nDeseja prosseguir?',
+      )
+      if (!confirmed) {
+        e.preventDefault()
+      }
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
@@ -138,9 +150,9 @@ export default function ProjetoDetalhePage() {
             )}
             {canEditProject && (
               <Button variant="outline" size="sm" className="ml-2" asChild>
-                <Link to={`/projetos/${project.id}/editar`}>
+                <Link to={`/projetos/${project.id}/editar`} onClick={handleEditClick}>
                   <Pencil className="w-4 h-4 mr-2" />
-                  Editar
+                  {isCompleted ? 'Editar (Admin)' : 'Editar'}
                 </Link>
               </Button>
             )}

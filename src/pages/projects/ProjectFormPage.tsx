@@ -28,6 +28,7 @@ export default function ProjectFormPage() {
   const [areas, setAreas] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [isLoadingProject, setIsLoadingProject] = useState(false)
+  const [isProjectCompleted, setIsProjectCompleted] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -60,6 +61,7 @@ export default function ProjectFormPage() {
         .then(([proj, areasRes]) => {
           if (proj) {
             const projectAreas = areasRes.data || []
+            setIsProjectCompleted(proj.status === 'completed')
             setFormData({
               client_id: proj.client_id || '',
               name: proj.name || '',
@@ -187,11 +189,18 @@ export default function ProjectFormPage() {
             {isEditMode ? 'Atualize os dados do projeto.' : 'Preencha os dados do novo projeto.'}
           </CardDescription>
         </CardHeader>
+        {isProjectCompleted && (
+          <div className="mx-6 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm mb-4">
+            Projeto Concluído. Apenas descrição, status e áreas podem ser editados. Campos críticos
+            (nome, datas, cliente, prioridade) estão bloqueados.
+          </div>
+        )}
         <CardContent className="space-y-6">
           {step === 1 && (
             <div className="space-y-4">
               <Label>Cliente</Label>
               <Select
+                disabled={isProjectCompleted}
                 value={formData.client_id}
                 onValueChange={(v) => setFormData({ ...formData, client_id: v })}
               >
@@ -214,6 +223,7 @@ export default function ProjectFormPage() {
               <div className="space-y-2">
                 <Label>Nome do Projeto</Label>
                 <Input
+                  disabled={isProjectCompleted}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
@@ -230,6 +240,7 @@ export default function ProjectFormPage() {
                   <Label>Data de Início</Label>
                   <Input
                     type="date"
+                    disabled={isProjectCompleted}
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                   />
@@ -241,6 +252,7 @@ export default function ProjectFormPage() {
                   <Input
                     type="date"
                     required
+                    disabled={isProjectCompleted}
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                   />
