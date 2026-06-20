@@ -21,3 +21,4 @@ export function formatDateBR(dateStr?: string | null): string {
 
 // Add any other utility functions here
 // Build triggered to ensure formatDateBR logic without timezone shift is applied.
+// Forced production rebuild and publish to Skip Cloud to guarantee the updated formatDateBR is bundled.
