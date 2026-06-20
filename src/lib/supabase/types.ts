@@ -487,6 +487,60 @@ export type Database = {
           },
         ]
       }
+      project_audit_log: {
+        Row: {
+          actor_label: string | null
+          actor_user_id: string | null
+          created_at: string
+          event_type: Database['public']['Enums']['audit_event_type']
+          field_name: string | null
+          id: string
+          metadata: Json | null
+          new_value: string | null
+          old_value: string | null
+          project_id: string
+        }
+        Insert: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: Database['public']['Enums']['audit_event_type']
+          field_name?: string | null
+          id?: string
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          project_id: string
+        }
+        Update: {
+          actor_label?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: Database['public']['Enums']['audit_event_type']
+          field_name?: string | null
+          id?: string
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'project_audit_log_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_audit_log_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       projects: {
         Row: {
           client_id: string
@@ -611,8 +665,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      audit_log_insert: {
+        Args: {
+          p_event_type: Database['public']['Enums']['audit_event_type']
+          p_field_name?: string
+          p_metadata?: Json
+          p_new_value?: string
+          p_old_value?: string
+          p_project_id: string
+        }
+        Returns: undefined
+      }
       can_view_project: { Args: { p_project_id: string }; Returns: boolean }
       generate_project_code: { Args: { p_client_id: string }; Returns: string }
+      get_project_audit_log: {
+        Args: {
+          p_event_types?: Database['public']['Enums']['audit_event_type'][]
+          p_limit?: number
+          p_project_id: string
+          p_since?: string
+        }
+        Returns: {
+          actor_name: string
+          actor_user_id: string
+          created_at: string
+          event_type: Database['public']['Enums']['audit_event_type']
+          field_name: string
+          id: string
+          metadata: Json
+          new_value: string
+          old_value: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       mark_overdue_projects: {
         Args: never
@@ -629,7 +713,25 @@ export type Database = {
       user_can_see_project: { Args: { p_project_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      audit_event_type:
+        | 'project_created'
+        | 'project_status_changed'
+        | 'project_end_date_changed'
+        | 'project_start_date_changed'
+        | 'project_name_changed'
+        | 'project_client_changed'
+        | 'project_priority_changed'
+        | 'project_area_added'
+        | 'project_area_removed'
+        | 'project_area_lead_changed'
+        | 'project_completed'
+        | 'project_reopened'
+        | 'project_overdue_auto'
+        | 'project_overdue_resolved_auto'
+        | 'gate_override_executed'
+        | 'gate_blocked'
+        | 'feedback_received'
+        | 'version_created'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -754,6 +856,27 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      audit_event_type: [
+        'project_created',
+        'project_status_changed',
+        'project_end_date_changed',
+        'project_start_date_changed',
+        'project_name_changed',
+        'project_client_changed',
+        'project_priority_changed',
+        'project_area_added',
+        'project_area_removed',
+        'project_area_lead_changed',
+        'project_completed',
+        'project_reopened',
+        'project_overdue_auto',
+        'project_overdue_resolved_auto',
+        'gate_override_executed',
+        'gate_blocked',
+        'feedback_received',
+        'version_created',
+      ],
+    },
   },
 } as const
