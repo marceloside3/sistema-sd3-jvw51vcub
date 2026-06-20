@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getProjectById, updateProjectStatus } from '@/services/projects'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
+import { ProjectHistoryTab } from '@/components/project/ProjectHistoryTab'
 import { getProjectDemands } from '@/services/demands'
 import { format } from 'date-fns'
 import {
@@ -164,11 +165,12 @@ export default function ProjetoDetalhePage() {
       </div>
 
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 max-w-xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="demandas">Demandas</TabsTrigger>
           <TabsTrigger value="anexos">Anexos</TabsTrigger>
           <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent
@@ -320,6 +322,10 @@ export default function ProjetoDetalhePage() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="historico" className="mt-6">
+          <ProjectHistoryTab projectId={project.id} />
         </TabsContent>
       </Tabs>
     </div>

@@ -105,6 +105,23 @@ export async function updateProject(id: string, payload: any) {
   return data
 }
 
+export async function getProjectAuditLog(
+  projectId: string,
+  eventTypes: string[] | null,
+  since: string | null,
+  limit: number = 200,
+) {
+  const { data, error } = await supabase.rpc('get_project_audit_log', {
+    p_project_id: projectId,
+    p_event_types: eventTypes,
+    p_since: since,
+    p_limit: limit,
+  })
+
+  if (error) throw error
+  return data
+}
+
 export async function updateProjectStatus(
   id: string,
   newStatus: string,
