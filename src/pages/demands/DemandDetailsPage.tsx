@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { Send, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { formatDateBR } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -186,9 +187,7 @@ export default function DemandDetailsPage() {
                 <span className="font-medium">{demand.to_user?.full_name || 'Qualquer'}</span>
 
                 <span className="text-gray-500">Prazo:</span>
-                <span className="font-medium">
-                  {demand.due_date ? format(new Date(demand.due_date), 'dd/MM/yyyy') : '-'}
-                </span>
+                <span className="font-medium">{formatDateBR(demand.due_date)}</span>
               </div>
             </CardContent>
           </Card>

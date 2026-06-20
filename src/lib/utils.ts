@@ -16,10 +16,10 @@ export function formatDateBR(dateStr?: string | null): string {
   const datePart = dateStr.split('T')[0]
   if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return dateStr
   const [year, month, day] = datePart.split('-')
-  return `[v2-test] ${day}/${month}/${year}`
+  return `${day}/${month}/${year}`
 }
 
 // Add any other utility functions here
 // Build triggered to ensure formatDateBR logic without timezone shift is applied.
 // Forced production rebuild and publish to Skip Cloud to guarantee the updated formatDateBR is bundled.
-// Deploy timestamp: 2026-06-20T20:59:24.309Z
+// Deploy timestamp: 2026-06-20T21:30:00.000Z
