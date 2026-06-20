@@ -9,6 +9,7 @@ import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { ProjectHistoryTab } from '@/components/project/ProjectHistoryTab'
 import { getProjectDemands } from '@/services/demands'
 import { format } from 'date-fns'
+import { formatDateBR } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -193,7 +194,7 @@ export default function ProjetoDetalhePage() {
                       <div className="flex items-center text-xs text-gray-500 mt-2 gap-3">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />{' '}
-                          {d.due_date ? format(new Date(d.due_date), 'dd/MM/yyyy') : 'Sem data'}
+                          {d.due_date ? formatDateBR(d.due_date) : 'Sem data'}
                         </span>
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" /> {d.to_area?.name}
@@ -266,9 +267,7 @@ export default function ProjetoDetalhePage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{d.status}</TableCell>
-                      <TableCell>
-                        {d.due_date ? format(new Date(d.due_date), 'dd/MM/yyyy') : '-'}
-                      </TableCell>
+                      <TableCell>{formatDateBR(d.due_date)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -297,10 +296,7 @@ export default function ProjetoDetalhePage() {
                 <div className="text-sm text-gray-500 mb-1">Período</div>
                 <div className="font-medium flex items-center gap-2">
                   <Clock className="w-4 h-4 text-gray-400" />
-                  {project.start_date
-                    ? format(new Date(project.start_date), 'dd/MM/yyyy')
-                    : '-'}{' '}
-                  até {project.end_date ? format(new Date(project.end_date), 'dd/MM/yyyy') : '-'}
+                  {formatDateBR(project.start_date)} até {formatDateBR(project.end_date)}
                 </div>
               </div>
             </div>

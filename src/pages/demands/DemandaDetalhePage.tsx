@@ -13,6 +13,7 @@ import {
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { format } from 'date-fns'
 import { useToast } from '@/components/ui/use-toast'
+import { formatDateBR } from '@/lib/utils'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import {
   Select,
@@ -142,8 +143,7 @@ export default function DemandaDetalhePage() {
                 <span className="text-gray-500 block">Prioridade</span> {demand.priority}
               </div>
               <div>
-                <span className="text-gray-500 block">Prazo</span>{' '}
-                {demand.due_date ? format(new Date(demand.due_date), 'dd/MM/yyyy') : '-'}
+                <span className="text-gray-500 block">Prazo</span> {formatDateBR(demand.due_date)}
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { getDemands } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { format } from 'date-fns'
+import { formatDateBR } from '@/lib/utils'
 
 export default function MinhasDemandasPage() {
   const { data: currentUser } = useCurrentUser()
@@ -84,9 +85,7 @@ export default function MinhasDemandasPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>{d.status}</TableCell>
-                <TableCell>
-                  {d.due_date ? format(new Date(d.due_date), 'dd/MM/yyyy') : '-'}
-                </TableCell>
+                <TableCell>{formatDateBR(d.due_date)}</TableCell>
               </TableRow>
             ))
           )}
