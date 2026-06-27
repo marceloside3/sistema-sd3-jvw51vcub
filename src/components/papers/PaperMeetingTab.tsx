@@ -7,6 +7,8 @@ import { ScheduleHandoverMeetingModal } from './ScheduleHandoverMeetingModal'
 import { updateMeeting, downloadMeetingIcs } from '@/services/papers'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export function PaperMeetingTab({
   projectId,
@@ -83,7 +85,9 @@ export function PaperMeetingTab({
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-semibold text-lg">
-                        {new Date(m.scheduled_at).toLocaleString('pt-BR')}
+                        {format(new Date(m.scheduled_at), "dd/MM/yyyy 'às' HH:mm", {
+                          locale: ptBR,
+                        })}
                       </h4>
                       <Badge variant={m.status === 'completed' ? 'default' : 'secondary'}>
                         {m.status === 'completed' ? 'Concluída' : 'Agendada'}

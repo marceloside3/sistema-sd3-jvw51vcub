@@ -68,7 +68,14 @@ export function ScheduleHandoverMeetingModal({
       return toast({ title: 'Selecione pelo menos um participante', variant: 'destructive' })
     }
 
-    const scheduledAt = new Date(`${date}T${time}`).toISOString()
+    // Create an ISO8601 string with the explicit local timezone offset
+    const offset = new Date().getTimezoneOffset()
+    const sign = offset > 0 ? '-' : '+'
+    const absOffset = Math.abs(offset)
+    const hours = String(Math.floor(absOffset / 60)).padStart(2, '0')
+    const minutes = String(absOffset % 60).padStart(2, '0')
+    const timeWithSeconds = time.length === 5 ? `${time}:00` : time
+    const scheduledAt = `${date}T${timeWithSeconds}${sign}${hours}:${minutes}`
 
     setLoading(true)
     try {
