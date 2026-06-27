@@ -45,6 +45,29 @@ export default function HubDashboardPage() {
     setLoading(false)
   }
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-600 hover:bg-green-700">Ativo</Badge>
+      case 'in_progress':
+        return <Badge className="bg-blue-500 hover:bg-blue-600">Em Andamento</Badge>
+      case 'draft':
+        return <Badge variant="secondary">Rascunho</Badge>
+      case 'paused':
+        return (
+          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+            Pausado
+          </Badge>
+        )
+      case 'completed':
+        return <Badge className="bg-blue-600 hover:bg-blue-700">Concluído</Badge>
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelado</Badge>
+      default:
+        return <Badge>{status}</Badge>
+    }
+  }
+
   const filteredProjects = projects.filter((p) => {
     if (statusFilter !== 'all' && p.status !== statusFilter) return false
     if (originFilter !== 'all' && p.origin_type !== originFilter) return false
@@ -70,6 +93,9 @@ export default function HubDashboardPage() {
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
               <SelectItem value="active">Ativo</SelectItem>
+              <SelectItem value="in_progress">Em Andamento</SelectItem>
+              <SelectItem value="draft">Rascunho</SelectItem>
+              <SelectItem value="paused">Pausado</SelectItem>
               <SelectItem value="completed">Concluído</SelectItem>
               <SelectItem value="cancelled">Cancelado</SelectItem>
             </SelectContent>
@@ -143,23 +169,7 @@ export default function HubDashboardPage() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        p.status === 'active'
-                          ? 'default'
-                          : p.status === 'completed'
-                            ? 'secondary'
-                            : 'destructive'
-                      }
-                    >
-                      {p.status === 'active'
-                        ? 'Ativo'
-                        : p.status === 'completed'
-                          ? 'Concluído'
-                          : 'Cancelado'}
-                    </Badge>
-                  </TableCell>
+                  <TableCell>{getStatusBadge(p.status)}</TableCell>
                   <TableCell className="text-gray-500 whitespace-nowrap">
                     {formatDateBR(p.created_at)}
                   </TableCell>

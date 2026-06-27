@@ -39,7 +39,9 @@ export default function ProjetosListPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-600">Ativo</Badge>
+        return <Badge className="bg-green-600 hover:bg-green-700">Ativo</Badge>
+      case 'in_progress':
+        return <Badge className="bg-blue-500 hover:bg-blue-600">Em Andamento</Badge>
       case 'draft':
         return <Badge variant="secondary">Rascunho</Badge>
       case 'paused':
@@ -49,7 +51,7 @@ export default function ProjetosListPage() {
           </Badge>
         )
       case 'completed':
-        return <Badge className="bg-blue-600">Concluído</Badge>
+        return <Badge className="bg-blue-600 hover:bg-blue-700">Concluído</Badge>
       case 'cancelled':
         return <Badge variant="destructive">Cancelado</Badge>
       default:

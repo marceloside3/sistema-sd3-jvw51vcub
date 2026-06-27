@@ -543,6 +543,8 @@ export type Database = {
       }
       projects: {
         Row: {
+          briefing_completed_at: string | null
+          briefing_data: Json
           client_id: string
           created_at: string
           created_by: string
@@ -550,12 +552,15 @@ export type Database = {
           end_date: string
           id: string
           name: string
+          origin_type: string
           project_code: string | null
           start_date: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          briefing_completed_at?: string | null
+          briefing_data?: Json
           client_id: string
           created_at?: string
           created_by: string
@@ -563,12 +568,15 @@ export type Database = {
           end_date: string
           id?: string
           name: string
+          origin_type?: string
           project_code?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          briefing_completed_at?: string | null
+          briefing_data?: Json
           client_id?: string
           created_at?: string
           created_by?: string
@@ -576,6 +584,7 @@ export type Database = {
           end_date?: string
           id?: string
           name?: string
+          origin_type?: string
           project_code?: string | null
           start_date?: string | null
           status?: string
