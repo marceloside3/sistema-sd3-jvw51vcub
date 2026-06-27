@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select'
 
 export default function PaperEditPage() {
-  const { id } = useParams()
+  const { projectId } = useParams()
   const [project, setProject] = useState<any>(null)
   const [papers, setPapers] = useState<any[]>([])
   const [meetings, setMeetings] = useState<any[]>([])
@@ -25,11 +25,11 @@ export default function PaperEditPage() {
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
-    if (!id) return
+    if (!projectId) return
     const [proj, paps, meets] = await Promise.all([
-      getProjectById(id),
-      getProjectPapers(id),
-      getProjectMeetings(id),
+      getProjectById(projectId),
+      getProjectPapers(projectId),
+      getProjectMeetings(projectId),
     ])
     setProject(proj)
     setPapers(paps || [])
@@ -42,7 +42,7 @@ export default function PaperEditPage() {
 
   useEffect(() => {
     loadData()
-  }, [id])
+  }, [projectId])
 
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
   if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
@@ -55,7 +55,7 @@ export default function PaperEditPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={`/projetos/${id}`}>
+          <Link to={`/projetos/${projectId}`}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
         </Button>
@@ -143,7 +143,7 @@ export default function PaperEditPage() {
         </TabsContent>
 
         <TabsContent value="reuniao" className="mt-6">
-          <PaperMeetingTab projectId={id!} meetings={meetings} onReload={loadData} />
+          <PaperMeetingTab projectId={projectId!} meetings={meetings} onReload={loadData} />
         </TabsContent>
 
         <TabsContent value="g3" className="mt-6">
