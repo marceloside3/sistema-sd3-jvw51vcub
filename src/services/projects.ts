@@ -36,7 +36,7 @@ export async function getProjectById(id: string) {
     .select(`
       *,
       client:clients(*),
-      areas:project_areas(id, is_lead, area:areas(*))
+      areas:project_areas(id, is_lead, area:areas(*, area_responsibles(user_id)))
     `)
     .eq('id', id)
     .single()

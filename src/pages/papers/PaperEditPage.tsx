@@ -1,0 +1,144 @@
+import { useEffect, useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { getProjectById } from '@/services/projects'
+import { getProjectPapers, getProjectMeetings } from '@/services/papers'
+import { PaperInputsTab } from '@/components/papers/PaperInputsTab'
+import { PaperMeetingTab } from '@/components/papers/PaperMeetingTab'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+export default function PaperEditPage() {
+  const { id } = useParams()
+  const [project, setProject] = useState<any>(null)
+  const [papers, setPapers] = useState<any[]>([])
+  const [meetings, setMeetings] = useState<any[]>([])
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+
+  const loadData = async () => {
+    if (!id) return
+    const [proj, paps, meets] = await Promise.all([
+      getProjectById(id),
+      getProjectPapers(id),
+      getProjectMeetings(id),
+    ])
+    setProject(proj)
+    setPapers(paps || [])
+    setMeetings(meets || [])
+    if (paps && paps.length > 0) {
+      setSelectedVersion(paps[0].id)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [id])
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
+  if (!project || papers.length === 0)
+    return <div className="p-8 text-center text-gray-500">Paper não encontrado</div>
+
+  const currentPaper = papers.find((p) => p.id === selectedVersion) || papers[0]
+  const isLatest = papers[0].id === currentPaper.id
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link to={`/projetos/${id}`}>
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+        </Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-bold">Paper do Projeto</h1>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              v{currentPaper.version}
+            </Badge>
+            <Badge variant="secondary" className="uppercase tracking-widest text-[10px]">
+              {currentPaper.status}
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-500">
+            {project.project_code} • {project.name}
+          </p>
+        </div>
+        <div>
+          <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Versão" />
+            </SelectTrigger>
+            <SelectContent>
+              {papers.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  Versão {p.version} {p.status === 'draft' ? '(Atual)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Tabs defaultValue="inputs" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+          <TabsTrigger value="gerais">Dados Gerais</TabsTrigger>
+          <TabsTrigger value="inputs">8 Inputs Estratégicos</TabsTrigger>
+          <TabsTrigger value="reuniao">Reunião de Passagem</TabsTrigger>
+          <TabsTrigger value="g3" disabled>
+            Submeter para G3
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="gerais" className="mt-6 border rounded-lg bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold mb-6">Informações do Projeto</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div>
+              <span className="text-gray-500 block mb-1">Cliente:</span>
+              <p className="font-medium text-base">{project.client?.name}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 block mb-1">
+                Data de Criação do Paper (v{currentPaper.version}):
+              </span>
+              <p className="font-medium">
+                {new Date(currentPaper.created_at).toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <div className="col-span-2">
+              <span className="text-gray-500 block mb-1">Escopo Original (Breve):</span>
+              <p className="font-medium whitespace-pre-wrap">{project.description}</p>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="inputs" className="mt-6">
+          <PaperInputsTab
+            paper={currentPaper}
+            project={project}
+            readOnly={!isLatest || currentPaper.status !== 'draft'}
+          />
+        </TabsContent>
+
+        <TabsContent value="reuniao" className="mt-6">
+          <PaperMeetingTab projectId={id!} meetings={meetings} onReload={loadData} />
+        </TabsContent>
+
+        <TabsContent value="g3" className="mt-6">
+          <div className="p-12 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50 flex items-center justify-center">
+            <span className="text-lg">Disponível na Sprint 3.B</span>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

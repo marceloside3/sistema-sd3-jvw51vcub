@@ -9,8 +9,10 @@ import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { DistributionModal } from '@/components/projects/DistributionModal'
 import { ProjectHistoryTab } from '@/components/project/ProjectHistoryTab'
 import { AiAnalysisModal } from '@/components/project/AiAnalysisModal'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, FileText } from 'lucide-react'
 import { getProjectDemands } from '@/services/demands'
+import { getProjectPapers, createPaperVersion } from '@/services/papers'
+import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { formatDateBR } from '@/lib/utils'
 import {
@@ -49,23 +51,36 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 export default function ProjetoDetalhePage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { data: userCtx } = useCurrentUser()
   const { toast } = useToast()
 
   const [project, setProject] = useState<any>(null)
   const [demands, setDemands] = useState<any[]>([])
+  const [papers, setPapers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
-    Promise.all([getProjectById(id), getProjectDemands(id)])
-      .then(([projData, demandsData]) => {
+    Promise.all([getProjectById(id), getProjectDemands(id), getProjectPapers(id).catch(() => [])])
+      .then(([projData, demandsData, papersData]) => {
         setProject(projData)
         setDemands(demandsData || [])
+        setPapers(papersData || [])
       })
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleCreatePaper = async () => {
+    if (!id) return
+    try {
+      await createPaperVersion(id)
+      navigate(`/projetos/${id}/paper`)
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    }
+  }
 
   const handleStatusChange = async (newStatus: string) => {
     if (!project || project.status === newStatus) return
@@ -109,6 +124,13 @@ export default function ProjetoDetalhePage() {
   const isAllowedToDistribute = ['super_admin', 'admin', 'atendimento', 'planejamento'].includes(
     userProfileCode,
   )
+  const isPlanning = userProfileCode === 'planejamento'
+  const isLeadAreaResponsible = project.areas?.some(
+    (a: any) =>
+      a.is_lead && a.area?.area_responsibles?.some((ar: any) => ar.user_id === userCtx?.user?.id),
+  )
+  const canViewPaper = project.distributed_at && (isAdmin || isPlanning || isLeadAreaResponsible)
+  const currentPaper = papers[0]
   const canDistribute =
     isAllowedToDistribute &&
     project.briefing_completed_at &&
@@ -199,6 +221,37 @@ export default function ProjetoDetalhePage() {
               </AiAnalysisModal>
             )}
           </div>
+
+          {canViewPaper && (
+            <div className="flex items-center gap-2 mt-2">
+              {currentPaper ? (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-50 text-blue-700 border-blue-200 uppercase tracking-wider text-[10px]"
+                  >
+                    Paper v{currentPaper.version} ({currentPaper.status})
+                  </Badge>
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" asChild>
+                    <Link to={`/projetos/${project.id}/paper`}>
+                      <FileText className="w-3 h-3 mr-1" />
+                      Abrir Paper
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+                  onClick={handleCreatePaper}
+                >
+                  <FileText className="w-3 h-3 mr-1" />
+                  Criar Paper do Projeto
+                </Button>
+              )}
+            </div>
+          )}
           <p className="text-sm text-gray-500 font-mono">
             {project.project_code} • {project.client?.name}
           </p>
