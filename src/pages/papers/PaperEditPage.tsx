@@ -73,11 +73,7 @@ export default function PaperEditPage() {
         setMeetings(meetingsResult.value || [])
       } else {
         console.error('Failed to fetch meetings:', meetingsResult.reason)
-        toast({
-          title: 'Aviso',
-          description: 'Não foi possível carregar as reuniões de passagem.',
-          variant: 'destructive',
-        })
+        setMeetings([])
       }
     } catch (error) {
       console.error('Failed to fetch project:', error)
