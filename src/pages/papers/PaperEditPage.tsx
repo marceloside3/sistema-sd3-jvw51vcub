@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Clock, Send, Loader2, FilePlus2, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -57,7 +57,7 @@ export default function PaperEditPage() {
   const [creatingVersion, setCreatingVersion] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!projectId) return
 
     setLoading(true)
@@ -78,10 +78,9 @@ export default function PaperEditPage() {
       setProject(proj)
       setLoading(false)
 
-      const [papersResult, meetingsResult, reviewsResult] = await Promise.allSettled([
+      const [papersResult, meetingsResult] = await Promise.allSettled([
         getProjectPapers(projectId),
         getProjectMeetings(projectId),
-        getPaperG3Reviews(projectId),
       ])
 
       if (papersResult.status === 'fulfilled') {
@@ -103,12 +102,6 @@ export default function PaperEditPage() {
       } else {
         setMeetings([])
       }
-
-      if (reviewsResult.status === 'fulfilled') {
-        setReviews(reviewsResult.value || [])
-      } else {
-        setReviews([])
-      }
     } catch (error) {
       toast({
         title: 'Erro',
@@ -118,11 +111,23 @@ export default function PaperEditPage() {
       setLoading(false)
       navigate('/projetos')
     }
-  }
+  }, [projectId, navigate, toast])
 
   useEffect(() => {
     loadData()
-  }, [projectId])
+  }, [loadData])
+
+  useEffect(() => {
+    const paper =
+      papers.length > 0 ? papers.find((p) => p.id === selectedVersion) || papers[0] : null
+    if (!paper?.id) {
+      setReviews([])
+      return
+    }
+    getPaperG3Reviews(paper.id)
+      .then((data) => setReviews(data || []))
+      .catch(() => setReviews([]))
+  }, [papers, selectedVersion])
 
   useEffect(() => {
     if (currentUser) {

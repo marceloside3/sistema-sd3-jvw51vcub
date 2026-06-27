@@ -456,6 +456,58 @@ export type Database = {
           },
         ]
       }
+      paper_g3_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          decision: string
+          id: string
+          paper_id: string
+          project_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          decision: string
+          id?: string
+          paper_id: string
+          project_id: string
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          decision?: string
+          id?: string
+          paper_id?: string
+          project_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'paper_g3_reviews_paper_id_fkey'
+            columns: ['paper_id']
+            isOneToOne: false
+            referencedRelation: 'project_papers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'paper_g3_reviews_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'paper_g3_reviews_reviewer_id_fkey'
+            columns: ['reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           code: string
@@ -635,6 +687,8 @@ export type Database = {
       }
       project_papers: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           budget_allocation: Json | null
           channels_priority: Json | null
           created_at: string
@@ -642,6 +696,9 @@ export type Database = {
           id: string
           key_message: string | null
           kpis: Json | null
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
           personas: Json | null
           premises_restrictions: string | null
           project_id: string
@@ -652,6 +709,8 @@ export type Database = {
           version: number
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           budget_allocation?: Json | null
           channels_priority?: Json | null
           created_at?: string
@@ -659,6 +718,9 @@ export type Database = {
           id?: string
           key_message?: string | null
           kpis?: Json | null
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           personas?: Json | null
           premises_restrictions?: string | null
           project_id: string
@@ -669,6 +731,8 @@ export type Database = {
           version?: number
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           budget_allocation?: Json | null
           channels_priority?: Json | null
           created_at?: string
@@ -676,6 +740,9 @@ export type Database = {
           id?: string
           key_message?: string | null
           kpis?: Json | null
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           personas?: Json | null
           premises_restrictions?: string | null
           project_id?: string
@@ -686,6 +753,20 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: 'project_papers_approved_by_fkey'
+            columns: ['approved_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_papers_override_by_fkey'
+            columns: ['override_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'project_papers_project_id_fkey'
             columns: ['project_id']
@@ -939,6 +1020,14 @@ export type Database = {
           updated_project_id: string
         }[]
       }
+      override_paper_g3: {
+        Args: { p_justification: string; p_paper_id: string }
+        Returns: undefined
+      }
+      review_paper_g3: {
+        Args: { p_comment?: string; p_decision: string; p_paper_id: string }
+        Returns: undefined
+      }
       schedule_handover_meeting: {
         Args: {
           p_agenda: string
@@ -950,6 +1039,7 @@ export type Database = {
         }
         Returns: string
       }
+      submit_paper_to_g3: { Args: { p_paper_id: string }; Returns: undefined }
       user_can_access_project: {
         Args: { p_project_id: string }
         Returns: boolean
@@ -990,6 +1080,10 @@ export type Database = {
         | 'paper_new_version'
         | 'handover_meeting_scheduled'
         | 'handover_meeting_completed'
+        | 'g3_submitted'
+        | 'g3_approved'
+        | 'g3_rejected'
+        | 'g3_override'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1144,6 +1238,10 @@ export const Constants = {
         'paper_new_version',
         'handover_meeting_scheduled',
         'handover_meeting_completed',
+        'g3_submitted',
+        'g3_approved',
+        'g3_rejected',
+        'g3_override',
       ],
     },
   },

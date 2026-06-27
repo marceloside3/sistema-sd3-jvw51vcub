@@ -108,14 +108,14 @@ export async function overridePaperG3(paperId: string, justification: string) {
   if (error) throw error
 }
 
-export async function getPaperG3Reviews(projectId: string) {
+export async function getPaperG3Reviews(paperId: string) {
   const { data, error } = await supabase
     .from('paper_g3_reviews')
     .select(`
       *,
       reviewer:users(full_name, email)
     `)
-    .eq('project_id', projectId)
+    .eq('paper_id', paperId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return data

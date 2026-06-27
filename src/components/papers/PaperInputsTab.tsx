@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, Save, CheckCircle2, CloudOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,59 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { useCurrentUser } from '@/hooks/use-current-user'
+
+function parseJsonArrayToString(val: any): string {
+  if (!val) return ''
+  if (Array.isArray(val)) {
+    return val
+      .map((item) => {
+        if (typeof item === 'object' && item !== null) {
+          return Object.values(item)
+            .filter((v) => typeof v === 'string')
+            .join(' - ')
+        }
+        return String(item)
+      })
+      .join('\n')
+  }
+  return String(val)
+}
+
+function serializeStringToJsonArray(val: string): string[] {
+  if (!val) return []
+  return val.split('\n').filter((s) => s.trim() !== '')
+}
+
+const FORM_FIELDS = [
+  {
+    key: 'refined_objective',
+    label: 'Objetivo Refinado',
+    placeholder: 'Descreva o objetivo refinado...',
+  },
+  { key: 'key_message', label: 'Mensagem Principal', placeholder: 'Qual é a mensagem principal?' },
+  {
+    key: 'premises_restrictions',
+    label: 'Premissas e Restrições',
+    placeholder: 'Liste as premissas e restrições...',
+  },
+  { key: 'kpis', label: 'KPIs', placeholder: 'Adicione os KPIs (um por linha)...' },
+  { key: 'personas', label: 'Personas', placeholder: 'Descreva as personas (uma por linha)...' },
+  {
+    key: 'channels_priority',
+    label: 'Prioridade de Canais',
+    placeholder: 'Liste os canais prioritários (um por linha)...',
+  },
+  {
+    key: 'budget_allocation',
+    label: 'Alocação de Verba',
+    placeholder: 'Descreva a alocação de verba (um item por linha)...',
+  },
+  {
+    key: 'timeline',
+    label: 'Timeline',
+    placeholder: 'Adicione os marcos do cronograma (um por linha)...',
+  },
+] as const
 
 interface PaperInputsTabProps {
   project: any
@@ -20,7 +73,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
   const navigate = useNavigate()
   const { toast } = useToast()
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<string, string>>({
     refined_objective: '',
     key_message: '',
     premises_restrictions: '',
@@ -35,24 +88,14 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
 
-  useEffect(() => {
-    const parseJsonArrayToString = (val: any) => {
-      if (!val) return ''
-      if (Array.isArray(val)) {
-        return val
-          .map((item) => {
-            if (typeof item === 'object' && item !== null) {
-              return Object.values(item)
-                .filter((v) => typeof v === 'string')
-                .join(' - ')
-            }
-            return String(item)
-          })
-          .join('\n')
-      }
-      return String(val)
-    }
+  const onReloadRef = useRef(onReload)
+  onReloadRef.current = onReload
+  const toastRef = useRef(toast)
+  toastRef.current = toast
+  const paperRef = useRef(paper)
+  paperRef.current = paper
 
+  useEffect(() => {
     if (paper) {
       setForm({
         refined_objective: paper.refined_objective || '',
@@ -67,60 +110,43 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
     }
   }, [paper])
 
-  // Auto-save logic with debounce
   useEffect(() => {
     if (readOnly) return
 
-    const parseJsonArrayToString = (val: any) => {
-      if (!val) return ''
-      if (Array.isArray(val)) {
-        return val
-          .map((item) => {
-            if (typeof item === 'object' && item !== null) {
-              return Object.values(item)
-                .filter((v) => typeof v === 'string')
-                .join(' - ')
-            }
-            return String(item)
-          })
-          .join('\n')
-      }
-      return String(val)
-    }
-
-    const hasChanges =
-      form.refined_objective !== (paper?.refined_objective || '') ||
-      form.key_message !== (paper?.key_message || '') ||
-      form.premises_restrictions !== (paper?.premises_restrictions || '') ||
-      form.kpis !== parseJsonArrayToString(paper?.kpis) ||
-      form.personas !== parseJsonArrayToString(paper?.personas) ||
-      form.timeline !== parseJsonArrayToString(paper?.timeline) ||
-      form.channels_priority !== parseJsonArrayToString(paper?.channels_priority) ||
-      form.budget_allocation !== parseJsonArrayToString(paper?.budget_allocation)
+    const currentPaper = paperRef.current
+    const hasChanges = currentPaper
+      ? form.refined_objective !== (currentPaper.refined_objective || '') ||
+        form.key_message !== (currentPaper.key_message || '') ||
+        form.premises_restrictions !== (currentPaper.premises_restrictions || '') ||
+        form.kpis !== parseJsonArrayToString(currentPaper.kpis) ||
+        form.personas !== parseJsonArrayToString(currentPaper.personas) ||
+        form.timeline !== parseJsonArrayToString(currentPaper.timeline) ||
+        form.channels_priority !== parseJsonArrayToString(currentPaper.channels_priority) ||
+        form.budget_allocation !== parseJsonArrayToString(currentPaper.budget_allocation)
+      : Object.values(form).some((v) => v.trim() !== '')
 
     if (!hasChanges) {
       if (saveStatus !== 'idle' && saveStatus !== 'error') setSaveStatus('idle')
       return
     }
 
-    const isFormEmpty =
-      !form.refined_objective &&
-      !form.key_message &&
-      !form.premises_restrictions &&
-      !form.kpis &&
-      !form.personas &&
-      !form.timeline &&
-      !form.channels_priority &&
-      !form.budget_allocation
-
-    if (!paper && isFormEmpty) return
+    const isFormEmpty = Object.values(form).every((v) => !v.trim())
+    if (!currentPaper && isFormEmpty) return
 
     setSaveStatus('saving')
     const timer = setTimeout(async () => {
       try {
-        const serializeStringToJsonArray = (val: string) => {
-          if (!val) return []
-          return val.split('\n').filter((s) => s.trim() !== '')
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (!session) {
+          toastRef.current({
+            title: 'Sessão expirada',
+            description: 'Faça login novamente para salvar.',
+            variant: 'destructive',
+          })
+          setSaveStatus('error')
+          return
         }
 
         const payload = {
@@ -135,32 +161,31 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
           updated_at: new Date().toISOString(),
         }
 
-        if (paper) {
-          const { error } = await supabase.from('project_papers').update(payload).eq('id', paper.id)
+        if (currentPaper) {
+          const { error } = await supabase
+            .from('project_papers')
+            .update(payload)
+            .eq('id', currentPaper.id)
           if (error) throw error
-        } else {
+        } else if (project?.id && user?.id) {
           const { error } = await supabase.from('project_papers').insert({
             ...payload,
             project_id: project.id,
             status: 'draft',
             version: 1,
-            created_by: user?.id,
+            created_by: user.id,
           })
           if (error) throw error
-          onReload()
+          onReloadRef.current()
         }
 
         setSaveStatus('saved')
         setLastSavedAt(new Date())
-
-        // Revert status to idle after 3s
-        setTimeout(() => {
-          setSaveStatus((prev) => (prev === 'saved' ? 'idle' : prev))
-        }, 3000)
+        setTimeout(() => setSaveStatus((prev) => (prev === 'saved' ? 'idle' : prev)), 3000)
       } catch (err) {
         console.error('Auto-save error:', err)
         setSaveStatus('error')
-        toast({
+        toastRef.current({
           title: 'Erro no salvamento automático',
           description: 'Verifique sua conexão. Tentaremos salvar novamente.',
           variant: 'destructive',
@@ -169,7 +194,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [form, paper, readOnly, project?.id, user?.id, onReload, toast])
+  }, [form, readOnly, project?.id, user?.id])
 
   const handleSave = async () => {
     if (!project || !user) return
@@ -177,9 +202,17 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
     setSaveStatus('saving')
 
     try {
-      const serializeStringToJsonArray = (val: string) => {
-        if (!val) return []
-        return val.split('\n').filter((s) => s.trim() !== '')
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        toast({
+          title: 'Sessão expirada',
+          description: 'Faça login novamente para salvar.',
+          variant: 'destructive',
+        })
+        setSaveStatus('error')
+        return
       }
 
       const payload = {
@@ -208,27 +241,25 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
       } else {
         const { error } = await supabase
           .from('project_papers')
-          .update({
-            ...payload,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', paper.id)
         if (error) throw error
       }
 
-      await supabase.rpc('audit_log_insert', {
-        p_project_id: project.id,
-        p_event_type: eventType as any,
-        p_new_value: !paper ? 'Paper v1 criado' : `Paper v${paper.version} atualizado`,
-        p_field_name: 'content',
-      })
+      try {
+        await supabase.rpc('audit_log_insert', {
+          p_project_id: project.id,
+          p_event_type: eventType as any,
+          p_new_value: !paper ? 'Paper v1 criado' : `Paper v${paper.version} atualizado`,
+          p_field_name: 'content',
+        })
+      } catch (auditErr) {
+        console.error('Audit log error (non-blocking):', auditErr)
+      }
 
       setSaveStatus('saved')
       setLastSavedAt(new Date())
-      toast({
-        title: 'Sucesso',
-        description: 'Paper salvo com sucesso.',
-      })
+      toast({ title: 'Sucesso', description: 'Paper salvo com sucesso.' })
       onReload()
       navigate(`/projetos/${project.id}`)
     } catch (err: any) {
@@ -279,93 +310,18 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <div className="space-y-2">
-          <Label>Objetivo Refinado</Label>
-          <Textarea
-            value={form.refined_objective}
-            onChange={(e) => setForm({ ...form, refined_objective: e.target.value })}
-            disabled={readOnly}
-            placeholder="Descreva o objetivo refinado..."
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Mensagem Principal</Label>
-          <Textarea
-            value={form.key_message}
-            onChange={(e) => setForm({ ...form, key_message: e.target.value })}
-            disabled={readOnly}
-            placeholder="Qual é a mensagem principal?"
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Premissas e Restrições</Label>
-          <Textarea
-            value={form.premises_restrictions}
-            onChange={(e) => setForm({ ...form, premises_restrictions: e.target.value })}
-            disabled={readOnly}
-            placeholder="Liste as premissas e restrições..."
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>KPIs</Label>
-          <Textarea
-            value={form.kpis}
-            onChange={(e) => setForm({ ...form, kpis: e.target.value })}
-            disabled={readOnly}
-            placeholder="Adicione os KPIs (um por linha)..."
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Personas</Label>
-          <Textarea
-            value={form.personas}
-            onChange={(e) => setForm({ ...form, personas: e.target.value })}
-            disabled={readOnly}
-            placeholder="Descreva as personas (uma por linha)..."
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Prioridade de Canais</Label>
-          <Textarea
-            value={form.channels_priority}
-            onChange={(e) => setForm({ ...form, channels_priority: e.target.value })}
-            disabled={readOnly}
-            placeholder="Liste os canais prioritários (um por linha)..."
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Alocação de Verba</Label>
-          <Textarea
-            value={form.budget_allocation}
-            onChange={(e) => setForm({ ...form, budget_allocation: e.target.value })}
-            disabled={readOnly}
-            placeholder="Descreva a alocação de verba (um item por linha)..."
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Timeline</Label>
-          <Textarea
-            value={form.timeline}
-            onChange={(e) => setForm({ ...form, timeline: e.target.value })}
-            disabled={readOnly}
-            placeholder="Adicione os marcos do cronograma (um por linha)..."
-            className="min-h-[100px]"
-          />
-        </div>
+        {FORM_FIELDS.map((field) => (
+          <div key={field.key} className="space-y-2">
+            <Label>{field.label}</Label>
+            <Textarea
+              value={form[field.key]}
+              onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
+              disabled={readOnly}
+              placeholder={field.placeholder}
+              className="min-h-[100px]"
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
