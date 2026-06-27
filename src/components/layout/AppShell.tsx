@@ -13,6 +13,7 @@ import {
   CheckSquare,
   Bell,
   Inbox,
+  ShieldCheck,
 } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
@@ -38,6 +39,9 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
   const canSeeAdmin = data?.profile?.is_admin || data?.profile?.is_director
   const canSeeHub =
     data?.profile && ['super_admin', 'atendimento', 'planejamento'].includes(data.profile.code)
+
+  const canSeeAudit =
+    data?.profile?.is_admin || (data?.profile?.is_director && data?.areas?.some((a) => a.is_hub))
 
   return (
     <>
@@ -191,6 +195,20 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                     <Briefcase className="w-4 h-4 mr-3" />
                     Clientes
                   </Link>
+                  {canSeeAudit && (
+                    <Link
+                      to="/auditoria"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        location.pathname.startsWith('/auditoria')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 mr-3" />
+                      Auditoria
+                    </Link>
+                  )}
                 </div>
               </div>
             )}
