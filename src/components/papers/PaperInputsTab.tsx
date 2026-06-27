@@ -52,22 +52,34 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
 
   // Auto-save logic with debounce
   useEffect(() => {
-    if (readOnly || !paper) return
+    if (readOnly) return
 
     const hasChanges =
-      form.refined_objective !== (paper.refined_objective || '') ||
-      form.key_message !== (paper.key_message || '') ||
-      form.premises_restrictions !== (paper.premises_restrictions || '') ||
-      JSON.stringify(form.kpis) !== JSON.stringify(paper.kpis || []) ||
-      JSON.stringify(form.personas) !== JSON.stringify(paper.personas || []) ||
-      JSON.stringify(form.timeline) !== JSON.stringify(paper.timeline || []) ||
-      JSON.stringify(form.channels_priority) !== JSON.stringify(paper.channels_priority || []) ||
-      JSON.stringify(form.budget_allocation) !== JSON.stringify(paper.budget_allocation || [])
+      form.refined_objective !== (paper?.refined_objective || '') ||
+      form.key_message !== (paper?.key_message || '') ||
+      form.premises_restrictions !== (paper?.premises_restrictions || '') ||
+      JSON.stringify(form.kpis) !== JSON.stringify(paper?.kpis || []) ||
+      JSON.stringify(form.personas) !== JSON.stringify(paper?.personas || []) ||
+      JSON.stringify(form.timeline) !== JSON.stringify(paper?.timeline || []) ||
+      JSON.stringify(form.channels_priority) !== JSON.stringify(paper?.channels_priority || []) ||
+      JSON.stringify(form.budget_allocation) !== JSON.stringify(paper?.budget_allocation || [])
 
     if (!hasChanges) {
       if (saveStatus !== 'idle' && saveStatus !== 'error') setSaveStatus('idle')
       return
     }
+
+    const isFormEmpty =
+      !form.refined_objective &&
+      !form.key_message &&
+      !form.premises_restrictions &&
+      form.kpis.length === 0 &&
+      form.personas.length === 0 &&
+      form.timeline.length === 0 &&
+      form.channels_priority.length === 0 &&
+      form.budget_allocation.length === 0
+
+    if (!paper && isFormEmpty) return
 
     setSaveStatus('saving')
     const timer = setTimeout(async () => {
@@ -84,9 +96,20 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
           updated_at: new Date().toISOString(),
         }
 
-        const { error } = await supabase.from('project_papers').update(payload).eq('id', paper.id)
-
-        if (error) throw error
+        if (paper) {
+          const { error } = await supabase.from('project_papers').update(payload).eq('id', paper.id)
+          if (error) throw error
+        } else {
+          const { error } = await supabase.from('project_papers').insert({
+            ...payload,
+            project_id: project.id,
+            status: 'draft',
+            version: 1,
+            created_by: user?.id,
+          })
+          if (error) throw error
+          onReload()
+        }
 
         setSaveStatus('saved')
 
@@ -103,10 +126,10 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
           variant: 'destructive',
         })
       }
-    }, 1500)
+    }, 1000)
 
     return () => clearTimeout(timer)
-  }, [form, paper, readOnly])
+  }, [form, paper, readOnly, project?.id, user?.id, onReload, toast])
 
   const handleSave = async () => {
     if (!project || !user) return

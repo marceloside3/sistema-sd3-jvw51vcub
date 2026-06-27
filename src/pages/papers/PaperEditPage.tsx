@@ -73,6 +73,16 @@ export default function PaperEditPage() {
         setMeetings(meetingsResult.value || [])
       } else {
         console.error('Failed to fetch meetings:', meetingsResult.reason)
+        const isNetworkError =
+          meetingsResult.reason?.message?.toLowerCase().includes('fetch') ||
+          meetingsResult.reason?.message?.toLowerCase().includes('network')
+        if (isNetworkError) {
+          toast({
+            title: 'Aviso',
+            description: 'Não foi possível carregar as reuniões devido a um erro de rede.',
+            variant: 'destructive',
+          })
+        }
         setMeetings([])
       }
     } catch (error) {

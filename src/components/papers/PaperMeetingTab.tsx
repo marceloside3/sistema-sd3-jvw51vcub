@@ -116,7 +116,7 @@ export function PaperMeetingTab({
                     <Users className="w-4 h-4" /> Participantes
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {m.participants.map((p: any) => (
+                    {(m.participants || []).map((p: any) => (
                       <Badge key={p.user_id} variant="outline" className="bg-gray-50">
                         {p.user?.full_name || p.user?.email} {p.is_organizer && '(Org)'}
                       </Badge>
