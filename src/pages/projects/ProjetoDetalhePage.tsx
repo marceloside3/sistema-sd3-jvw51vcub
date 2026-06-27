@@ -88,13 +88,19 @@ export default function ProjetoDetalhePage() {
       .finally(() => setLoading(false))
   }, [id])
 
+  const [isCreatingPaper, setIsCreatingPaper] = useState(false)
+
   const handleCreatePaper = async () => {
-    if (!id) return
+    if (!id || isCreatingPaper) return
+    setIsCreatingPaper(true)
     try {
       await createPaperVersion(id)
+      toast({ title: 'Sucesso', description: 'Paper do projeto criado com sucesso.' })
       navigate(`/projetos/${id}/paper`)
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsCreatingPaper(false)
     }
   }
 
