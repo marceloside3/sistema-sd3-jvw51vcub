@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatDateBR } from '@/lib/utils'
+import { getProjectStatusLabel } from '@/lib/constants/project-status'
 import { useToast } from '@/components/ui/use-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -166,26 +168,118 @@ export default function PaperEditPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="gerais" className="mt-6 border rounded-lg bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-6">Informações do Projeto</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-            <div>
-              <span className="text-gray-500 block mb-1">Cliente:</span>
-              <p className="font-medium text-base">{project.client?.name}</p>
+        <TabsContent value="gerais" className="mt-6 space-y-6">
+          <div className="border rounded-lg bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">Detalhes do Projeto</h3>
+              {currentPaper && (
+                <div className="text-sm text-gray-500">
+                  Criado em: {new Date(currentPaper.created_at).toLocaleString('pt-BR')}
+                </div>
+              )}
             </div>
-            {currentPaper && (
-              <div>
-                <span className="text-gray-500 block mb-1">
-                  Data de Criação do Paper (v{currentPaper.version}):
-                </span>
-                <p className="font-medium">
-                  {new Date(currentPaper.created_at).toLocaleString('pt-BR')}
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Nome do Projeto</div>
+                  <div className="font-medium">{project.name || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Código</div>
+                  <div className="font-medium">{project.project_code || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Status</div>
+                  <div className="font-medium">
+                    {getProjectStatusLabel(project.status as any) || '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Origem</div>
+                  <div className="font-medium capitalize">{project.origin_type}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Cliente</div>
+                  <div className="font-medium">{project.client?.name}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Área Líder</div>
+                  <div className="font-medium">
+                    {project.areas?.find((a: any) => a.is_lead)?.area?.name || '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Período</div>
+                  <div className="font-medium flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    {project.start_date ? formatDateBR(project.start_date) : '-'} até{' '}
+                    {project.end_date ? formatDateBR(project.end_date) : '-'}
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="col-span-2">
-              <span className="text-gray-500 block mb-1">Escopo Original (Breve):</span>
-              <p className="font-medium whitespace-pre-wrap">{project.description}</p>
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Descrição / Escopo</div>
+                <div className="text-sm whitespace-pre-wrap">
+                  {project.description || 'Sem descrição'}
+                </div>
+
+                <div className="mt-6">
+                  <div className="text-sm text-gray-500 mb-2">Todas as Áreas Envolvidas</div>
+                  <div className="flex flex-wrap gap-2">
+                    {project.areas?.map((a: any) => (
+                      <Badge key={a.id} variant="secondary">
+                        {a.area?.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border rounded-lg bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-6">Briefing do Projeto</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Objetivo</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.objetivo || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Público-alvo</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.publico_alvo || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Canais</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.canais || 'Não informado'}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Orçamento</div>
+                  <div className="text-sm font-medium">
+                    {project.briefing_data?.budget || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Restrições</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.restricoes || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Referências</div>
+                  <div className="text-sm whitespace-pre-wrap break-words">
+                    {project.briefing_data?.referencias || 'Não informado'}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>
