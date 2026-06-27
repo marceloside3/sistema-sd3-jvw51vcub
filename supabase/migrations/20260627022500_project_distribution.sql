@@ -130,6 +130,6 @@ BEGIN
   );
 
 END;
-$;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.distribute_project(uuid, jsonb) TO authenticated;
