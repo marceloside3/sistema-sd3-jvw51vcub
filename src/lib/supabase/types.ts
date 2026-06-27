@@ -551,6 +551,10 @@ export type Database = {
           description: string | null
           distributed_at: string | null
           end_date: string
+          g2_override_by: string | null
+          g2_override_reason: string | null
+          g2_status: string | null
+          g2_validated_at: string | null
           id: string
           name: string
           origin_type: string
@@ -568,6 +572,10 @@ export type Database = {
           description?: string | null
           distributed_at?: string | null
           end_date: string
+          g2_override_by?: string | null
+          g2_override_reason?: string | null
+          g2_status?: string | null
+          g2_validated_at?: string | null
           id?: string
           name: string
           origin_type?: string
@@ -585,6 +593,10 @@ export type Database = {
           description?: string | null
           distributed_at?: string | null
           end_date?: string
+          g2_override_by?: string | null
+          g2_override_reason?: string | null
+          g2_status?: string | null
+          g2_validated_at?: string | null
           id?: string
           name?: string
           origin_type?: string
@@ -604,6 +616,13 @@ export type Database = {
           {
             foreignKeyName: 'projects_created_by_fkey'
             columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'projects_g2_override_by_fkey'
+            columns: ['g2_override_by']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
@@ -721,11 +740,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      can_override_g2: { Args: never; Returns: boolean }
       can_view_project: { Args: { p_project_id: string }; Returns: boolean }
-      distribute_project: {
-        Args: { p_assignments: Json; p_project_id: string }
-        Returns: undefined
-      }
+      distribute_project:
+        | {
+            Args: { p_assignments: Json; p_project_id: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_assignments: Json
+              p_override_reason?: string
+              p_project_id: string
+            }
+            Returns: undefined
+          }
       generate_project_code: { Args: { p_client_id: string }; Returns: string }
       get_project_audit_log: {
         Args: {
@@ -760,6 +789,10 @@ export type Database = {
         Returns: boolean
       }
       user_can_see_project: { Args: { p_project_id: string }; Returns: boolean }
+      validate_briefing_for_distribution: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       audit_event_type:
@@ -782,6 +815,9 @@ export type Database = {
         | 'feedback_received'
         | 'version_created'
         | 'project_distributed'
+        | 'g2_validation_passed'
+        | 'g2_validation_failed'
+        | 'g2_override'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -927,6 +963,9 @@ export const Constants = {
         'feedback_received',
         'version_created',
         'project_distributed',
+        'g2_validation_passed',
+        'g2_validation_failed',
+        'g2_override',
       ],
     },
   },
