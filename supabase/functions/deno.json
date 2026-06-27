@@ -2,6 +2,6 @@
   "_versions": {
     "validate-password": 5,
     "invite-user": 5,
-    "generate-meeting-ics": 3
+    "generate-meeting-ics": 4
   }
 }
