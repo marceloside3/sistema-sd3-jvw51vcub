@@ -45,11 +45,11 @@ export default function PaperEditPage() {
   }, [id])
 
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
-  if (!project || papers.length === 0)
-    return <div className="p-8 text-center text-gray-500">Paper não encontrado</div>
+  if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
 
-  const currentPaper = papers.find((p) => p.id === selectedVersion) || papers[0]
-  const isLatest = papers[0].id === currentPaper.id
+  const currentPaper =
+    papers.length > 0 ? papers.find((p) => p.id === selectedVersion) || papers[0] : null
+  const isLatest = papers.length === 0 || papers[0].id === currentPaper?.id
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -62,31 +62,41 @@ export default function PaperEditPage() {
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold">Paper do Projeto</h1>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              v{currentPaper.version}
-            </Badge>
-            <Badge variant="secondary" className="uppercase tracking-widest text-[10px]">
-              {currentPaper.status}
-            </Badge>
+            {currentPaper ? (
+              <>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                  v{currentPaper.version}
+                </Badge>
+                <Badge variant="secondary" className="uppercase tracking-widest text-[10px]">
+                  {currentPaper.status}
+                </Badge>
+              </>
+            ) : (
+              <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                Novo Rascunho
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-gray-500">
             {project.project_code} • {project.name}
           </p>
         </div>
-        <div>
-          <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Versão" />
-            </SelectTrigger>
-            <SelectContent>
-              {papers.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  Versão {p.version} {p.status === 'draft' ? '(Atual)' : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {papers.length > 0 && (
+          <div>
+            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Versão" />
+              </SelectTrigger>
+              <SelectContent>
+                {papers.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    Versão {p.version} {p.status === 'draft' ? '(Atual)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <Tabs defaultValue="inputs" className="w-full">
@@ -106,14 +116,16 @@ export default function PaperEditPage() {
               <span className="text-gray-500 block mb-1">Cliente:</span>
               <p className="font-medium text-base">{project.client?.name}</p>
             </div>
-            <div>
-              <span className="text-gray-500 block mb-1">
-                Data de Criação do Paper (v{currentPaper.version}):
-              </span>
-              <p className="font-medium">
-                {new Date(currentPaper.created_at).toLocaleString('pt-BR')}
-              </p>
-            </div>
+            {currentPaper && (
+              <div>
+                <span className="text-gray-500 block mb-1">
+                  Data de Criação do Paper (v{currentPaper.version}):
+                </span>
+                <p className="font-medium">
+                  {new Date(currentPaper.created_at).toLocaleString('pt-BR')}
+                </p>
+              </div>
+            )}
             <div className="col-span-2">
               <span className="text-gray-500 block mb-1">Escopo Original (Breve):</span>
               <p className="font-medium whitespace-pre-wrap">{project.description}</p>
@@ -125,7 +137,8 @@ export default function PaperEditPage() {
           <PaperInputsTab
             paper={currentPaper}
             project={project}
-            readOnly={!isLatest || currentPaper.status !== 'draft'}
+            readOnly={currentPaper ? !isLatest || currentPaper.status !== 'draft' : false}
+            onReload={loadData}
           />
         </TabsContent>
 
