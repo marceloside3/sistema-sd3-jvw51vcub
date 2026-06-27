@@ -66,6 +66,13 @@ export async function createProject(
   })
 
   if (rpcError) {
+    console.error('[createProject] Error generating project code:', {
+      message: rpcError.message,
+      code: rpcError.code,
+      details: rpcError.details,
+      hint: rpcError.hint,
+      clientId: payload.client_id,
+    })
     throw rpcError
   }
 
@@ -77,7 +84,16 @@ export async function createProject(
 
   const { data, error } = await supabase.from('projects').insert([projectPayload]).select().single()
 
-  if (error) throw error
+  if (error) {
+    console.error('[createProject] Error inserting project:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      payload: { ...projectPayload, briefing_data: '[omitted]' },
+    })
+    throw error
+  }
 
   if (areaIds && areaIds.length > 0) {
     const areasPayload = areaIds.map((a) => ({
@@ -87,7 +103,17 @@ export async function createProject(
     }))
     const { error: areasError } = await supabase.from('project_areas').insert(areasPayload)
 
-    if (areasError) throw areasError
+    if (areasError) {
+      console.error('[createProject] Error inserting project areas:', {
+        message: areasError.message,
+        code: areasError.code,
+        details: areasError.details,
+        hint: areasError.hint,
+        projectId: data.id,
+        areasPayload,
+      })
+      throw areasError
+    }
   }
 
   return data

@@ -173,20 +173,48 @@ export default function ProjectFormPage() {
           })
           .eq('id', editingId)
 
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error('[ProjectFormPage] Error updating project:', {
+            message: updateError.message,
+            code: updateError.code,
+            details: updateError.details,
+            hint: updateError.hint,
+            editingId,
+          })
+          throw updateError
+        }
 
         const { error: delError } = await supabase
           .from('project_areas')
           .delete()
           .eq('project_id', editingId)
 
-        if (delError) throw delError
+        if (delError) {
+          console.error('[ProjectFormPage] Error deleting project areas:', {
+            message: delError.message,
+            code: delError.code,
+            details: delError.details,
+            hint: delError.hint,
+            editingId,
+          })
+          throw delError
+        }
 
         const { error: insError } = await supabase
           .from('project_areas')
           .insert(areaPayload.map((a) => ({ ...a, project_id: editingId })))
 
-        if (insError) throw insError
+        if (insError) {
+          console.error('[ProjectFormPage] Error inserting project areas:', {
+            message: insError.message,
+            code: insError.code,
+            details: insError.details,
+            hint: insError.hint,
+            editingId,
+            areaPayload,
+          })
+          throw insError
+        }
 
         toast({ title: 'Projeto atualizado com sucesso!' })
         navigate(`/projetos/${editingId}`)
@@ -210,9 +238,25 @@ export default function ProjectFormPage() {
         navigate(`/projetos/${project.id}`)
       }
     } catch (err: any) {
+      console.error('[ProjectFormPage] Erro ao salvar projeto:', {
+        error: err,
+        message: err?.message,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+        isEditMode,
+        editingId,
+        formData: {
+          name: formData.name,
+          client_id: formData.client_id,
+          selectedAreas: formData.selectedAreas,
+          leadArea: formData.leadArea,
+        },
+      })
       toast({
         title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
-        description: err.message,
+        description:
+          err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.',
         variant: 'destructive',
       })
     } finally {
