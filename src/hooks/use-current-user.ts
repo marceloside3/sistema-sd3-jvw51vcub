@@ -13,6 +13,8 @@ interface Area {
   id: string
   code: string
   name: string
+  is_principal: boolean
+  is_hub: boolean
 }
 
 interface Profile {
@@ -74,7 +76,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
             .maybeSingle(),
           supabase
             .from('area_responsibles')
-            .select(`area:areas(id, code, name)`)
+            .select(`is_principal, area:areas(id, code, name, is_hub)`)
             .eq('user_id', user.id),
         ])
 
@@ -86,7 +88,12 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
             email: userRes.data.email,
             full_name: userRes.data.full_name,
             profile: userRes.data.profile as unknown as Profile,
-            areas: (areasRes.data || []).map((item: any) => item.area).filter(Boolean) as Area[],
+            areas: (areasRes.data || [])
+              .map((item: any) => ({
+                ...item.area,
+                is_principal: item.is_principal ?? false,
+              }))
+              .filter((a: any) => a.id) as Area[],
           })
         } else {
           setData({

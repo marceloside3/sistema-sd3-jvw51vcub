@@ -20,7 +20,7 @@ export default function Home() {
     )
   }
 
-  const { user, profile, areas } = data
+  const { full_name, profile, areas } = data
 
   const sortedAreas = [...areas].sort((a, b) => {
     if (a.is_principal) return -1
@@ -31,9 +31,7 @@ export default function Home() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-          Bem-vindo, {user.full_name}
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Bem-vindo, {full_name}</h1>
         <p className="text-gray-500 mt-2">
           Aqui está o resumo do seu perfil no Sistema Operacional SD3.
         </p>
