@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getProjectById, updateProjectStatus } from '@/services/projects'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
+import { DistributionModal } from '@/components/projects/DistributionModal'
 import { ProjectHistoryTab } from '@/components/project/ProjectHistoryTab'
 import { getProjectDemands } from '@/services/demands'
 import { format } from 'date-fns'
@@ -52,6 +53,7 @@ export default function ProjetoDetalhePage() {
   const [project, setProject] = useState<any>(null)
   const [demands, setDemands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -100,6 +102,16 @@ export default function ProjetoDetalhePage() {
   const isCompleted = project.status === 'completed'
   const canEditProject = isAdmin || (isCreator && !isCompleted)
   const canChangeStatus = isAdmin || isCreator
+
+  const userProfileCode = userCtx?.profile?.code?.toLowerCase() || ''
+  const isAllowedToDistribute = ['super_admin', 'admin', 'atendimento', 'planejamento'].includes(
+    userProfileCode,
+  )
+  const canDistribute =
+    isAllowedToDistribute &&
+    project.briefing_completed_at &&
+    !project.distributed_at &&
+    project.areas?.length > 0
 
   const availableTransitions = VALID_TRANSITIONS[project.status] || []
   const showStatusSelect = canChangeStatus && availableTransitions.length > 0
@@ -157,6 +169,19 @@ export default function ProjetoDetalhePage() {
                   {isCompleted ? 'Editar (Admin)' : 'Editar'}
                 </Link>
               </Button>
+            )}
+            {canDistribute && (
+              <Button size="sm" className="ml-2" onClick={() => setIsDistributionModalOpen(true)}>
+                Distribuir para áreas
+              </Button>
+            )}
+            {project.distributed_at && (
+              <Badge
+                variant="outline"
+                className="ml-2 text-green-700 border-green-700 bg-green-50 uppercase tracking-wider text-[10px]"
+              >
+                Distribuído em {formatDateBR(project.distributed_at)}
+              </Badge>
             )}
           </div>
           <p className="text-sm text-gray-500 font-mono">
@@ -324,6 +349,24 @@ export default function ProjetoDetalhePage() {
           <ProjectHistoryTab projectId={project.id} />
         </TabsContent>
       </Tabs>
+
+      {isDistributionModalOpen && (
+        <DistributionModal
+          projectId={project.id}
+          projectAreas={project.areas}
+          onSuccess={() => {
+            setIsDistributionModalOpen(false)
+            setLoading(true)
+            Promise.all([getProjectById(id || ''), getProjectDemands(id || '')])
+              .then(([projData, demandsData]) => {
+                setProject(projData)
+                setDemands(demandsData || [])
+              })
+              .finally(() => setLoading(false))
+          }}
+          onClose={() => setIsDistributionModalOpen(false)}
+        />
+      )}
     </div>
   )
 }

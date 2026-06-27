@@ -122,6 +122,19 @@ export async function getProjectAuditLog(
   return data
 }
 
+export async function distributeProject(
+  projectId: string,
+  assignments: { area_id: string; user_id: string }[],
+) {
+  const { data, error } = await supabase.rpc('distribute_project', {
+    p_project_id: projectId,
+    p_assignments: assignments,
+  })
+
+  if (error) throw error
+  return data
+}
+
 export async function updateProjectStatus(
   id: string,
   newStatus: string,
