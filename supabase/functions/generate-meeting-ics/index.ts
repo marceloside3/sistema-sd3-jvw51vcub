@@ -48,43 +48,56 @@ Deno.serve(async (req: Request) => {
         .replace(/\n/g, '\\n')
     }
 
+    const foldLine = (line: string) => {
+      if (line.length <= 75) return line
+      let folded = line.substring(0, 75)
+      let remaining = line.substring(75)
+      while (remaining.length > 0) {
+        folded += '\r\n ' + remaining.substring(0, 74)
+        remaining = remaining.substring(74)
+      }
+      return folded
+    }
+
     const organizerParticipant = meeting.participants.find((p: any) => p.is_organizer)
     const organizerLine = organizerParticipant
       ? `ORGANIZER;CN="${organizerParticipant.user.full_name}":mailto:${organizerParticipant.user.email}`
       : ''
 
-    const attendees = meeting.participants
-      .map((p: any) => `ATTENDEE;RSVP=TRUE;CN="${p.user.full_name}":mailto:${p.user.email}`)
-      .join('\r\n')
+    const attendeeLines = meeting.participants.map(
+      (p: any) => `ATTENDEE;RSVP=TRUE;CN="${p.user.full_name}":mailto:${p.user.email}`,
+    )
 
-    const icsContent = [
+    const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'METHOD:REQUEST',
-      'PRODID:-//Skip//SD3 OS//PT-BR',
+      'PRODID:-//Side3//SD3 OS//PT-BR',
       'BEGIN:VEVENT',
       `UID:${meeting.id}@sd3.com.br`,
       'SEQUENCE:0',
       `DTSTAMP:${formatDate(new Date())}`,
       `DTSTART:${formatDate(startDate)}`,
       `DTEND:${formatDate(endDate)}`,
+      'TRANSP:OPAQUE',
+      'CLASS:PUBLIC',
       `SUMMARY:Reunião de Passagem: ${escapeText(meeting.project?.name)}`,
       `DESCRIPTION:${escapeText(meeting.agenda)}`,
       `LOCATION:${escapeText(meeting.location_or_link)}`,
       organizerLine,
-      attendees,
+      ...attendeeLines,
       'STATUS:CONFIRMED',
       'END:VEVENT',
       'END:VCALENDAR',
-    ]
-      .filter(Boolean)
-      .join('\r\n')
+    ].filter(Boolean)
+
+    const icsContent = lines.map(foldLine).join('\r\n')
 
     return new Response(icsContent, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/calendar; charset=utf-8; method=REQUEST',
-        'Content-Disposition': `attachment; filename="reuniao-passagem.ics"`,
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': `attachment; filename="convite-reuniao.ics"`,
       },
     })
   } catch (err: any) {
