@@ -320,40 +320,88 @@ export default function ProjetoDetalhePage() {
           {project.id && <AttachmentsSection type="project" entityId={project.id} />}
         </TabsContent>
 
-        <TabsContent value="detalhes" className="mt-6 border rounded-lg bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-6">Informações Gerais</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Cliente</div>
-                <div className="font-medium">{project.client?.name}</div>
+        <TabsContent value="detalhes" className="mt-6 space-y-6">
+          <div className="border rounded-lg bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-6">Informações Gerais</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Cliente</div>
+                  <div className="font-medium">{project.client?.name}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Área Líder</div>
+                  <div className="font-medium">{leadArea || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Período</div>
+                  <div className="font-medium flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    {formatDateBR(project.start_date)} até {formatDateBR(project.end_date)}
+                  </div>
+                </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500 mb-1">Área Líder</div>
-                <div className="font-medium">{leadArea || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Período</div>
-                <div className="font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  {formatDateBR(project.start_date)} até {formatDateBR(project.end_date)}
+                <div className="text-sm text-gray-500 mb-1">Descrição / Escopo</div>
+                <div className="text-sm whitespace-pre-wrap">
+                  {project.description || 'Sem descrição'}
+                </div>
+
+                <div className="mt-6">
+                  <div className="text-sm text-gray-500 mb-2">Todas as Áreas Envolvidas</div>
+                  <div className="flex flex-wrap gap-2">
+                    {project.areas?.map((a: any) => (
+                      <Badge key={a.id} variant="secondary">
+                        {a.area?.name}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Descrição / Escopo</div>
-              <div className="text-sm whitespace-pre-wrap">
-                {project.description || 'Sem descrição'}
-              </div>
+          </div>
 
-              <div className="mt-6">
-                <div className="text-sm text-gray-500 mb-2">Todas as Áreas Envolvidas</div>
-                <div className="flex flex-wrap gap-2">
-                  {project.areas?.map((a: any) => (
-                    <Badge key={a.id} variant="secondary">
-                      {a.area?.name}
-                    </Badge>
-                  ))}
+          <div className="border rounded-lg bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-6">Briefing do Projeto</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Objetivo</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.objetivo || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Público-alvo</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.publico_alvo || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Canais</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.canais || 'Não informado'}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Orçamento</div>
+                  <div className="text-sm font-medium">
+                    {project.briefing_data?.budget || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Restrições</div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {project.briefing_data?.restricoes || 'Não informado'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Referências</div>
+                  <div className="text-sm whitespace-pre-wrap break-words">
+                    {project.briefing_data?.referencias || 'Não informado'}
+                  </div>
                 </div>
               </div>
             </div>
