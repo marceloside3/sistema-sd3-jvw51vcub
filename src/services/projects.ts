@@ -125,12 +125,28 @@ export async function getProjectAuditLog(
 export async function distributeProject(
   projectId: string,
   assignments: { area_id: string; user_id: string }[],
+  overrideReason?: string,
 ) {
   const { data, error } = await supabase.rpc('distribute_project', {
     p_project_id: projectId,
     p_assignments: assignments,
+    p_override_reason: overrideReason || null,
   })
 
+  if (error) throw error
+  return data
+}
+
+export async function validateBriefingForDistribution(projectId: string) {
+  const { data, error } = await supabase.rpc('validate_briefing_for_distribution', {
+    p_project_id: projectId,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function checkCanOverrideG2() {
+  const { data, error } = await supabase.rpc('can_override_g2')
   if (error) throw error
   return data
 }

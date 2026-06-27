@@ -17,8 +17,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase/client'
-import { distributeProject } from '@/services/projects'
+import {
+  distributeProject,
+  validateBriefingForDistribution,
+  checkCanOverrideG2,
+} from '@/services/projects'
 import { useToast } from '@/components/ui/use-toast'
+import { G2ValidationModal } from './G2ValidationModal'
 
 interface ProjectArea {
   id: string
@@ -46,6 +51,9 @@ export function DistributionModal({
   const [loading, setLoading] = useState(true)
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [valModalOpen, setValModalOpen] = useState(false)
+  const [validationResult, setValidationResult] = useState<any>(null)
+  const [canOverride, setCanOverride] = useState(false)
 
   useEffect(() => {
     async function fetchPrincipals() {
@@ -115,6 +123,28 @@ export function DistributionModal({
 
     setSubmitting(true)
     try {
+      const [valRes, canOverrideRes] = await Promise.all([
+        validateBriefingForDistribution(projectId),
+        checkCanOverrideG2(),
+      ])
+
+      setValidationResult(valRes)
+      setCanOverride(canOverrideRes)
+      setValModalOpen(true)
+    } catch (err: any) {
+      toast({
+        title: 'Erro',
+        description: err.message || 'Falha ao validar G2',
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleConfirmDistribution = async (overrideReason?: string) => {
+    setSubmitting(true)
+    try {
       const payload = projectAreas
         .filter((pa) => pa.area)
         .map((pa) => ({
@@ -122,11 +152,12 @@ export function DistributionModal({
           user_id: assignments[pa.area!.id],
         }))
 
-      await distributeProject(projectId, payload)
+      await distributeProject(projectId, payload, overrideReason)
       toast({
         title: 'Sucesso',
-        description: `Distribuição concluída — ${payload.length} demandas criadas`,
+        description: `Distribuição concluída — demandas criadas`,
       })
+      setValModalOpen(false)
       onSuccess()
     } catch (err: any) {
       toast({
@@ -196,10 +227,19 @@ export function DistributionModal({
             Cancelar
           </Button>
           <Button onClick={handleDistribute} disabled={loading || submitting}>
-            {submitting ? 'Distribuindo...' : 'Confirmar distribuição'}
+            {submitting ? 'Validando...' : 'Confirmar distribuição'}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <G2ValidationModal
+        open={valModalOpen}
+        onClose={() => setValModalOpen(false)}
+        onConfirm={handleConfirmDistribution}
+        validationResult={validationResult}
+        canOverride={canOverride}
+        submitting={submitting}
+      />
     </Dialog>
   )
 }

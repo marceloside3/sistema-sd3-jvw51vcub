@@ -127,6 +127,7 @@ export default function HubDashboardPage() {
               <TableHead>Cliente</TableHead>
               <TableHead>Projeto</TableHead>
               <TableHead>Origem</TableHead>
+              <TableHead>G2</TableHead>
               <TableHead>SLA</TableHead>
               <TableHead>Áreas envolvidas</TableHead>
               <TableHead>Briefing</TableHead>
@@ -137,13 +138,13 @@ export default function HubDashboardPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center h-24">
+                <TableCell colSpan={10} className="text-center h-24">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center h-24">
+                <TableCell colSpan={10} className="text-center h-24">
                   Nenhum projeto encontrado.
                 </TableCell>
               </TableRow>
@@ -163,6 +164,24 @@ export default function HubDashboardPage() {
                     <Badge variant="outline">
                       {p.origin_type === 'handoff_comercial' ? 'Handoff Comercial' : 'Manual'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {p.g2_status === 'approved' ? (
+                      <Badge className="bg-green-500 hover:bg-green-600">Aprovado</Badge>
+                    ) : p.g2_status === 'override' ? (
+                      <div title={p.g2_override_reason}>
+                        <Badge
+                          variant="secondary"
+                          className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200"
+                        >
+                          Override
+                        </Badge>
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="text-gray-400">
+                        —
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <SlaBadge

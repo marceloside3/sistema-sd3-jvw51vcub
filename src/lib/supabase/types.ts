@@ -610,6 +610,39 @@ export type Database = {
           },
         ]
       }
+      sla_configs: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          hours_limit: number
+          id: string
+          is_active: boolean | null
+          stage_code: string
+          stage_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          hours_limit: number
+          id?: string
+          is_active?: boolean | null
+          stage_code: string
+          stage_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          hours_limit?: number
+          id?: string
+          is_active?: boolean | null
+          stage_code?: string
+          stage_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       system_config: {
         Row: {
           created_at: string
