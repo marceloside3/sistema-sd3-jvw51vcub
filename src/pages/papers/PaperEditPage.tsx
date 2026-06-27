@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock } from 'lucide-react'
+import { ArrowLeft, Clock, Send, Loader2, FilePlus2, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatDateBR } from '@/lib/utils'
 import { getProjectStatusLabel } from '@/lib/constants/project-status'
@@ -8,9 +8,19 @@ import { useToast } from '@/components/ui/use-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { getProjectById } from '@/services/projects'
-import { getProjectPapers, getProjectMeetings } from '@/services/papers'
+import {
+  getProjectPapers,
+  getProjectMeetings,
+  submitPaperToG3,
+  createPaperVersion,
+  getPaperG3Reviews,
+} from '@/services/papers'
 import { PaperInputsTab } from '@/components/papers/PaperInputsTab'
 import { PaperMeetingTab } from '@/components/papers/PaperMeetingTab'
+import { BenchmarksTab } from '@/components/papers/BenchmarksTab'
+import { G3ReviewPanel } from '@/components/papers/G3ReviewPanel'
+import { G3StatusBadge } from '@/components/papers/G3StatusBadge'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import {
   Select,
   SelectContent,
@@ -18,17 +28,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { supabase } from '@/lib/supabase/client'
+
+const REQUIRED_FIELDS = [
+  { key: 'refined_objective', label: 'Objetivo Refinado' },
+  { key: 'personas', label: 'Personas', isArray: true },
+  { key: 'key_message', label: 'Mensagem Principal' },
+  { key: 'channels_priority', label: 'Prioridade de Canais', isArray: true },
+  { key: 'kpis', label: 'KPIs', isArray: true },
+  { key: 'timeline', label: 'Timeline', isArray: true },
+  { key: 'budget_allocation', label: 'Alocação de Verba', isArray: true },
+  { key: 'premises_restrictions', label: 'Premissas e Restrições' },
+]
 
 export default function PaperEditPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user: currentUser } = useCurrentUser()
 
   const [project, setProject] = useState<any>(null)
   const [papers, setPapers] = useState<any[]>([])
   const [meetings, setMeetings] = useState<any[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
   const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [creatingVersion, setCreatingVersion] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
 
   const loadData = async () => {
     if (!projectId) return
@@ -51,9 +78,10 @@ export default function PaperEditPage() {
       setProject(proj)
       setLoading(false)
 
-      const [papersResult, meetingsResult] = await Promise.allSettled([
+      const [papersResult, meetingsResult, reviewsResult] = await Promise.allSettled([
         getProjectPapers(projectId),
         getProjectMeetings(projectId),
+        getPaperG3Reviews(projectId),
       ])
 
       if (papersResult.status === 'fulfilled') {
@@ -63,7 +91,6 @@ export default function PaperEditPage() {
           setSelectedVersion((prev) => prev || paps[0].id)
         }
       } else {
-        console.error('Failed to fetch papers:', papersResult.reason)
         toast({
           title: 'Aviso',
           description: 'Não foi possível carregar os papers do projeto.',
@@ -74,24 +101,18 @@ export default function PaperEditPage() {
       if (meetingsResult.status === 'fulfilled') {
         setMeetings(meetingsResult.value || [])
       } else {
-        console.error('Failed to fetch meetings:', meetingsResult.reason)
-        const isNetworkError =
-          meetingsResult.reason?.message?.toLowerCase().includes('fetch') ||
-          meetingsResult.reason?.message?.toLowerCase().includes('network')
-        if (isNetworkError) {
-          toast({
-            title: 'Aviso',
-            description: 'Não foi possível carregar as reuniões devido a um erro de rede.',
-            variant: 'destructive',
-          })
-        }
         setMeetings([])
       }
+
+      if (reviewsResult.status === 'fulfilled') {
+        setReviews(reviewsResult.value || [])
+      } else {
+        setReviews([])
+      }
     } catch (error) {
-      console.error('Failed to fetch project:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível acessar o projeto. Por favor, tente novamente.',
+        description: 'Não foi possível acessar o projeto.',
         variant: 'destructive',
       })
       setLoading(false)
@@ -103,12 +124,106 @@ export default function PaperEditPage() {
     loadData()
   }, [projectId])
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
-  if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
+  useEffect(() => {
+    if (currentUser) {
+      supabase
+        .from('profiles')
+        .select('is_admin, is_director')
+        .eq('id', currentUser.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setUserProfile(data)
+        })
+    }
+  }, [currentUser])
 
   const currentPaper =
     papers.length > 0 ? papers.find((p) => p.id === selectedVersion) || papers[0] : null
   const isLatest = papers.length === 0 || papers[0].id === currentPaper?.id
+  const isAdmin = userProfile?.is_admin ?? false
+
+  const isPaperOwner = currentUser?.id === currentPaper?.created_by
+
+  const isPlanningDirector = useMemo(() => {
+    if (!currentUser || !project) return false
+    return false
+  }, [currentUser, project])
+
+  const missingFields = useMemo(() => {
+    if (!currentPaper) return REQUIRED_FIELDS.map((f) => f.label)
+    const missing: string[] = []
+    for (const field of REQUIRED_FIELDS) {
+      if (field.isArray) {
+        const val = currentPaper[field.key]
+        if (!val || !Array.isArray(val) || val.length === 0) {
+          missing.push(field.label)
+        }
+      } else {
+        const val = currentPaper[field.key]
+        if (!val || val.trim() === '') {
+          missing.push(field.label)
+        }
+      }
+    }
+    return missing
+  }, [currentPaper])
+
+  const handleSubmitToG3 = async () => {
+    if (!currentPaper) return
+    if (missingFields.length > 0) {
+      toast({
+        title: 'Campos obrigatórios faltando',
+        description: `Preencha: ${missingFields.join(', ')}`,
+        variant: 'destructive',
+      })
+      return
+    }
+    setSubmitting(true)
+    try {
+      await submitPaperToG3(currentPaper.id)
+      toast({
+        title: 'Paper submetido ao G3',
+        description: 'O Diretor de Planejamento foi notificado para revisão.',
+      })
+      loadData()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao submeter',
+        description: err.message || 'Não foi possível submeter o paper.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleCreateVersion = async () => {
+    if (!projectId) return
+    setCreatingVersion(true)
+    try {
+      await createPaperVersion(projectId)
+      toast({
+        title: 'Nova versão criada',
+        description: 'Uma nova versão do paper foi criada para edição.',
+      })
+      await loadData()
+    } catch (err: any) {
+      toast({
+        title: 'Erro',
+        description: err.message || 'Não foi possível criar nova versão.',
+        variant: 'destructive',
+      })
+    } finally {
+      setCreatingVersion(false)
+    }
+  }
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
+  if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
+
+  const canReview = isAdmin || isPlanningDirector
+  const latestReview = reviews.length > 0 ? reviews[0] : null
+  const approverName = latestReview?.reviewer?.full_name
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -119,16 +234,14 @@ export default function PaperEditPage() {
           </Link>
         </Button>
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h1 className="text-2xl font-bold">Paper do Projeto</h1>
             {currentPaper ? (
               <>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700">
                   v{currentPaper.version}
                 </Badge>
-                <Badge variant="secondary" className="uppercase tracking-widest text-[10px]">
-                  {currentPaper.status}
-                </Badge>
+                <G3StatusBadge paper={currentPaper} approverName={approverName} />
               </>
             ) : (
               <Badge variant="outline" className="bg-gray-100 text-gray-600">
@@ -159,13 +272,12 @@ export default function PaperEditPage() {
       </div>
 
       <Tabs defaultValue="inputs" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="gerais">Dados Gerais</TabsTrigger>
           <TabsTrigger value="inputs">8 Inputs Estratégicos</TabsTrigger>
+          <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
           <TabsTrigger value="reuniao">Reunião de Passagem</TabsTrigger>
-          <TabsTrigger value="g3" disabled>
-            Submeter para G3
-          </TabsTrigger>
+          <TabsTrigger value="g3">G3</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gerais" className="mt-6 space-y-6">
@@ -291,16 +403,115 @@ export default function PaperEditPage() {
             readOnly={currentPaper ? !isLatest || currentPaper.status !== 'draft' : false}
             onReload={loadData}
           />
+          {currentPaper && isLatest && currentPaper.status === 'draft' && isPaperOwner && (
+            <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium">Submeter ao Gate G3</h4>
+                  {missingFields.length > 0 ? (
+                    <p className="text-xs text-red-500 mt-1">
+                      Campos faltando: {missingFields.join(', ')}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-green-600 mt-1">
+                      Todos os 8 inputs estão preenchidos. Pronto para submeter.
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={handleSubmitToG3}
+                  disabled={submitting || missingFields.length > 0}
+                >
+                  {submitting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Submeter ao G3
+                </Button>
+              </div>
+            </div>
+          )}
+          {currentPaper && currentPaper.status === 'rejected' && isPaperOwner && (
+            <div className="mt-4 border rounded-lg bg-red-50 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="w-4 h-4 text-red-500" />
+                <h4 className="text-sm font-medium text-red-700">Paper recusado</h4>
+              </div>
+              {latestReview && latestReview.comment && (
+                <p className="text-sm text-red-600 italic mb-3">
+                  &quot;{latestReview.comment}&quot;
+                </p>
+              )}
+              <Button onClick={handleCreateVersion} disabled={creatingVersion} variant="default">
+                {creatingVersion ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FilePlus2 className="w-4 h-4 mr-2" />
+                )}
+                Criar nova versão
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="benchmarks" className="mt-6">
+          <BenchmarksTab
+            paper={currentPaper}
+            readOnly={!isLatest || currentPaper?.status !== 'draft'}
+            onReload={loadData}
+          />
         </TabsContent>
 
         <TabsContent value="reuniao" className="mt-6">
           <PaperMeetingTab projectId={projectId!} meetings={meetings} onReload={loadData} />
         </TabsContent>
 
-        <TabsContent value="g3" className="mt-6">
-          <div className="p-12 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50 flex items-center justify-center">
-            <span className="text-lg">Disponível na Sprint 3.B</span>
-          </div>
+        <TabsContent value="g3" className="mt-6 space-y-6">
+          {currentPaper ? (
+            <>
+              <div className="border rounded-lg bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Status do Gate G3</h3>
+                  <G3StatusBadge paper={currentPaper} approverName={approverName} />
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {currentPaper.approved_at && (
+                    <div>
+                      <span className="text-muted-foreground">Aprovado em:</span>{' '}
+                      <span className="font-medium">{formatDateBR(currentPaper.approved_at)}</span>
+                    </div>
+                  )}
+                  {currentPaper.override_at && (
+                    <div>
+                      <span className="text-muted-foreground">Override em:</span>{' '}
+                      <span className="font-medium">{formatDateBR(currentPaper.override_at)}</span>
+                    </div>
+                  )}
+                  {currentPaper.override_reason && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Justificativa do Override:</span>
+                      <p className="italic mt-1">&quot;{currentPaper.override_reason}&quot;</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {canReview && currentPaper.status === 'submitted' && (
+                <G3ReviewPanel paper={currentPaper} isAdmin={isAdmin} onReload={loadData} />
+              )}
+
+              {!canReview && currentPaper.status !== 'submitted' && (
+                <div className="p-8 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50">
+                  O painel de revisão G3 aparece quando há um paper aguardando aprovação.
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="p-8 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50">
+              Crie um paper primeiro para acessar o Gate G3.
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

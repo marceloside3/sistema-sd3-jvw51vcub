@@ -81,3 +81,42 @@ export async function downloadMeetingIcs(meetingId: string) {
   if (error) throw error
   return data
 }
+
+export async function submitPaperToG3(paperId: string) {
+  const { error } = await supabase.rpc('submit_paper_to_g3', { p_paper_id: paperId })
+  if (error) throw error
+}
+
+export async function reviewPaperG3(
+  paperId: string,
+  decision: 'approved' | 'rejected',
+  comment?: string,
+) {
+  const { error } = await supabase.rpc('review_paper_g3', {
+    p_paper_id: paperId,
+    p_decision: decision,
+    p_comment: comment ?? null,
+  })
+  if (error) throw error
+}
+
+export async function overridePaperG3(paperId: string, justification: string) {
+  const { error } = await supabase.rpc('override_paper_g3', {
+    p_paper_id: paperId,
+    p_justification: justification,
+  })
+  if (error) throw error
+}
+
+export async function getPaperG3Reviews(projectId: string) {
+  const { data, error } = await supabase
+    .from('paper_g3_reviews')
+    .select(`
+      *,
+      reviewer:users(full_name, email)
+    `)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}

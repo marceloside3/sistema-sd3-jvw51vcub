@@ -4,16 +4,32 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase/client'
 import { formatDateBR } from '@/lib/utils'
-import { AlertCircle, Search } from 'lucide-react'
+import { AlertCircle, Search, Send, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 
 export default function AuditReport() {
   const [overrides, setOverrides] = useState<any[]>([])
+  const [auditEvents, setAuditEvents] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState('')
 
+  const G3_EVENT_META: Record<string, { label: string; color: string; icon: any }> = {
+    g3_submitted: {
+      label: 'Paper submetido ao G3',
+      color: 'bg-blue-100 text-blue-800',
+      icon: Send,
+    },
+    g3_approved: { label: 'G3 aprovado', color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
+    g3_rejected: { label: 'G3 recusado', color: 'bg-red-100 text-red-800', icon: XCircle },
+    g3_override: {
+      label: 'G3 override',
+      color: 'bg-orange-100 text-orange-800',
+      icon: AlertTriangle,
+    },
+  }
+
   useEffect(() => {
-    async function loadOverrides() {
-      const { data, error } = await supabase
+    async function loadData() {
+      const { data: overrideData, error: overrideError } = await supabase
         .from('project_audit_log')
         .select(`
           id, created_at, metadata, 
@@ -23,11 +39,26 @@ export default function AuditReport() {
         .eq('event_type', 'g2_override')
         .order('created_at', { ascending: false })
 
-      if (!error && data) {
-        setOverrides(data)
+      if (!overrideError && overrideData) {
+        setOverrides(overrideData)
+      }
+
+      const g3EventTypes = Object.keys(G3_EVENT_META)
+      const { data: g3Data, error: g3Error } = await supabase
+        .from('project_audit_log')
+        .select(`
+          id, created_at, event_type, field_name, new_value, old_value, metadata,
+          projects(id, name, clients(name)),
+          users:actor_user_id(full_name)
+        `)
+        .in('event_type', g3EventTypes)
+        .order('created_at', { ascending: false })
+
+      if (!g3Error && g3Data) {
+        setAuditEvents(g3Data)
       }
     }
-    loadOverrides()
+    loadData()
   }, [])
 
   const filteredOverrides = overrides.filter((ov) => {
@@ -135,6 +166,91 @@ export default function AuditReport() {
                             </Badge>
                           ))}
                         </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-blue-500" />
+            Eventos do Gate G3
+          </CardTitle>
+          <CardDescription>
+            Histórico de submissões, aprovações, recusas e overrides do Gate G3.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {auditEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhum evento G3 encontrado.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {auditEvents.map((ev) => {
+                const meta = G3_EVENT_META[ev.event_type] || {
+                  label: ev.event_type,
+                  color: 'bg-gray-100 text-gray-800',
+                  icon: AlertCircle,
+                }
+                const Icon = meta.icon
+                const metadata = (ev.metadata as any) || {}
+                const proj = ev.projects
+                return (
+                  <div key={ev.id} className="border rounded-md p-4 space-y-3 bg-muted/20">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-sm">
+                          {proj?.name}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            ({proj?.clients?.name})
+                          </span>
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Por{' '}
+                          <span className="font-medium text-foreground">
+                            {ev.users?.full_name || 'Desconhecido'}
+                          </span>{' '}
+                          em {formatDateBR(ev.created_at)} às{' '}
+                          {new Date(ev.created_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      <Badge className={meta.color}>
+                        <Icon className="w-3 h-3 mr-1" />
+                        {meta.label}
+                      </Badge>
+                    </div>
+
+                    {metadata.version && (
+                      <p className="text-xs text-muted-foreground">
+                        Versão do Paper: <span className="font-medium">{metadata.version}</span>
+                      </p>
+                    )}
+
+                    {metadata.comment && (
+                      <div className="bg-background border rounded p-3 text-sm">
+                        <p className="font-medium mb-1">Comentário:</p>
+                        <p className="text-muted-foreground italic">
+                          &quot;{metadata.comment}&quot;
+                        </p>
+                      </div>
+                    )}
+
+                    {metadata.reason && (
+                      <div className="bg-background border rounded p-3 text-sm">
+                        <p className="font-medium mb-1">Justificativa:</p>
+                        <p className="text-muted-foreground italic">
+                          &quot;{metadata.reason}&quot;
+                        </p>
                       </div>
                     )}
                   </div>
