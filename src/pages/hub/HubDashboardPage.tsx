@@ -21,13 +21,18 @@ import {
 } from '@/components/ui/select'
 import { formatDateBR } from '@/lib/utils'
 import { getProjectStatusBadge, PROJECT_STATUS_LABELS } from '@/lib/constants/project-status'
+import { useSlaConfig } from '@/hooks/use-sla-config'
+import { calculateSla } from '@/lib/sla'
+import { SlaBadge } from '@/components/sla/SlaBadge'
 
 export default function HubDashboardPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [originFilter, setOriginFilter] = useState('all')
+  const [slaFilter, setSlaFilter] = useState('all')
   const navigate = useNavigate()
+  const { configs } = useSlaConfig()
 
   useEffect(() => {
     fetchProjects()
@@ -37,7 +42,7 @@ export default function HubDashboardPage() {
     setLoading(true)
     const { data, error } = await supabase
       .from('projects')
-      .select('*, clients(name)')
+      .select('*, clients(name), project_areas(area:areas(name))')
       .order('created_at', { ascending: false })
 
     if (data && !error) {
@@ -49,6 +54,14 @@ export default function HubDashboardPage() {
   const filteredProjects = projects.filter((p) => {
     if (statusFilter !== 'all' && p.status !== statusFilter) return false
     if (originFilter !== 'all' && p.origin_type !== originFilter) return false
+    if (slaFilter !== 'all') {
+      const slaLimit = configs['atendimento_to_areas']?.hours_limit || 24
+      const { status } = calculateSla(p.distributed_at, slaLimit)
+      if (slaFilter === 'not_distributed' && status !== 'not_distributed') return false
+      if (slaFilter === 'safe' && status !== 'safe') return false
+      if (slaFilter === 'warning' && status !== 'warning') return false
+      if (slaFilter === 'overdue' && status !== 'overdue') return false
+    }
     return true
   })
 
@@ -90,6 +103,20 @@ export default function HubDashboardPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-48">
+          <Select value={slaFilter} onValueChange={setSlaFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="SLA" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos (SLA)</SelectItem>
+              <SelectItem value="safe">No prazo</SelectItem>
+              <SelectItem value="warning">Vencendo</SelectItem>
+              <SelectItem value="overdue">Vencidas</SelectItem>
+              <SelectItem value="not_distributed">Não distribuídos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="bg-white rounded-md border overflow-hidden">
@@ -100,21 +127,23 @@ export default function HubDashboardPage() {
               <TableHead>Cliente</TableHead>
               <TableHead>Projeto</TableHead>
               <TableHead>Origem</TableHead>
+              <TableHead>SLA</TableHead>
+              <TableHead>Áreas envolvidas</TableHead>
               <TableHead>Briefing</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Data Criação</TableHead>
+              <TableHead>Criado em</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center h-24">
+                <TableCell colSpan={9} className="text-center h-24">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center h-24">
+                <TableCell colSpan={9} className="text-center h-24">
                   Nenhum projeto encontrado.
                 </TableCell>
               </TableRow>
@@ -134,6 +163,28 @@ export default function HubDashboardPage() {
                     <Badge variant="outline">
                       {p.origin_type === 'handoff_comercial' ? 'Handoff Comercial' : 'Manual'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <SlaBadge
+                      startedAt={p.distributed_at}
+                      hoursLimit={configs['atendimento_to_areas']?.hours_limit || 24}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                      {p.project_areas?.map((pa: any, idx: number) => (
+                        <Badge
+                          key={idx}
+                          variant="secondary"
+                          className="text-[10px] px-1 py-0 h-4 font-normal"
+                        >
+                          {pa.area?.name}
+                        </Badge>
+                      ))}
+                      {(!p.project_areas || p.project_areas.length === 0) && (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {p.briefing_completed_at ? (

@@ -549,6 +549,7 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          distributed_at: string | null
           end_date: string
           id: string
           name: string
@@ -565,6 +566,7 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          distributed_at?: string | null
           end_date: string
           id?: string
           name: string
@@ -581,6 +583,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          distributed_at?: string | null
           end_date?: string
           id?: string
           name?: string
@@ -686,6 +689,10 @@ export type Database = {
         Returns: undefined
       }
       can_view_project: { Args: { p_project_id: string }; Returns: boolean }
+      distribute_project: {
+        Args: { p_assignments: Json; p_project_id: string }
+        Returns: undefined
+      }
       generate_project_code: { Args: { p_client_id: string }; Returns: string }
       get_project_audit_log: {
         Args: {
@@ -741,6 +748,7 @@ export type Database = {
         | 'gate_blocked'
         | 'feedback_received'
         | 'version_created'
+        | 'project_distributed'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -885,6 +893,7 @@ export const Constants = {
         'gate_blocked',
         'feedback_received',
         'version_created',
+        'project_distributed',
       ],
     },
   },

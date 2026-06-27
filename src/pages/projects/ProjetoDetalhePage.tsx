@@ -8,6 +8,8 @@ import { getProjectById, updateProjectStatus } from '@/services/projects'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { DistributionModal } from '@/components/projects/DistributionModal'
 import { ProjectHistoryTab } from '@/components/project/ProjectHistoryTab'
+import { AiAnalysisModal } from '@/components/project/AiAnalysisModal'
+import { Sparkles } from 'lucide-react'
 import { getProjectDemands } from '@/services/demands'
 import { format } from 'date-fns'
 import { formatDateBR } from '@/lib/utils'
@@ -115,6 +117,7 @@ export default function ProjetoDetalhePage() {
 
   const availableTransitions = VALID_TRANSITIONS[project.status] || []
   const showStatusSelect = canChangeStatus && availableTransitions.length > 0
+  const canAnalyzeBriefing = !!project.briefing_completed_at
 
   const handleEditClick = (e: React.MouseEvent) => {
     if (isCompleted) {
@@ -182,6 +185,18 @@ export default function ProjetoDetalhePage() {
               >
                 Distribuído em {formatDateBR(project.distributed_at)}
               </Badge>
+            )}
+            {canAnalyzeBriefing && (
+              <AiAnalysisModal>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Analisar Briefing (IA)
+                </Button>
+              </AiAnalysisModal>
             )}
           </div>
           <p className="text-sm text-gray-500 font-mono">

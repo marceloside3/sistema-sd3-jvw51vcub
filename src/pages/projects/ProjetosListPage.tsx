@@ -74,7 +74,7 @@ export default function ProjetosListPage() {
               <TableHead>Projeto</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Início</TableHead>
+              <TableHead>Início previsto</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
