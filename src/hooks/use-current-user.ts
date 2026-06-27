@@ -1,149 +1,115 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  createElement,
+  type ReactNode,
+} from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useAuth } from './use-auth'
+import { useAuth } from '@/hooks/use-auth'
 
-type Area = {
+interface Area {
   id: string
   code: string
   name: string
-  is_hub: boolean
-  is_principal: boolean
 }
 
-type Profile = {
+interface Profile {
   id: string
   code: string
   name: string
-  is_director: boolean
   is_admin: boolean
-  is_system: boolean
+  is_director: boolean
+  is_active: boolean
 }
 
-type UserData = {
+interface CurrentUserData {
   id: string
   email: string
   full_name: string
-  is_active: boolean
-  last_login_at: string | null
+  profile: Profile | null
+  areas: Area[]
 }
 
 interface CurrentUserContextType {
-  data: {
-    user: UserData
-    profile: Profile | null
-    areas: Area[]
-  } | null
+  data: CurrentUserData | null
   loading: boolean
-  clearCache: () => void
 }
 
 const CurrentUserContext = createContext<CurrentUserContextType | undefined>(undefined)
 
-export function CurrentUserProvider({ children }: { children: React.ReactNode }) {
-  const { session } = useAuth()
-  const [data, setData] = useState<CurrentUserContextType['data']>(null)
-  const [loading, setLoading] = useState(true)
-
-  const clearCache = useCallback(() => {
-    setData(null)
-  }, [])
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function fetchUser() {
-      setLoading(true)
-      try {
-        const { data: authData, error: authError } = await supabase.auth.getUser()
-        if (authError || !authData?.user) {
-          if (isMounted) {
-            setData(null)
-            setLoading(false)
-          }
-          return
-        }
-
-        const userId = authData.user.id
-
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select(`
-            id, email, full_name, is_active, last_login_at,
-            profile:profiles(id, code, name, is_director, is_admin, is_system)
-          `)
-          .eq('id', userId)
-          .single()
-
-        if (userError) throw userError
-
-        const { data: areasData, error: areasError } = await supabase
-          .from('area_responsibles')
-          .select(`
-            area_id,
-            is_principal,
-            areas(id, code, name, is_hub)
-          `)
-          .eq('user_id', userId)
-
-        if (areasError) throw areasError
-
-        if (isMounted) {
-          const profileData = userData.profile
-            ? Array.isArray(userData.profile)
-              ? userData.profile[0]
-              : userData.profile
-            : null
-
-          setData({
-            user: {
-              id: userData.id,
-              email: userData.email,
-              full_name: userData.full_name,
-              is_active: userData.is_active,
-              last_login_at: userData.last_login_at,
-            },
-            profile: profileData as Profile | null,
-            areas: (areasData || []).map((a: any) => ({
-              id: a.areas?.id,
-              code: a.areas?.code,
-              name: a.areas?.name,
-              is_hub: a.areas?.is_hub,
-              is_principal: a.is_principal,
-            })),
-          })
-        }
-      } catch (err) {
-        console.error('Error fetching current user:', err)
-      } finally {
-        if (isMounted) setLoading(false)
-      }
-    }
-
-    if (session) {
-      fetchUser()
-    } else {
-      if (isMounted) {
-        setData(null)
-        setLoading(false)
-      }
-    }
-
-    return () => {
-      isMounted = false
-    }
-  }, [session])
-
-  return React.createElement(
-    CurrentUserContext.Provider,
-    { value: { data, loading, clearCache } },
-    children,
-  )
-}
-
 export function useCurrentUser() {
   const context = useContext(CurrentUserContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCurrentUser must be used within a CurrentUserProvider')
   }
   return context
+}
+
+export function CurrentUserProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const [data, setData] = useState<CurrentUserData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) {
+      setData(null)
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadUserData() {
+      try {
+        const [userRes, areasRes] = await Promise.all([
+          supabase
+            .from('users')
+            .select(
+              `id, email, full_name, is_active,
+              profile:profiles(id, code, name, is_admin, is_director, is_active)`,
+            )
+            .eq('id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('area_responsibles')
+            .select(`area:areas(id, code, name)`)
+            .eq('user_id', user.id),
+        ])
+
+        if (cancelled) return
+
+        if (userRes.data) {
+          setData({
+            id: userRes.data.id,
+            email: userRes.data.email,
+            full_name: userRes.data.full_name,
+            profile: userRes.data.profile as unknown as Profile,
+            areas: (areasRes.data || []).map((item: any) => item.area).filter(Boolean) as Area[],
+          })
+        } else {
+          setData({
+            id: user.id,
+            email: user.email || '',
+            full_name: (user.user_metadata?.full_name as string) || user.email || '',
+            profile: null,
+            areas: [],
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadUserData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  return createElement(CurrentUserContext.Provider, { value: { data, loading } }, children)
 }
