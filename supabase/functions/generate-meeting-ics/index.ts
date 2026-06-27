@@ -64,6 +64,7 @@ Deno.serve(async (req: Request) => {
       'PRODID:-//Skip//SD3 OS//PT-BR',
       'BEGIN:VEVENT',
       `UID:${meeting.id}@sd3.com.br`,
+      'SEQUENCE:0',
       `DTSTAMP:${formatDate(new Date())}`,
       `DTSTART:${formatDate(startDate)}`,
       `DTEND:${formatDate(endDate)}`,
