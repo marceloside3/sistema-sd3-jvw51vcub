@@ -108,7 +108,18 @@ export async function createProject(
         created_by: projectPayload.created_by,
       },
     })
-    throw error
+
+    const techAlert = `[${error.code || 'UNKNOWN'}] ${error.message}${error.details ? ` | Details: ${error.details}` : ''}${error.hint ? ` | Hint: ${error.hint}` : ''}`
+
+    const enhancedError = new Error(
+      error.code === '42501'
+        ? `Permissão negada (RLS): ${techAlert}`
+        : `Erro de banco (${error.code || 'UNKNOWN'}): ${techAlert}`,
+    ) as Error & { code?: string; techAlert?: string }
+    enhancedError.code = error.code
+    enhancedError.techAlert = techAlert
+
+    throw enhancedError
   }
 
   if (areaIds && areaIds.length > 0) {

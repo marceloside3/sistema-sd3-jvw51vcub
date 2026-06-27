@@ -138,6 +138,24 @@ export default function ProjectFormPage() {
       return
     }
 
+    if (!formData.name || !formData.name.trim()) {
+      toast({
+        title: 'Campo obrigatório',
+        description: 'O nome do projeto é obrigatório.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!formData.client_id) {
+      toast({
+        title: 'Campo obrigatório',
+        description: 'O cliente é obrigatório.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (!formData.end_date) {
       toast({
         title: 'Campo obrigatório',
@@ -234,21 +252,20 @@ export default function ProjectFormPage() {
         toast({ title: 'Projeto atualizado com sucesso!' })
         navigate(`/projetos/${editingId}`)
       } else {
-        const project = await createProject(
-          {
-            name: formData.name,
-            description: formData.description,
-            start_date: formData.start_date || new Date().toISOString().split('T')[0],
-            end_date: formData.end_date || new Date().toISOString().split('T')[0],
-            client_id: formData.client_id,
-            status: formData.status,
-            origin_type: formData.origin_type,
-            briefing_data: formData.briefing_data,
-            briefing_completed_at: briefingCompletedAt,
-            created_by: user?.id,
-          },
-          areaPayload,
-        )
+        const projectPayload = {
+          name: formData.name,
+          description: formData.description,
+          start_date: formData.start_date || new Date().toISOString().split('T')[0],
+          end_date: formData.end_date,
+          client_id: formData.client_id,
+          status: formData.status,
+          origin_type: formData.origin_type,
+          briefing_data: formData.briefing_data,
+          briefing_completed_at: briefingCompletedAt,
+          created_by: user.id,
+        }
+
+        const project = await createProject(projectPayload, areaPayload)
 
         if (!project) {
           throw new Error('Falha ao criar projeto: resposta vazia do servidor.')
@@ -277,6 +294,10 @@ export default function ProjectFormPage() {
       let errorTitle = isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto'
       let errorDesc =
         err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.'
+
+      if (err?.techAlert) {
+        errorDesc = err.techAlert
+      }
 
       if (err?.code === '42501') {
         errorTitle = 'Permissão negada'

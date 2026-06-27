@@ -1050,6 +1050,18 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: Json
       }
+      verify_project_insert_access: {
+        Args: never
+        Returns: {
+          has_access: boolean
+          is_admin: boolean
+          is_director: boolean
+          rls_insert_policy_exists: boolean
+          user_exists_in_public_users: boolean
+          user_has_areas: boolean
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       audit_event_type:
