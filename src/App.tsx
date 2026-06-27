@@ -20,6 +20,8 @@ import MyDemandsPage from './pages/demands/MyDemandsPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
 import AreaPage from './pages/AreaPage'
 import AuditReport from './pages/AuditReport'
+import HubDashboardPage from './pages/hub/HubDashboardPage'
+import { HubGuard } from './components/auth/HubGuard'
 import { AdminGuard } from './components/auth/AdminGuard'
 import UsersPage from './pages/admin/UsersPage'
 import AreasPage from './pages/admin/AreasPage'
@@ -62,6 +64,15 @@ const App = () => (
 
               <Route path="/area/:area_slug" element={<AreaPage />} />
               <Route path="/auditoria" element={<AuditReport />} />
+
+              <Route
+                path="/hub"
+                element={
+                  <HubGuard>
+                    <HubDashboardPage />
+                  </HubGuard>
+                }
+              />
 
               <Route
                 path="/admin"

@@ -13,6 +13,12 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { getClients } from '@/services/clients'
 import { createProject, getProjectById } from '@/services/projects'
 import { useToast } from '@/hooks/use-toast'
@@ -41,6 +47,16 @@ export default function ProjectFormPage() {
     status: 'active',
     selectedAreas: [] as string[],
     leadArea: '',
+    origin_type: 'manual',
+    briefing_data: {
+      objetivo: '',
+      publico_alvo: '',
+      canais: '',
+      prazo: '',
+      budget: '',
+      restricoes: '',
+      referencias: '',
+    },
   })
 
   useEffect(() => {
@@ -62,6 +78,9 @@ export default function ProjectFormPage() {
           if (proj) {
             const projectAreas = areasRes.data || []
             setIsProjectCompleted(proj.status === 'completed')
+
+            const bData = proj.briefing_data || {}
+
             setFormData({
               client_id: proj.client_id || '',
               name: proj.name || '',
@@ -71,6 +90,16 @@ export default function ProjectFormPage() {
               status: proj.status || 'active',
               selectedAreas: projectAreas.map((a: any) => a.area_id) || [],
               leadArea: projectAreas.find((a: any) => a.is_lead)?.area_id || '',
+              origin_type: proj.origin_type || 'manual',
+              briefing_data: {
+                objetivo: bData.objetivo || '',
+                publico_alvo: bData.publico_alvo || '',
+                canais: bData.canais || '',
+                prazo: bData.prazo || '',
+                budget: bData.budget || '',
+                restricoes: bData.restricoes || '',
+                referencias: bData.referencias || '',
+              },
             })
           }
         })
@@ -86,6 +115,17 @@ export default function ProjectFormPage() {
     setStep((s) => s + 1)
   }
 
+  const handleBudgetChange = (val: string) => {
+    const numeric = val.replace(/\D/g, '')
+    if (!numeric) {
+      setFormData((f) => ({ ...f, briefing_data: { ...f.briefing_data, budget: '' } }))
+      return
+    }
+    const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+    const masked = formatter.format(Number(numeric) / 100)
+    setFormData((f) => ({ ...f, briefing_data: { ...f.briefing_data, budget: masked } }))
+  }
+
   const handleSubmit = async () => {
     if (!formData.end_date) {
       alert('Data de Fim Prevista é obrigatória.')
@@ -96,6 +136,18 @@ export default function ProjectFormPage() {
       return toast({ title: 'Selecione ao menos uma área', variant: 'destructive' })
     if (!formData.leadArea || !formData.selectedAreas.includes(formData.leadArea))
       return toast({ title: 'Selecione a área líder dentre as marcadas', variant: 'destructive' })
+
+    const b = formData.briefing_data
+    const isBriefingComplete = Boolean(
+      b.objetivo &&
+      b.publico_alvo &&
+      b.canais &&
+      b.prazo &&
+      b.budget &&
+      b.restricoes &&
+      b.referencias,
+    )
+    const briefingCompletedAt = isBriefingComplete ? new Date().toISOString() : null
 
     setLoading(true)
     try {
@@ -114,6 +166,9 @@ export default function ProjectFormPage() {
             end_date: formData.end_date,
             client_id: formData.client_id,
             status: formData.status,
+            origin_type: formData.origin_type,
+            briefing_data: formData.briefing_data,
+            briefing_completed_at: briefingCompletedAt,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingId)
@@ -144,6 +199,9 @@ export default function ProjectFormPage() {
             end_date: formData.end_date || new Date().toISOString().split('T')[0],
             client_id: formData.client_id,
             status: formData.status,
+            origin_type: formData.origin_type,
+            briefing_data: formData.briefing_data,
+            briefing_completed_at: briefingCompletedAt,
           },
           areaPayload,
         )
@@ -182,7 +240,7 @@ export default function ProjectFormPage() {
           <CardTitle>
             {isEditMode ? 'Editar Projeto' : 'Novo Projeto'} -{' '}
             {step === 1 && 'Passo 1: Selecione o Cliente'}
-            {step === 2 && 'Passo 2: Informações Básicas'}
+            {step === 2 && 'Passo 2: Informações Básicas e Briefing'}
             {step === 3 && 'Passo 3: Áreas Envolvidas'}
           </CardTitle>
           <CardDescription>
@@ -258,6 +316,104 @@ export default function ProjectFormPage() {
                   />
                 </div>
               </div>
+
+              <Accordion type="single" collapsible className="w-full border rounded-md px-4 mt-6">
+                <AccordionItem value="briefing" className="border-b-0">
+                  <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                    Briefing do Projeto
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-4 pb-4">
+                    <div className="space-y-2">
+                      <Label>1. Objetivo</Label>
+                      <Textarea
+                        placeholder="Qual é o objetivo principal do projeto?"
+                        value={formData.briefing_data.objetivo}
+                        onChange={(e) =>
+                          setFormData((f) => ({
+                            ...f,
+                            briefing_data: { ...f.briefing_data, objetivo: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>2. Público-alvo</Label>
+                      <Textarea
+                        placeholder="Quem queremos atingir?"
+                        value={formData.briefing_data.publico_alvo}
+                        onChange={(e) =>
+                          setFormData((f) => ({
+                            ...f,
+                            briefing_data: { ...f.briefing_data, publico_alvo: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>3. Canais</Label>
+                      <Textarea
+                        placeholder="Onde será veiculado? (ex: Instagram, E-mail, Site)"
+                        value={formData.briefing_data.canais}
+                        onChange={(e) =>
+                          setFormData((f) => ({
+                            ...f,
+                            briefing_data: { ...f.briefing_data, canais: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>4. Prazo</Label>
+                        <Input
+                          type="date"
+                          value={formData.briefing_data.prazo}
+                          onChange={(e) =>
+                            setFormData((f) => ({
+                              ...f,
+                              briefing_data: { ...f.briefing_data, prazo: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>5. Budget</Label>
+                        <Input
+                          placeholder="R$ 0,00"
+                          value={formData.briefing_data.budget}
+                          onChange={(e) => handleBudgetChange(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>6. Restrições</Label>
+                      <Textarea
+                        placeholder="O que não pode ser feito ou dito?"
+                        value={formData.briefing_data.restricoes}
+                        onChange={(e) =>
+                          setFormData((f) => ({
+                            ...f,
+                            briefing_data: { ...f.briefing_data, restricoes: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>7. Referências</Label>
+                      <Textarea
+                        placeholder="Links ou ideias de referência"
+                        value={formData.briefing_data.referencias}
+                        onChange={(e) =>
+                          setFormData((f) => ({
+                            ...f,
+                            briefing_data: { ...f.briefing_data, referencias: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           )}
 

@@ -12,6 +12,7 @@ import {
   FolderKanban,
   CheckSquare,
   Bell,
+  Inbox,
 } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
@@ -35,6 +36,8 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
   const location = useLocation()
   const { data } = useCurrentUser()
   const canSeeAdmin = data?.profile?.is_admin || data?.profile?.is_director
+  const canSeeHub =
+    data?.profile && ['super_admin', 'atendimento', 'planejamento'].includes(data.profile.code)
 
   return (
     <>
@@ -116,6 +119,21 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <Bell className="w-4 h-4 mr-3" />
               Notificações
             </Link>
+
+            {canSeeHub && (
+              <Link
+                to="/hub"
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  location.pathname.startsWith('/hub')
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <Inbox className="w-4 h-4 mr-3" />
+                HUB Atendimento
+              </Link>
+            )}
 
             {canSeeAdmin && (
               <div className="pt-6">
