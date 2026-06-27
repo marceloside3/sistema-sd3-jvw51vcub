@@ -61,6 +61,18 @@ export async function createProject(
     throw new Error('User is not authenticated.')
   }
 
+  const { data: userRecord } = await supabase
+    .from('users')
+    .select('id, full_name')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!userRecord) {
+    throw new Error(
+      'Seu usuário não está registrado no sistema. Contate o administrador para configurar seu perfil.',
+    )
+  }
+
   const { data: projectCode, error: rpcError } = await supabase.rpc('generate_project_code', {
     p_client_id: payload.client_id,
   })

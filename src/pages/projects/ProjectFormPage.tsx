@@ -129,8 +129,21 @@ export default function ProjectFormPage() {
   }
 
   const handleSubmit = async () => {
+    if (!user?.id) {
+      toast({
+        title: 'Sessão expirada',
+        description: 'Não foi possível identificar seu usuário. Faça login novamente.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (!formData.end_date) {
-      alert('Data de Fim Prevista é obrigatória.')
+      toast({
+        title: 'Campo obrigatório',
+        description: 'Data de Fim Prevista é obrigatória.',
+        variant: 'destructive',
+      })
       return
     }
 
@@ -260,10 +273,30 @@ export default function ProjectFormPage() {
           leadArea: formData.leadArea,
         },
       })
+
+      let errorTitle = isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto'
+      let errorDesc =
+        err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.'
+
+      if (err?.code === '42501') {
+        errorTitle = 'Permissão negada'
+        errorDesc =
+          'Você não tem permissão para realizar esta operação. Verifique se seu perfil está corretamente configurado ou contate o administrador.'
+      } else if (err?.code === '23503') {
+        errorTitle = 'Erro de integridade'
+        errorDesc =
+          'Referência inválida. Verifique se o cliente e as áreas selecionadas são válidos.'
+      } else if (err?.code === '23505') {
+        errorTitle = 'Duplicidade'
+        errorDesc = 'Já existe um projeto com estes dados.'
+      } else if (err?.message?.includes('não está registrado')) {
+        errorTitle = 'Usuário não registrado'
+        errorDesc = err.message
+      }
+
       toast({
-        title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
-        description:
-          err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.',
+        title: errorTitle,
+        description: errorDesc,
         variant: 'destructive',
       })
     } finally {
