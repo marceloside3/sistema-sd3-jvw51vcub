@@ -11,8 +11,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { scheduleMeeting } from '@/services/papers'
-import { getUsers } from '@/services/admin'
+import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Check, ChevronsUpDown, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 export function ScheduleHandoverMeetingModal({
   projectId,
@@ -32,16 +44,30 @@ export function ScheduleHandoverMeetingModal({
   const [users, setUsers] = useState<any[]>([])
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingUsers, setLoadingUsers] = useState(true)
+  const [openCombobox, setOpenCombobox] = useState(false)
 
   useEffect(() => {
-    getUsers()
-      .then((data) => setUsers(data.filter((u: any) => u.is_active)))
-      .catch(console.error)
+    supabase
+      .from('users')
+      .select('id, full_name, email')
+      .eq('is_active', true)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setUsers(data)
+        }
+        setLoadingUsers(false)
+      })
   }, [])
 
   const handleSubmit = async () => {
-    if (!date || !time)
+    if (!date || !time) {
       return toast({ title: 'Data e hora são obrigatórios', variant: 'destructive' })
+    }
+    if (selectedUsers.length === 0) {
+      return toast({ title: 'Selecione pelo menos um participante', variant: 'destructive' })
+    }
+
     const scheduledAt = new Date(`${date}T${time}`).toISOString()
 
     setLoading(true)
@@ -66,6 +92,8 @@ export function ScheduleHandoverMeetingModal({
   const toggleUser = (id: string) => {
     setSelectedUsers((prev) => (prev.includes(id) ? prev.filter((u) => u !== id) : [...prev, id]))
   }
+
+  const selectedUserDetails = users.filter((u) => selectedUsers.includes(u.id))
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -101,22 +129,80 @@ export function ScheduleHandoverMeetingModal({
           </div>
           <div className="col-span-2 space-y-2">
             <Label>Participantes a Convocar</Label>
-            <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-gray-50">
-              {users.map((u) => (
-                <label
-                  key={u.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"
+            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCombobox}
+                  className="w-full justify-between h-auto min-h-[2.5rem] py-2"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedUsers.includes(u.id)}
-                    onChange={() => toggleUser(u.id)}
-                    className="rounded border-gray-300"
-                  />
-                  {u.full_name} ({u.email})
-                </label>
-              ))}
-            </div>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedUserDetails.length > 0 ? (
+                      selectedUserDetails.map((u) => (
+                        <Badge
+                          key={u.id}
+                          variant="secondary"
+                          className="mr-1 mb-1"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            toggleUser(u.id)
+                          }}
+                        >
+                          {u.full_name}
+                          <div
+                            role="button"
+                            className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          >
+                            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                          </div>
+                        </Badge>
+                      ))
+                    ) : loadingUsers ? (
+                      <span className="text-muted-foreground font-normal">Carregando...</span>
+                    ) : (
+                      <span className="text-muted-foreground font-normal">
+                        Selecionar participantes...
+                      </span>
+                    )}
+                  </div>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[480px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar por nome ou email..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {users.map((user) => (
+                        <CommandItem
+                          key={user.id}
+                          value={`${user.full_name} ${user.email}`}
+                          onSelect={() => toggleUser(user.id)}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              selectedUsers.includes(user.id) ? 'opacity-100' : 'opacity-0',
+                            )}
+                          />
+                          <div className="flex flex-col">
+                            <span>{user.full_name}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
