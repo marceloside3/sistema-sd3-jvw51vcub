@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/components/ui/use-toast'
+import { supabase } from '@/lib/supabase/client'
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Ativo',
@@ -58,8 +59,23 @@ export default function ProjetoDetalhePage() {
   const [project, setProject] = useState<any>(null)
   const [demands, setDemands] = useState<any[]>([])
   const [papers, setPapers] = useState<any[]>([])
+  const [userAreas, setUserAreas] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (userCtx?.user?.id) {
+      supabase
+        .from('area_responsibles')
+        .select('area:areas(code)')
+        .eq('user_id', userCtx.user.id)
+        .then(({ data }) => {
+          if (data) {
+            setUserAreas(data.map((d: any) => d.area?.code?.toLowerCase() || ''))
+          }
+        })
+    }
+  }, [userCtx?.user?.id])
 
   useEffect(() => {
     if (!id) return
@@ -124,13 +140,12 @@ export default function ProjetoDetalhePage() {
   const isAllowedToDistribute = ['super_admin', 'admin', 'atendimento', 'planejamento'].includes(
     userProfileCode,
   )
-  const isPlanning = userProfileCode === 'planejamento'
-  const isLeadAreaResponsible = project.areas?.some(
-    (a: any) =>
-      a.is_lead && a.area?.area_responsibles?.some((ar: any) => ar.user_id === userCtx?.user?.id),
-  )
-  const canViewPaper = project.distributed_at && (isAdmin || isPlanning || isLeadAreaResponsible)
+
+  const isPlanningArea = userAreas.includes('planejamento')
+  const canViewPaperSection = !!project.distributed_at
+  const canCreatePaper = project.distributed_at && (isAdmin || isPlanningArea)
   const currentPaper = papers[0]
+
   const canDistribute =
     isAllowedToDistribute &&
     project.briefing_completed_at &&
@@ -222,7 +237,7 @@ export default function ProjetoDetalhePage() {
             )}
           </div>
 
-          {canViewPaper && (
+          {canViewPaperSection && (
             <div className="flex items-center gap-2 mt-2">
               {currentPaper ? (
                 <>
@@ -239,7 +254,7 @@ export default function ProjetoDetalhePage() {
                     </Link>
                   </Button>
                 </>
-              ) : (
+              ) : canCreatePaper ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -249,6 +264,14 @@ export default function ProjetoDetalhePage() {
                   <FileText className="w-3 h-3 mr-1" />
                   Criar Paper do Projeto
                 </Button>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="bg-gray-50 text-gray-500 border-gray-200 text-[10px] font-medium py-1"
+                >
+                  <FileText className="w-3 h-3 mr-1" />
+                  Paper pendente de criação pelo Planejamento
+                </Badge>
               )}
             </div>
           )}

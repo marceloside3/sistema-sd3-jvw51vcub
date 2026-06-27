@@ -320,6 +320,91 @@ export type Database = {
           },
         ]
       }
+      handover_meeting_participants: {
+        Row: {
+          confirmed: boolean | null
+          created_at: string
+          id: string
+          is_organizer: boolean
+          meeting_id: string
+          user_id: string
+        }
+        Insert: {
+          confirmed?: boolean | null
+          created_at?: string
+          id?: string
+          is_organizer?: boolean
+          meeting_id: string
+          user_id: string
+        }
+        Update: {
+          confirmed?: boolean | null
+          created_at?: string
+          id?: string
+          is_organizer?: boolean
+          meeting_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'handover_meeting_participants_meeting_id_fkey'
+            columns: ['meeting_id']
+            isOneToOne: false
+            referencedRelation: 'handover_meetings'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      handover_meetings: {
+        Row: {
+          agenda: string | null
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          id: string
+          location_or_link: string | null
+          notes: string | null
+          project_id: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agenda?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          location_or_link?: string | null
+          notes?: string | null
+          project_id: string
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agenda?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          location_or_link?: string | null
+          notes?: string | null
+          project_id?: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'handover_meetings_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -541,6 +626,68 @@ export type Database = {
           },
         ]
       }
+      project_papers: {
+        Row: {
+          budget_allocation: Json | null
+          channels_priority: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          key_message: string | null
+          kpis: Json | null
+          personas: Json | null
+          premises_restrictions: string | null
+          project_id: string
+          refined_objective: string | null
+          status: string
+          timeline: Json | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          budget_allocation?: Json | null
+          channels_priority?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_message?: string | null
+          kpis?: Json | null
+          personas?: Json | null
+          premises_restrictions?: string | null
+          project_id: string
+          refined_objective?: string | null
+          status?: string
+          timeline?: Json | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          budget_allocation?: Json | null
+          channels_priority?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_message?: string | null
+          kpis?: Json | null
+          personas?: Json | null
+          premises_restrictions?: string | null
+          project_id?: string
+          refined_objective?: string | null
+          status?: string
+          timeline?: Json | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'project_papers_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       projects: {
         Row: {
           briefing_completed_at: string | null
@@ -742,6 +889,7 @@ export type Database = {
       }
       can_override_g2: { Args: never; Returns: boolean }
       can_view_project: { Args: { p_project_id: string }; Returns: boolean }
+      create_paper_version: { Args: { p_project_id: string }; Returns: string }
       distribute_project:
         | {
             Args: { p_assignments: Json; p_project_id: string }
@@ -784,6 +932,17 @@ export type Database = {
           updated_project_id: string
         }[]
       }
+      schedule_handover_meeting: {
+        Args: {
+          p_agenda: string
+          p_duration_minutes: number
+          p_location: string
+          p_participant_ids: string[]
+          p_project_id: string
+          p_scheduled_at: string
+        }
+        Returns: string
+      }
       user_can_access_project: {
         Args: { p_project_id: string }
         Returns: boolean
@@ -818,6 +977,12 @@ export type Database = {
         | 'g2_validation_passed'
         | 'g2_validation_failed'
         | 'g2_override'
+        | 'paper_created'
+        | 'paper_updated'
+        | 'paper_submitted'
+        | 'paper_new_version'
+        | 'handover_meeting_scheduled'
+        | 'handover_meeting_completed'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -966,6 +1131,12 @@ export const Constants = {
         'g2_validation_passed',
         'g2_validation_failed',
         'g2_override',
+        'paper_created',
+        'paper_updated',
+        'paper_submitted',
+        'paper_new_version',
+        'handover_meeting_scheduled',
+        'handover_meeting_completed',
       ],
     },
   },
