@@ -117,6 +117,19 @@ export default function PaperEditPage() {
     loadData()
   }, [loadData])
 
+  const refreshPapers = useCallback(async () => {
+    if (!projectId) return
+    try {
+      const paps = await getProjectPapers(projectId)
+      setPapers(paps || [])
+      if (paps && paps.length > 0) {
+        setSelectedVersion((prev) => prev || paps[0].id)
+      }
+    } catch {
+      // silent fail for background refresh
+    }
+  }, [projectId])
+
   useEffect(() => {
     const paper =
       papers.length > 0 ? papers.find((p) => p.id === selectedVersion) || papers[0] : null
@@ -406,7 +419,7 @@ export default function PaperEditPage() {
             paper={currentPaper}
             project={project}
             readOnly={currentPaper ? !isLatest || currentPaper.status !== 'draft' : false}
-            onReload={loadData}
+            onReload={refreshPapers}
           />
           {currentPaper && isLatest && currentPaper.status === 'draft' && isPaperOwner && (
             <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
@@ -464,7 +477,7 @@ export default function PaperEditPage() {
           <BenchmarksTab
             paper={currentPaper}
             readOnly={!isLatest || currentPaper?.status !== 'draft'}
-            onReload={loadData}
+            onReload={refreshPapers}
           />
         </TabsContent>
 

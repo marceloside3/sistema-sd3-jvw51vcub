@@ -94,10 +94,11 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
   toastRef.current = toast
   const paperRef = useRef(paper)
   paperRef.current = paper
+  const lastSavedFormRef = useRef<Record<string, string> | null>(null)
 
   useEffect(() => {
     if (paper) {
-      setForm({
+      const paperForm = {
         refined_objective: paper.refined_objective || '',
         key_message: paper.key_message || '',
         premises_restrictions: paper.premises_restrictions || '',
@@ -106,9 +107,20 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         timeline: parseJsonArrayToString(paper.timeline),
         channels_priority: parseJsonArrayToString(paper.channels_priority),
         budget_allocation: parseJsonArrayToString(paper.budget_allocation),
-      })
+      }
+
+      const lastSaved = lastSavedFormRef.current
+      if (lastSaved) {
+        const matchesLastSave = Object.keys(paperForm).every((k) => paperForm[k] === lastSaved[k])
+        if (matchesLastSave) {
+          return
+        }
+      }
+
+      setForm(paperForm)
+      lastSavedFormRef.current = null
     }
-  }, [paper])
+  }, [paper?.id])
 
   useEffect(() => {
     if (readOnly) return
@@ -142,7 +154,8 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         if (!session) {
           toastRef.current({
             title: 'Sessão expirada',
-            description: 'Faça login novamente para salvar.',
+            description:
+              'Sua sessão expirou. Faça login novamente para salvar. Seu conteúdo foi preservado no formulário.',
             variant: 'destructive',
           })
           setSaveStatus('error')
@@ -167,6 +180,8 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
             .update(payload)
             .eq('id', currentPaper.id)
           if (error) throw error
+          lastSavedFormRef.current = { ...form }
+          onReloadRef.current()
         } else if (project?.id && user?.id) {
           const { error } = await supabase.from('project_papers').insert({
             ...payload,
@@ -208,7 +223,8 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
       if (!session) {
         toast({
           title: 'Sessão expirada',
-          description: 'Faça login novamente para salvar.',
+          description:
+            'Sua sessão expirou. Faça login novamente para salvar. Seu conteúdo foi preservado no formulário.',
           variant: 'destructive',
         })
         setSaveStatus('error')
