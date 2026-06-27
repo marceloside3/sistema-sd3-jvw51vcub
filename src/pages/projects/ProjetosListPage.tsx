@@ -25,7 +25,10 @@ export default function ProjetosListPage() {
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  const canCreate = currentUser?.profile?.is_admin || currentUser?.profile?.is_director
+  const canCreate =
+    currentUser?.profile?.is_admin ||
+    currentUser?.profile?.is_director ||
+    currentUser?.areas?.some((a) => a.code === 'planejamento')
 
   useEffect(() => {
     async function fetchProjects() {
