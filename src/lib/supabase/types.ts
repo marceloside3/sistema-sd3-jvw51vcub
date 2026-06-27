@@ -1012,6 +1012,7 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      is_director: { Args: never; Returns: boolean }
       mark_overdue_projects: {
         Args: never
         Returns: {

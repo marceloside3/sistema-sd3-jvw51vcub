@@ -237,6 +237,10 @@ export default function ProjectFormPage() {
           areaPayload,
         )
 
+        if (!project) {
+          throw new Error('Falha ao criar projeto: resposta vazia do servidor.')
+        }
+
         toast({ title: 'Projeto criado com sucesso!' })
         navigate(`/projetos/${project.id}`)
       }
@@ -256,25 +260,12 @@ export default function ProjectFormPage() {
           leadArea: formData.leadArea,
         },
       })
-      const isRlsError =
-        err?.code === '42501' ||
-        err?.message?.toLowerCase().includes('row-level security') ||
-        err?.message?.toLowerCase().includes('permission denied')
-      if (isRlsError) {
-        toast({
-          title: 'Erro de permissão',
-          description:
-            'Você não tem permissão para realizar esta operação. Verifique seu perfil com o administrador do sistema.',
-          variant: 'destructive',
-        })
-      } else {
-        toast({
-          title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
-          description:
-            err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.',
-          variant: 'destructive',
-        })
-      }
+      toast({
+        title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
+        description:
+          err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
