@@ -96,8 +96,9 @@ Deno.serve(async (req: Request) => {
     return new Response(icsContent, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': `attachment; filename="convite-reuniao.ics"`,
+        'Content-Type': 'text/calendar; charset=utf-8; method=REQUEST',
+        'Content-Disposition': 'inline; filename="reuniao-passagem.ics"',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     })
   } catch (err: any) {
