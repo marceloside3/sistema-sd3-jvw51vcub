@@ -244,9 +244,7 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
         <NotificationBell />
         {data && (
           <div className="flex flex-col items-end">
-            <span className="text-sm font-medium text-gray-900 leading-none">
-              {data.user.full_name}
-            </span>
+            <span className="text-sm font-medium text-gray-900 leading-none">{data.full_name}</span>
             <span className="text-xs text-gray-500 mt-1">{data.profile?.name || 'Sem perfil'}</span>
           </div>
         )}
