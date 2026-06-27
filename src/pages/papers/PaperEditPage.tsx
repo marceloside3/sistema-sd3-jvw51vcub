@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { getProjectById } from '@/services/projects'
@@ -18,6 +19,9 @@ import {
 
 export default function PaperEditPage() {
   const { projectId } = useParams()
+  const navigate = useNavigate()
+  const { toast } = useToast()
+
   const [project, setProject] = useState<any>(null)
   const [papers, setPapers] = useState<any[]>([])
   const [meetings, setMeetings] = useState<any[]>([])
@@ -26,18 +30,65 @@ export default function PaperEditPage() {
 
   const loadData = async () => {
     if (!projectId) return
-    const [proj, paps, meets] = await Promise.all([
-      getProjectById(projectId),
-      getProjectPapers(projectId),
-      getProjectMeetings(projectId),
-    ])
-    setProject(proj)
-    setPapers(paps || [])
-    setMeetings(meets || [])
-    if (paps && paps.length > 0) {
-      setSelectedVersion(paps[0].id)
+
+    setLoading(true)
+    try {
+      const proj = await getProjectById(projectId)
+
+      if (!proj) {
+        toast({
+          title: 'Projeto não encontrado',
+          description: 'O projeto não existe ou você não tem permissão para acessá-lo.',
+          variant: 'destructive',
+        })
+        setLoading(false)
+        navigate('/projetos')
+        return
+      }
+
+      setProject(proj)
+      setLoading(false)
+
+      const [papersResult, meetingsResult] = await Promise.allSettled([
+        getProjectPapers(projectId),
+        getProjectMeetings(projectId),
+      ])
+
+      if (papersResult.status === 'fulfilled') {
+        const paps = papersResult.value || []
+        setPapers(paps)
+        if (paps.length > 0) {
+          setSelectedVersion((prev) => prev || paps[0].id)
+        }
+      } else {
+        console.error('Failed to fetch papers:', papersResult.reason)
+        toast({
+          title: 'Aviso',
+          description: 'Não foi possível carregar os papers do projeto.',
+          variant: 'destructive',
+        })
+      }
+
+      if (meetingsResult.status === 'fulfilled') {
+        setMeetings(meetingsResult.value || [])
+      } else {
+        console.error('Failed to fetch meetings:', meetingsResult.reason)
+        toast({
+          title: 'Aviso',
+          description: 'Não foi possível carregar as reuniões de passagem.',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch project:', error)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível acessar o projeto. Por favor, tente novamente.',
+        variant: 'destructive',
+      })
+      setLoading(false)
+      navigate('/projetos')
     }
-    setLoading(false)
   }
 
   useEffect(() => {

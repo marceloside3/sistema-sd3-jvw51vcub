@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -22,13 +23,28 @@ export default function ProjetosListPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   const canCreate = currentUser?.profile?.is_admin || currentUser?.profile?.is_director
 
   useEffect(() => {
-    getProjects()
-      .then(setProjects)
-      .finally(() => setLoading(false))
+    async function fetchProjects() {
+      try {
+        const data = await getProjects()
+        setProjects(data || [])
+      } catch (error) {
+        console.error('Failed to fetch projects:', error)
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível carregar a lista de projetos. Por favor, tente novamente.',
+          variant: 'destructive',
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjects()
   }, [])
 
   const filtered = projects.filter(
