@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatDateBR } from '@/lib/utils'
+import { getProjectStatusBadge, PROJECT_STATUS_LABELS } from '@/lib/constants/project-status'
 
 export default function HubDashboardPage() {
   const [projects, setProjects] = useState<any[]>([])
@@ -43,29 +44,6 @@ export default function HubDashboardPage() {
       setProjects(data)
     }
     setLoading(false)
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-600 hover:bg-green-700">Ativo</Badge>
-      case 'in_progress':
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Em Andamento</Badge>
-      case 'draft':
-        return <Badge variant="secondary">Rascunho</Badge>
-      case 'paused':
-        return (
-          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-            Pausado
-          </Badge>
-        )
-      case 'completed':
-        return <Badge className="bg-blue-600 hover:bg-blue-700">Concluído</Badge>
-      case 'cancelled':
-        return <Badge variant="destructive">Cancelado</Badge>
-      default:
-        return <Badge>{status}</Badge>
-    }
   }
 
   const filteredProjects = projects.filter((p) => {
@@ -92,12 +70,11 @@ export default function HubDashboardPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="in_progress">Em Andamento</SelectItem>
-              <SelectItem value="draft">Rascunho</SelectItem>
-              <SelectItem value="paused">Pausado</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
+              {Object.entries(PROJECT_STATUS_LABELS).map(([val, label]) => (
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -169,7 +146,7 @@ export default function HubDashboardPage() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>{getStatusBadge(p.status)}</TableCell>
+                  <TableCell>{getProjectStatusBadge(p.status)}</TableCell>
                   <TableCell className="text-gray-500 whitespace-nowrap">
                     {formatDateBR(p.created_at)}
                   </TableCell>

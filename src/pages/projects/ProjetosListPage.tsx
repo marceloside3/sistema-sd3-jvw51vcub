@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { getProjects } from '@/services/projects'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { format } from 'date-fns'
+import { getProjectStatusBadge } from '@/lib/constants/project-status'
 
 export default function ProjetosListPage() {
   const { data: currentUser } = useCurrentUser()
@@ -35,29 +36,6 @@ export default function ProjetosListPage() {
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.project_code?.toLowerCase().includes(search.toLowerCase()),
   )
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-600 hover:bg-green-700">Ativo</Badge>
-      case 'in_progress':
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Em Andamento</Badge>
-      case 'draft':
-        return <Badge variant="secondary">Rascunho</Badge>
-      case 'paused':
-        return (
-          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-            Pausado
-          </Badge>
-        )
-      case 'completed':
-        return <Badge className="bg-blue-600 hover:bg-blue-700">Concluído</Badge>
-      case 'cancelled':
-        return <Badge variant="destructive">Cancelado</Badge>
-      default:
-        return <Badge>{status}</Badge>
-    }
-  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -133,7 +111,7 @@ export default function ProjetosListPage() {
                     </Link>
                   </TableCell>
                   <TableCell>{p.client?.name}</TableCell>
-                  <TableCell>{getStatusBadge(p.status)}</TableCell>
+                  <TableCell>{getProjectStatusBadge(p.status)}</TableCell>
                   <TableCell>
                     {p.start_date ? format(new Date(p.start_date), 'dd/MM/yyyy') : '-'}
                   </TableCell>
