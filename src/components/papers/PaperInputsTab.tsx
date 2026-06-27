@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, Save, CheckCircle2, CloudOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { DynamicList } from './DynamicList'
 
 interface PaperInputsTabProps {
   project: any
@@ -25,27 +24,44 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
     refined_objective: '',
     key_message: '',
     premises_restrictions: '',
-    kpis: [],
-    personas: [],
-    timeline: [],
-    channels_priority: [],
-    budget_allocation: [],
+    kpis: '',
+    personas: '',
+    timeline: '',
+    channels_priority: '',
+    budget_allocation: '',
   })
 
   const [loading, setLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   useEffect(() => {
+    const parseJsonArrayToString = (val: any) => {
+      if (!val) return ''
+      if (Array.isArray(val)) {
+        return val
+          .map((item) => {
+            if (typeof item === 'object' && item !== null) {
+              return Object.values(item)
+                .filter((v) => typeof v === 'string')
+                .join(' - ')
+            }
+            return String(item)
+          })
+          .join('\n')
+      }
+      return String(val)
+    }
+
     if (paper) {
       setForm({
         refined_objective: paper.refined_objective || '',
         key_message: paper.key_message || '',
         premises_restrictions: paper.premises_restrictions || '',
-        kpis: paper.kpis || [],
-        personas: paper.personas || [],
-        timeline: paper.timeline || [],
-        channels_priority: paper.channels_priority || [],
-        budget_allocation: paper.budget_allocation || [],
+        kpis: parseJsonArrayToString(paper.kpis),
+        personas: parseJsonArrayToString(paper.personas),
+        timeline: parseJsonArrayToString(paper.timeline),
+        channels_priority: parseJsonArrayToString(paper.channels_priority),
+        budget_allocation: parseJsonArrayToString(paper.budget_allocation),
       })
     }
   }, [paper])
@@ -54,15 +70,32 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
   useEffect(() => {
     if (readOnly) return
 
+    const parseJsonArrayToString = (val: any) => {
+      if (!val) return ''
+      if (Array.isArray(val)) {
+        return val
+          .map((item) => {
+            if (typeof item === 'object' && item !== null) {
+              return Object.values(item)
+                .filter((v) => typeof v === 'string')
+                .join(' - ')
+            }
+            return String(item)
+          })
+          .join('\n')
+      }
+      return String(val)
+    }
+
     const hasChanges =
       form.refined_objective !== (paper?.refined_objective || '') ||
       form.key_message !== (paper?.key_message || '') ||
       form.premises_restrictions !== (paper?.premises_restrictions || '') ||
-      JSON.stringify(form.kpis) !== JSON.stringify(paper?.kpis || []) ||
-      JSON.stringify(form.personas) !== JSON.stringify(paper?.personas || []) ||
-      JSON.stringify(form.timeline) !== JSON.stringify(paper?.timeline || []) ||
-      JSON.stringify(form.channels_priority) !== JSON.stringify(paper?.channels_priority || []) ||
-      JSON.stringify(form.budget_allocation) !== JSON.stringify(paper?.budget_allocation || [])
+      form.kpis !== parseJsonArrayToString(paper?.kpis) ||
+      form.personas !== parseJsonArrayToString(paper?.personas) ||
+      form.timeline !== parseJsonArrayToString(paper?.timeline) ||
+      form.channels_priority !== parseJsonArrayToString(paper?.channels_priority) ||
+      form.budget_allocation !== parseJsonArrayToString(paper?.budget_allocation)
 
     if (!hasChanges) {
       if (saveStatus !== 'idle' && saveStatus !== 'error') setSaveStatus('idle')
@@ -73,26 +106,31 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
       !form.refined_objective &&
       !form.key_message &&
       !form.premises_restrictions &&
-      form.kpis.length === 0 &&
-      form.personas.length === 0 &&
-      form.timeline.length === 0 &&
-      form.channels_priority.length === 0 &&
-      form.budget_allocation.length === 0
+      !form.kpis &&
+      !form.personas &&
+      !form.timeline &&
+      !form.channels_priority &&
+      !form.budget_allocation
 
     if (!paper && isFormEmpty) return
 
     setSaveStatus('saving')
     const timer = setTimeout(async () => {
       try {
+        const serializeStringToJsonArray = (val: string) => {
+          if (!val) return []
+          return val.split('\n').filter((s) => s.trim() !== '')
+        }
+
         const payload = {
           refined_objective: form.refined_objective,
           key_message: form.key_message,
           premises_restrictions: form.premises_restrictions,
-          kpis: form.kpis,
-          personas: form.personas,
-          timeline: form.timeline,
-          channels_priority: form.channels_priority,
-          budget_allocation: form.budget_allocation,
+          kpis: serializeStringToJsonArray(form.kpis),
+          personas: serializeStringToJsonArray(form.personas),
+          timeline: serializeStringToJsonArray(form.timeline),
+          channels_priority: serializeStringToJsonArray(form.channels_priority),
+          budget_allocation: serializeStringToJsonArray(form.budget_allocation),
           updated_at: new Date().toISOString(),
         }
 
@@ -137,16 +175,21 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
     setSaveStatus('saving')
 
     try {
+      const serializeStringToJsonArray = (val: string) => {
+        if (!val) return []
+        return val.split('\n').filter((s) => s.trim() !== '')
+      }
+
       const payload = {
         project_id: project.id,
         refined_objective: form.refined_objective,
-        personas: form.personas,
-        kpis: form.kpis,
+        personas: serializeStringToJsonArray(form.personas),
+        kpis: serializeStringToJsonArray(form.kpis),
         key_message: form.key_message,
         premises_restrictions: form.premises_restrictions,
-        budget_allocation: form.budget_allocation,
-        timeline: form.timeline,
-        channels_priority: form.channels_priority,
+        budget_allocation: serializeStringToJsonArray(form.budget_allocation),
+        timeline: serializeStringToJsonArray(form.timeline),
+        channels_priority: serializeStringToJsonArray(form.channels_priority),
         status: 'draft',
       }
 
@@ -231,7 +274,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div className="space-y-2">
           <Label>Objetivo Refinado</Label>
           <Textarea
@@ -254,7 +297,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2">
           <Label>Premissas e Restrições</Label>
           <Textarea
             value={form.premises_restrictions}
@@ -267,51 +310,56 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
 
         <div className="space-y-2">
           <Label>KPIs</Label>
-          <DynamicList
-            items={form.kpis}
-            onChange={(items) => setForm({ ...form, kpis: items as any })}
+          <Textarea
+            value={form.kpis}
+            onChange={(e) => setForm({ ...form, kpis: e.target.value })}
             disabled={readOnly}
-            placeholder="Adicionar KPI..."
+            placeholder="Adicione os KPIs (um por linha)..."
+            className="min-h-[100px]"
           />
         </div>
 
         <div className="space-y-2">
           <Label>Personas</Label>
-          <DynamicList
-            items={form.personas}
-            onChange={(items) => setForm({ ...form, personas: items as any })}
+          <Textarea
+            value={form.personas}
+            onChange={(e) => setForm({ ...form, personas: e.target.value })}
             disabled={readOnly}
-            placeholder="Adicionar Persona..."
+            placeholder="Descreva as personas (uma por linha)..."
+            className="min-h-[100px]"
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Canais Prioritários</Label>
-          <DynamicList
-            items={form.channels_priority}
-            onChange={(items) => setForm({ ...form, channels_priority: items as any })}
+          <Label>Prioridade de Canais</Label>
+          <Textarea
+            value={form.channels_priority}
+            onChange={(e) => setForm({ ...form, channels_priority: e.target.value })}
             disabled={readOnly}
-            placeholder="Adicionar Canal..."
+            placeholder="Liste os canais prioritários (um por linha)..."
+            className="min-h-[100px]"
           />
         </div>
 
         <div className="space-y-2">
           <Label>Alocação de Verba</Label>
-          <DynamicList
-            items={form.budget_allocation}
-            onChange={(items) => setForm({ ...form, budget_allocation: items as any })}
+          <Textarea
+            value={form.budget_allocation}
+            onChange={(e) => setForm({ ...form, budget_allocation: e.target.value })}
             disabled={readOnly}
-            placeholder="Adicionar Item de Verba..."
+            placeholder="Descreva a alocação de verba (um item por linha)..."
+            className="min-h-[100px]"
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <Label>Cronograma</Label>
-          <DynamicList
-            items={form.timeline}
-            onChange={(items) => setForm({ ...form, timeline: items as any })}
+        <div className="space-y-2">
+          <Label>Timeline</Label>
+          <Textarea
+            value={form.timeline}
+            onChange={(e) => setForm({ ...form, timeline: e.target.value })}
             disabled={readOnly}
-            placeholder="Adicionar Marco do Cronograma..."
+            placeholder="Adicione os marcos do cronograma (um por linha)..."
+            className="min-h-[100px]"
           />
         </div>
       </div>

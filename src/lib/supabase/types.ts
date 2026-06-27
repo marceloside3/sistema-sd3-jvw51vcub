@@ -353,6 +353,13 @@ export type Database = {
             referencedRelation: 'handover_meetings'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'handover_meeting_participants_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
         ]
       }
       handover_meetings: {
