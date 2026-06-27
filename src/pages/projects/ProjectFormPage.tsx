@@ -22,6 +22,7 @@ import {
 import { getClients } from '@/services/clients'
 import { createProject, getProjectById } from '@/services/projects'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 
 export default function ProjectFormPage() {
@@ -37,6 +38,7 @@ export default function ProjectFormPage() {
   const [isProjectCompleted, setIsProjectCompleted] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -230,6 +232,7 @@ export default function ProjectFormPage() {
             origin_type: formData.origin_type,
             briefing_data: formData.briefing_data,
             briefing_completed_at: briefingCompletedAt,
+            created_by: user?.id,
           },
           areaPayload,
         )
@@ -253,12 +256,25 @@ export default function ProjectFormPage() {
           leadArea: formData.leadArea,
         },
       })
-      toast({
-        title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
-        description:
-          err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.',
-        variant: 'destructive',
-      })
+      const isRlsError =
+        err?.code === '42501' ||
+        err?.message?.toLowerCase().includes('row-level security') ||
+        err?.message?.toLowerCase().includes('permission denied')
+      if (isRlsError) {
+        toast({
+          title: 'Erro de permissão',
+          description:
+            'Você não tem permissão para realizar esta operação. Verifique seu perfil com o administrador do sistema.',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
+          description:
+            err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setLoading(false)
     }
