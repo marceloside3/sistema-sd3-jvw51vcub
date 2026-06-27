@@ -21,7 +21,7 @@ Deno.serve(async (req: Request) => {
       .select(`
         *,
         project:projects(name, project_code),
-        participants:handover_meeting_participants(user:users(email, full_name))
+        participants:handover_meeting_participants(is_organizer, user:users(email, full_name))
       `)
       .eq('id', meetingId)
       .single()
@@ -48,30 +48,42 @@ Deno.serve(async (req: Request) => {
         .replace(/\n/g, '\\n')
     }
 
-    const attendees = meeting.participants
-      .map((p: any) => `ATTENDEE;RSVP=TRUE;CN=${p.user.full_name}:mailto:${p.user.email}`)
-      .join('\n')
+    const organizerParticipant = meeting.participants.find((p: any) => p.is_organizer)
+    const organizerLine = organizerParticipant
+      ? `ORGANIZER;CN="${organizerParticipant.user.full_name}":mailto:${organizerParticipant.user.email}`
+      : ''
 
-    const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Skip//SD3 OS//PT-BR
-BEGIN:VEVENT
-UID:${meeting.id}@sd3.com.br
-DTSTAMP:${formatDate(new Date())}
-DTSTART:${formatDate(startDate)}
-DTEND:${formatDate(endDate)}
-SUMMARY:Reunião de Passagem: ${escapeText(meeting.project?.name)}
-DESCRIPTION:${escapeText(meeting.agenda)}
-LOCATION:${escapeText(meeting.location_or_link)}
-${attendees}
-END:VEVENT
-END:VCALENDAR`
+    const attendees = meeting.participants
+      .map((p: any) => `ATTENDEE;RSVP=TRUE;CN="${p.user.full_name}":mailto:${p.user.email}`)
+      .join('\r\n')
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'METHOD:REQUEST',
+      'PRODID:-//Skip//SD3 OS//PT-BR',
+      'BEGIN:VEVENT',
+      `UID:${meeting.id}@sd3.com.br`,
+      `DTSTAMP:${formatDate(new Date())}`,
+      `DTSTART:${formatDate(startDate)}`,
+      `DTEND:${formatDate(endDate)}`,
+      `SUMMARY:Reunião de Passagem: ${escapeText(meeting.project?.name)}`,
+      `DESCRIPTION:${escapeText(meeting.agenda)}`,
+      `LOCATION:${escapeText(meeting.location_or_link)}`,
+      organizerLine,
+      attendees,
+      'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ]
+      .filter(Boolean)
+      .join('\r\n')
 
     return new Response(icsContent, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': `attachment; filename="reuniao-passagem-${meeting.project?.project_code || 'projeto'}.ics"`,
+        'Content-Type': 'text/calendar; charset=utf-8; method=REQUEST',
+        'Content-Disposition': `attachment; filename="reuniao-passagem.ics"`,
       },
     })
   } catch (err: any) {

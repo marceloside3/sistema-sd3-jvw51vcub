@@ -33,6 +33,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
 
   const [loading, setLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
 
   useEffect(() => {
     const parseJsonArrayToString = (val: any) => {
@@ -150,6 +151,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         }
 
         setSaveStatus('saved')
+        setLastSavedAt(new Date())
 
         // Revert status to idle after 3s
         setTimeout(() => {
@@ -222,6 +224,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
       })
 
       setSaveStatus('saved')
+      setLastSavedAt(new Date())
       toast({
         title: 'Sucesso',
         description: 'Paper salvo com sucesso.',
@@ -251,9 +254,10 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
               <Loader2 className="w-3 h-3 animate-spin" /> Salvando...
             </span>
           )}
-          {saveStatus === 'saved' && (
-            <span className="flex items-center text-sm text-green-600 gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Todas as alterações salvas
+          {(saveStatus === 'saved' || (saveStatus === 'idle' && lastSavedAt)) && (
+            <span className="flex items-center text-xs text-muted-foreground gap-1">
+              <CheckCircle2 className="w-3 h-3 text-green-600" /> Salvo às{' '}
+              {lastSavedAt?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           {saveStatus === 'error' && (

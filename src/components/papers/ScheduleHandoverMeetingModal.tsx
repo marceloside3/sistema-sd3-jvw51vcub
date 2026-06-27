@@ -46,6 +46,7 @@ export function ScheduleHandoverMeetingModal({
   const [loading, setLoading] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState(true)
   const [openCombobox, setOpenCombobox] = useState(false)
+  const [dateTimeError, setDateTimeError] = useState('')
 
   useEffect(() => {
     supabase
@@ -61,11 +62,21 @@ export function ScheduleHandoverMeetingModal({
   }, [])
 
   const handleSubmit = async () => {
+    setDateTimeError('')
     if (!date || !time) {
       return toast({ title: 'Data e hora são obrigatórios', variant: 'destructive' })
     }
     if (selectedUsers.length === 0) {
       return toast({ title: 'Selecione pelo menos um participante', variant: 'destructive' })
+    }
+
+    const [year, month, day] = date.split('-').map(Number)
+    const [hours, minutes] = time.split(':').map(Number)
+    const selectedDate = new Date(year, month - 1, day, hours, minutes)
+
+    if (selectedDate <= new Date()) {
+      setDateTimeError('Data e hora devem ser futuras.')
+      return
     }
 
     // Create an ISO8601 string with the explicit local timezone offset
@@ -118,6 +129,9 @@ export function ScheduleHandoverMeetingModal({
             <Label>Hora</Label>
             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
+          {dateTimeError && (
+            <div className="col-span-2 text-sm text-red-500 mt-[-8px]">{dateTimeError}</div>
+          )}
           <div className="space-y-2">
             <Label>Duração (minutos)</Label>
             <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
