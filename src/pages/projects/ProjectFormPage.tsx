@@ -129,10 +129,24 @@ export default function ProjectFormPage() {
   }
 
   const handleSubmit = async () => {
-    if (!user?.id) {
+    const {
+      data: { user: sessionUser },
+      error: sessionError,
+    } = await supabase.auth.getUser()
+    if (sessionError || !sessionUser?.id) {
       toast({
         title: 'Sessão expirada',
         description: 'Não foi possível identificar seu usuário. Faça login novamente.',
+        variant: 'destructive',
+      })
+      return
+    }
+    const validUserId = sessionUser.id
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!UUID_REGEX.test(validUserId)) {
+      toast({
+        title: 'ID de usuário inválido',
+        description: 'O ID da sessão não é um UUID válido. Faça login novamente.',
         variant: 'destructive',
       })
       return
@@ -262,7 +276,7 @@ export default function ProjectFormPage() {
           origin_type: formData.origin_type,
           briefing_data: formData.briefing_data,
           briefing_completed_at: briefingCompletedAt,
-          created_by: user.id,
+          created_by: validUserId,
         }
 
         const project = await createProject(projectPayload, areaPayload)
@@ -281,6 +295,7 @@ export default function ProjectFormPage() {
         code: err?.code,
         details: err?.details,
         hint: err?.hint,
+        techAlert: err?.techAlert,
         isEditMode,
         editingId,
         formData: {
@@ -290,7 +305,6 @@ export default function ProjectFormPage() {
           leadArea: formData.leadArea,
         },
       })
-
       let errorTitle = isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto'
       let errorDesc =
         err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.'
@@ -300,8 +314,9 @@ export default function ProjectFormPage() {
       }
 
       if (err?.code === '42501') {
-        errorTitle = 'Permissão negada'
+        errorTitle = 'Permissão negada (RLS Policy Violation)'
         errorDesc =
+          err?.techAlert ||
           'Você não tem permissão para realizar esta operação. Verifique se seu perfil está corretamente configurado ou contate o administrador.'
       } else if (err?.code === '23503') {
         errorTitle = 'Erro de integridade'

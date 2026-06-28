@@ -61,6 +61,11 @@ export async function createProject(
     throw new Error('User is not authenticated.')
   }
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!UUID_REGEX.test(user.id)) {
+    throw new Error(`Invalid user ID format: ${user.id}`)
+  }
+
   const { data: userRecord } = await supabase
     .from('users')
     .select('id, full_name')
@@ -94,56 +99,83 @@ export async function createProject(
     created_by: user.id,
   }
 
-  const { data, error } = await supabase.from('projects').insert([projectPayload]).select().single()
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert([projectPayload])
+      .select()
+      .single()
 
-  if (error) {
-    console.error('[createProject] Error inserting project:', {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      payload: {
-        ...projectPayload,
-        briefing_data: '[omitted]',
-        created_by: projectPayload.created_by,
-      },
-    })
+    if (error) {
+      console.error('[createProject] Error inserting project:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        payload: {
+          ...projectPayload,
+          briefing_data: '[omitted]',
+          created_by: projectPayload.created_by,
+        },
+      })
 
-    const techAlert = `[${error.code || 'UNKNOWN'}] ${error.message}${error.details ? ` | Details: ${error.details}` : ''}${error.hint ? ` | Hint: ${error.hint}` : ''}`
+      const techAlert = `[${error.code || 'UNKNOWN'}] ${error.message}${error.details ? ` | Details: ${error.details}` : ''}${error.hint ? ` | Hint: ${error.hint}` : ''}`
 
+      const enhancedError = new Error(
+        error.code === '42501'
+          ? `Permissão negada (RLS): ${techAlert}`
+          : `Erro de banco (${error.code || 'UNKNOWN'}): ${techAlert}`,
+      ) as Error & { code?: string; techAlert?: string }
+      enhancedError.code = error.code
+      enhancedError.techAlert = techAlert
+
+      throw enhancedError
+    }
+
+    if (areaIds && areaIds.length > 0) {
+      const areasPayload = areaIds.map((a) => ({
+        project_id: data.id,
+        area_id: a.area_id,
+        is_lead: a.is_lead,
+      }))
+      const { error: areasError } = await supabase.from('project_areas').insert(areasPayload)
+
+      if (areasError) {
+        console.error('[createProject] Error inserting project areas:', {
+          message: areasError.message,
+          code: areasError.code,
+          details: areasError.details,
+          hint: areasError.hint,
+          projectId: data.id,
+          areasPayload,
+        })
+
+        const areasTechAlert = `[${areasError.code || 'UNKNOWN'}] ${areasError.message}${areasError.details ? ` | Details: ${areasError.details}` : ''}${areasError.hint ? ` | Hint: ${areasError.hint}` : ''}`
+
+        const areasEnhancedError = new Error(
+          areasError.code === '42501'
+            ? `Permissão negada (RLS) ao inserir áreas: ${areasTechAlert}`
+            : `Erro de banco ao inserir áreas (${areasError.code || 'UNKNOWN'}): ${areasTechAlert}`,
+        ) as Error & { code?: string; techAlert?: string }
+        areasEnhancedError.code = areasError.code
+        areasEnhancedError.techAlert = areasTechAlert
+
+        throw areasEnhancedError
+      }
+    }
+
+    return data
+  } catch (err: any) {
+    if (err?.techAlert) throw err
+
+    console.error('[createProject] Unexpected error:', err)
     const enhancedError = new Error(
-      error.code === '42501'
-        ? `Permissão negada (RLS): ${techAlert}`
-        : `Erro de banco (${error.code || 'UNKNOWN'}): ${techAlert}`,
+      err?.message || 'Erro inesperado ao criar projeto.',
     ) as Error & { code?: string; techAlert?: string }
-    enhancedError.code = error.code
-    enhancedError.techAlert = techAlert
-
+    enhancedError.code = err?.code
+    enhancedError.techAlert = err?.message || 'Unexpected error'
     throw enhancedError
   }
-
-  if (areaIds && areaIds.length > 0) {
-    const areasPayload = areaIds.map((a) => ({
-      project_id: data.id,
-      area_id: a.area_id,
-      is_lead: a.is_lead,
-    }))
-    const { error: areasError } = await supabase.from('project_areas').insert(areasPayload)
-
-    if (areasError) {
-      console.error('[createProject] Error inserting project areas:', {
-        message: areasError.message,
-        code: areasError.code,
-        details: areasError.details,
-        hint: areasError.hint,
-        projectId: data.id,
-        areasPayload,
-      })
-      throw areasError
-    }
-  }
-
-  return data
 }
 
 export async function updateProject(id: string, payload: any) {
