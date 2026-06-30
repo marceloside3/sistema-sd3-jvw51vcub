@@ -236,6 +236,12 @@ export async function checkCanOverrideG2() {
   return data
 }
 
+export async function getAuthDiagnostic() {
+  const { data, error } = await supabase.rpc('get_auth_diagnostic')
+  if (error) throw error
+  return data
+}
+
 export async function updateProjectStatus(
   id: string,
   newStatus: string,
