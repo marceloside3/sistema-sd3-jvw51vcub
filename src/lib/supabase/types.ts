@@ -992,6 +992,7 @@ export type Database = {
             Returns: undefined
           }
       generate_project_code: { Args: { p_client_id: string }; Returns: string }
+      get_auth_diagnostic: { Args: never; Returns: Json }
       get_project_audit_log: {
         Args: {
           p_event_types?: Database['public']['Enums']['audit_event_type'][]

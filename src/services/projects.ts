@@ -99,6 +99,8 @@ export async function createProject(
     created_by: user.id,
   }
 
+  console.log('[createProject] Inserting project with created_by:', user.id)
+
   try {
     const { data, error } = await supabase
       .from('projects')

@@ -298,6 +298,7 @@ export default function ProjectFormPage() {
         techAlert: err?.techAlert,
         isEditMode,
         editingId,
+        validUserId,
         formData: {
           name: formData.name,
           client_id: formData.client_id,
