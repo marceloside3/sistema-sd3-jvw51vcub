@@ -10,8 +10,11 @@ export function HubGuard({ children }: { children: ReactNode }) {
     return <div className="p-8 text-center text-gray-500">Verificando permissões...</div>
   }
 
-  const allowedProfiles = ['super_admin', 'atendimento', 'planejamento']
-  const hasAccess = data?.profile && allowedProfiles.includes(data.profile.code)
+  const allowedProfiles = ['admin', 'diretor', 'super_admin', 'atendimento', 'planejamento']
+  const hasAccess =
+    (data?.profile && allowedProfiles.includes(data.profile.code)) ||
+    data?.profile?.is_admin ||
+    data?.profile?.is_director
 
   if (!hasAccess) {
     setTimeout(() => {
