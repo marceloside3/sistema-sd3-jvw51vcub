@@ -60,14 +60,17 @@ export const updateUser = async (id: string, payload: any) => {
   if (areas) {
     await supabase.from('area_responsibles').delete().eq('user_id', id)
     if (areas.length > 0) {
-      const { error: areaError } = await supabase.from('area_responsibles').insert(
-        areas.map((a: any) => ({
-          user_id: id,
-          area_id: a.area_id,
-          is_principal: a.is_principal,
-        })),
-      )
-      if (areaError) throw areaError
+      const validAreas = areas.filter((a: any) => a?.area_id)
+      if (validAreas.length > 0) {
+        const { error: areaError } = await supabase.from('area_responsibles').insert(
+          validAreas.map((a: any) => ({
+            user_id: id,
+            area_id: a.area_id,
+            is_principal: a.is_principal,
+          })),
+        )
+        if (areaError) throw areaError
+      }
     }
   }
   return true

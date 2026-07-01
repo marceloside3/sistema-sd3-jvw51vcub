@@ -107,7 +107,7 @@ export default function UsersPage() {
       profile_id: u.profile_id,
       areas: (u.areas || [])
         .filter((a: any) => a?.area?.id)
-        .map((a: any) => ({ area_id: a.area.id, is_principal: a.is_principal })),
+        .map((a: any) => ({ area_id: a.area!.id, is_principal: a.is_principal })),
     })
     setIsModalOpen(true)
   }
@@ -168,7 +168,7 @@ export default function UsersPage() {
         is_active: !u.is_active,
         areas: (u.areas || [])
           .filter((a: any) => a?.area?.id)
-          .map((a: any) => ({ area_id: a.area.id, is_principal: a.is_principal })),
+          .map((a: any) => ({ area_id: a.area!.id, is_principal: a.is_principal })),
       })
       toast({ title: u.is_active ? 'Usuário desativado' : 'Usuário reativado' })
       loadData()
@@ -257,12 +257,12 @@ export default function UsersPage() {
                       .filter((a: any) => a?.area?.id)
                       .map((a: any) => (
                         <Badge
-                          key={a.area.id}
+                          key={a.area!.id}
                           variant={a.is_principal ? 'default' : 'secondary'}
                           className="text-xs"
                         >
                           {a.is_principal && <span className="mr-1">⭐</span>}
-                          {a.area.name} {a.is_principal && '(Principal)'}
+                          {a.area?.name ?? 'Área removida'} {a.is_principal && '(Principal)'}
                         </Badge>
                       ))}
                   </div>
