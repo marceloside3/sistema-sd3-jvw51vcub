@@ -57,18 +57,18 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="h-16 flex items-center justify-between px-5 border-b border-zinc-800">
-          <div className="flex-shrink-0 flex items-center justify-start h-full w-[30%] max-w-[80px]">
+        <div className="h-20 flex items-center justify-between px-5 border-b border-zinc-800">
+          <div className="flex-1 flex items-center justify-center h-full">
             <img
               src={iconUrl}
               alt="SD3"
-              className="w-full h-auto object-contain transform origin-left transition-transform duration-300 ease-smooth"
+              className="w-[30%] max-w-[80px] h-auto object-contain transition-transform duration-300 ease-smooth"
             />
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-300 ease-smooth"
+            className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-300 ease-smooth absolute right-4 top-6"
             onClick={() => setIsOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -202,11 +202,11 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
         >
           <Menu className="w-5 h-5" />
         </Button>
-        <div className="md:hidden flex-shrink-0 flex items-center justify-end h-full w-[30%] max-w-[60px]">
+        <div className="md:hidden flex-1 flex items-center justify-center h-full">
           <img
             src={iconUrl}
             alt="SD3"
-            className="w-full h-auto object-contain transform origin-right transition-transform duration-300 ease-smooth"
+            className="w-[30%] max-w-[60px] h-auto object-contain transition-transform duration-300 ease-smooth"
           />
         </div>
       </div>

@@ -105,7 +105,9 @@ export default function UsersPage() {
       full_name: u.full_name,
       email: u.email,
       profile_id: u.profile_id,
-      areas: u.areas.map((a: any) => ({ area_id: a.area.id, is_principal: a.is_principal })),
+      areas: (u.areas || [])
+        .filter((a: any) => a?.area?.id)
+        .map((a: any) => ({ area_id: a.area.id, is_principal: a.is_principal })),
     })
     setIsModalOpen(true)
   }
@@ -164,7 +166,9 @@ export default function UsersPage() {
         full_name: u.full_name,
         profile_id: u.profile_id,
         is_active: !u.is_active,
-        areas: u.areas.map((a: any) => ({ area_id: a.area.id, is_principal: a.is_principal })),
+        areas: (u.areas || [])
+          .filter((a: any) => a?.area?.id)
+          .map((a: any) => ({ area_id: a.area.id, is_principal: a.is_principal })),
       })
       toast({ title: u.is_active ? 'Usuário desativado' : 'Usuário reativado' })
       loadData()
@@ -249,18 +253,20 @@ export default function UsersPage() {
                 <TableCell>{u.profile?.name}</TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
-                    {u.areas?.map((a: any) => (
-                      <Badge
-                        key={a.area.id}
-                        variant={a.is_principal ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {a.is_principal && <span className="mr-1">⭐</span>}
-                        {a.area.name} {a.is_principal && '(Principal)'}
-                      </Badge>
-                    ))}
+                    {(u.areas || [])
+                      .filter((a: any) => a?.area?.id)
+                      .map((a: any) => (
+                        <Badge
+                          key={a.area.id}
+                          variant={a.is_principal ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {a.is_principal && <span className="mr-1">⭐</span>}
+                          {a.area.name} {a.is_principal && '(Principal)'}
+                        </Badge>
+                      ))}
                   </div>
-                </TableCell>
+                </TableCell>{' '}
                 <TableCell>
                   <Badge
                     variant={u.is_active ? 'outline' : 'destructive'}
