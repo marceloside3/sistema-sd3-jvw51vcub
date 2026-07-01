@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Calendar, User, Clock, Pencil } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Plus, Calendar, User, Clock, Pencil, Sparkles, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -9,11 +9,8 @@ import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { DistributionModal } from '@/components/projects/DistributionModal'
 import { ProjectHistoryTab } from '@/components/project/ProjectHistoryTab'
 import { AiAnalysisModal } from '@/components/project/AiAnalysisModal'
-import { Sparkles, FileText } from 'lucide-react'
 import { getProjectDemands } from '@/services/demands'
-import { getProjectPapers, createPaperVersion } from '@/services/papers'
-import { useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
+import { getProjectPapers } from '@/services/papers'
 import { formatDateBR } from '@/lib/utils'
 import {
   Table,
@@ -32,7 +29,6 @@ import {
 } from '@/components/ui/select'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/components/ui/use-toast'
-import { supabase } from '@/lib/supabase/client'
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Ativo',
@@ -59,23 +55,8 @@ export default function ProjetoDetalhePage() {
   const [project, setProject] = useState<any>(null)
   const [demands, setDemands] = useState<any[]>([])
   const [papers, setPapers] = useState<any[]>([])
-  const [userAreas, setUserAreas] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
-
-  useEffect(() => {
-    if (userCtx?.user?.id) {
-      supabase
-        .from('area_responsibles')
-        .select('area:areas(code)')
-        .eq('user_id', userCtx.user.id)
-        .then(({ data }) => {
-          if (data) {
-            setUserAreas(data.map((d: any) => d.area?.code?.toLowerCase() || ''))
-          }
-        })
-    }
-  }, [userCtx?.user?.id])
 
   useEffect(() => {
     if (!id) return
@@ -102,19 +83,22 @@ export default function ProjetoDetalhePage() {
     if (!confirmed) return
 
     try {
-      const updatedProject = await updateProjectStatus(
+      await updateProjectStatus(
         project.id,
         newStatus,
         project.name,
-        userCtx?.user?.id || '',
-        userCtx?.user?.full_name || 'Usuário',
+        userCtx?.id || '',
+        userCtx?.full_name || 'Usuário',
       )
       setProject((prev: any) => ({ ...prev, status: newStatus }))
       toast({ title: 'Sucesso', description: 'Status do projeto atualizado com sucesso.' })
     } catch (error: any) {
+      const isPermissionError = error?.code === '42501'
       toast({
-        title: 'Erro',
-        description: error.message || 'Falha ao atualizar status.',
+        title: isPermissionError ? 'Acesso Negado' : 'Erro',
+        description: isPermissionError
+          ? 'Privilégios insuficientes para alterar o status do projeto.'
+          : error.message || 'Falha ao atualizar status.',
         variant: 'destructive',
       })
     }
@@ -126,19 +110,18 @@ export default function ProjetoDetalhePage() {
   const leadArea = project.areas?.find((a: any) => a.is_lead)?.area?.name
 
   const isAdmin = userCtx?.profile?.is_admin === true
-  const isCreator = project.created_by === userCtx?.user?.id
+  const isDirector = userCtx?.profile?.is_director === true
+  const isCreator = project.created_by === userCtx?.id
   const isCompleted = project.status === 'completed'
   const canEditProject = isAdmin || (isCreator && !isCompleted)
   const canChangeStatus = isAdmin || isCreator
 
-  const userProfileCode = userCtx?.profile?.code?.toLowerCase() || ''
-  const isAllowedToDistribute = ['super_admin', 'admin', 'atendimento', 'planejamento'].includes(
-    userProfileCode,
-  )
+  const userAreaCodes = (userCtx?.areas || []).map((a) => a.code?.toLowerCase() || '')
+  const isPlanningArea = userAreaCodes.includes('planejamento')
+  const isAllowedToDistribute = isAdmin || isDirector || isPlanningArea
 
-  const isPlanningArea = userAreas.includes('planejamento')
   const canViewPaperSection = !!project.distributed_at
-  const canCreatePaper = project.distributed_at && (isAdmin || isPlanningArea)
+  const canCreatePaper = project.distributed_at && (isAdmin || isDirector || isPlanningArea)
   const currentPaper = papers[0]
 
   const canDistribute =
@@ -491,10 +474,15 @@ export default function ProjetoDetalhePage() {
           onSuccess={() => {
             setIsDistributionModalOpen(false)
             setLoading(true)
-            Promise.all([getProjectById(id || ''), getProjectDemands(id || '')])
-              .then(([projData, demandsData]) => {
+            Promise.all([
+              getProjectById(id || ''),
+              getProjectDemands(id || ''),
+              getProjectPapers(id || '').catch(() => []),
+            ])
+              .then(([projData, demandsData, papersData]) => {
                 setProject(projData)
                 setDemands(demandsData || [])
+                setPapers(papersData || [])
               })
               .finally(() => setLoading(false))
           }}

@@ -978,19 +978,14 @@ export type Database = {
       can_override_g2: { Args: never; Returns: boolean }
       can_view_project: { Args: { p_project_id: string }; Returns: boolean }
       create_paper_version: { Args: { p_project_id: string }; Returns: string }
-      distribute_project:
-        | {
-            Args: { p_assignments: Json; p_project_id: string }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_assignments: Json
-              p_override_reason?: string
-              p_project_id: string
-            }
-            Returns: undefined
-          }
+      distribute_project: {
+        Args: {
+          p_assignments: Json
+          p_override_reason?: string
+          p_project_id: string
+        }
+        Returns: undefined
+      }
       generate_project_code: { Args: { p_client_id: string }; Returns: string }
       get_auth_diagnostic: { Args: never; Returns: Json }
       get_project_audit_log: {

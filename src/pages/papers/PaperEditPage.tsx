@@ -100,10 +100,13 @@ export default function PaperEditPage() {
       } else {
         setMeetings([])
       }
-    } catch (error) {
+    } catch (error: any) {
+      const isPermissionError = error?.code === '42501' || error?.message?.includes('permission')
       toast({
-        title: 'Erro',
-        description: 'Não foi possível acessar o projeto.',
+        title: isPermissionError ? 'Acesso Negado' : 'Erro',
+        description: isPermissionError
+          ? 'Privilégios insuficientes para acessar este projeto.'
+          : 'Não foi possível acessar o projeto.',
         variant: 'destructive',
       })
       setLoading(false)
@@ -147,14 +150,18 @@ export default function PaperEditPage() {
 
   const isPaperOwner = currentUserData?.id === currentPaper?.created_by
 
+  const isPlanningArea = useMemo(() => {
+    if (!currentUserData) return false
+    return currentUserData.areas?.some((a) => a.code?.toLowerCase() === 'planejamento') ?? false
+  }, [currentUserData])
+
   const isPlanningDirector = useMemo(() => {
-    if (!currentUserData || !project) return false
+    if (!currentUserData) return false
     const isDirector = currentUserData.profile?.is_director ?? false
-    const isPlanningArea = currentUserData.areas?.some(
-      (a) => a.code?.toLowerCase() === 'planejamento',
-    )
-    return isDirector || isPlanningArea
-  }, [currentUserData, project])
+    return isDirector && isPlanningArea
+  }, [currentUserData, isPlanningArea])
+
+  const canEditPaper = isPaperOwner || isPlanningArea || isAdmin
 
   const missingFields = useMemo(() => {
     if (!currentPaper) return REQUIRED_FIELDS.map((f) => f.label)
@@ -410,61 +417,56 @@ export default function PaperEditPage() {
             readOnly={currentPaper ? !isLatest || currentPaper.status !== 'draft' : false}
             onReload={refreshPapers}
           />
-          {currentPaper &&
-            isLatest &&
-            currentPaper.status === 'draft' &&
-            (isPaperOwner || isPlanningDirector || isAdmin) && (
-              <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Submeter ao Gate G3</h4>
-                    {missingFields.length > 0 ? (
-                      <p className="text-xs text-red-500 mt-1">
-                        Campos faltando: {missingFields.join(', ')}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-green-600 mt-1">
-                        Todos os 8 inputs estão preenchidos. Pronto para submeter.
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    onClick={handleSubmitToG3}
-                    disabled={submitting || missingFields.length > 0}
-                  >
-                    {submitting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4 mr-2" />
-                    )}
-                    Submeter ao G3
-                  </Button>
+          {currentPaper && isLatest && currentPaper.status === 'draft' && canEditPaper && (
+            <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium">Submeter ao Gate G3</h4>
+                  {missingFields.length > 0 ? (
+                    <p className="text-xs text-red-500 mt-1">
+                      Campos faltando: {missingFields.join(', ')}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-green-600 mt-1">
+                      Todos os 8 inputs estão preenchidos. Pronto para submeter.
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
-          {currentPaper &&
-            currentPaper.status === 'rejected' &&
-            (isPaperOwner || isPlanningDirector || isAdmin) && (
-              <div className="mt-4 border rounded-lg bg-red-50 p-4 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageCircle className="w-4 h-4 text-red-500" />
-                  <h4 className="text-sm font-medium text-red-700">Paper recusado</h4>
-                </div>
-                {latestReview && latestReview.comment && (
-                  <p className="text-sm text-red-600 italic mb-3">
-                    &quot;{latestReview.comment}&quot;
-                  </p>
-                )}
-                <Button onClick={handleCreateVersion} disabled={creatingVersion} variant="default">
-                  {creatingVersion ? (
+                <Button
+                  onClick={handleSubmitToG3}
+                  disabled={submitting || missingFields.length > 0}
+                >
+                  {submitting ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <FilePlus2 className="w-4 h-4 mr-2" />
+                    <Send className="w-4 h-4 mr-2" />
                   )}
-                  Criar nova versão
+                  Submeter ao G3
                 </Button>
               </div>
-            )}
+            </div>
+          )}
+          {currentPaper && currentPaper.status === 'rejected' && canEditPaper && (
+            <div className="mt-4 border rounded-lg bg-red-50 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="w-4 h-4 text-red-500" />
+                <h4 className="text-sm font-medium text-red-700">Paper recusado</h4>
+              </div>
+              {latestReview && latestReview.comment && (
+                <p className="text-sm text-red-600 italic mb-3">
+                  &quot;{latestReview.comment}&quot;
+                </p>
+              )}
+              <Button onClick={handleCreateVersion} disabled={creatingVersion} variant="default">
+                {creatingVersion ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FilePlus2 className="w-4 h-4 mr-2" />
+                )}
+                Criar nova versão
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="benchmarks" className="mt-6">

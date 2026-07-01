@@ -132,9 +132,12 @@ export function DistributionModal({
       setCanOverride(canOverrideRes)
       setValModalOpen(true)
     } catch (err: any) {
+      const isPermissionError = err?.code === '42501' || err?.message?.includes('permission')
       toast({
-        title: 'Erro',
-        description: err.message || 'Falha ao validar G2',
+        title: isPermissionError ? 'Acesso Negado' : 'Erro',
+        description: isPermissionError
+          ? 'Privilégios insuficientes para distribuir projetos.'
+          : err.message || 'Falha ao validar G2',
         variant: 'destructive',
       })
     } finally {
@@ -160,9 +163,12 @@ export function DistributionModal({
       setValModalOpen(false)
       onSuccess()
     } catch (err: any) {
+      const isPermissionError = err?.code === '42501' || err?.message?.includes('permission')
       toast({
-        title: 'Erro',
-        description: err.message || 'Falha ao distribuir',
+        title: isPermissionError ? 'Acesso Negado' : 'Erro',
+        description: isPermissionError
+          ? 'Privilégios insuficientes para distribuir projetos.'
+          : err.message || 'Falha ao distribuir',
         variant: 'destructive',
       })
     } finally {
