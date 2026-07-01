@@ -88,8 +88,8 @@ const navLinkClass = (isActive: boolean) =>
   cn(
     'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
     isActive
-      ? 'bg-orange-500/15 text-orange-400 border-l-[3px] border-orange-500'
-      : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-[3px] border-transparent',
+      ? 'bg-orange-500/15 text-orange-600 border-l-[3px] border-orange-500'
+      : 'text-black hover:bg-black/5 hover:text-gray-900 border-l-[3px] border-transparent',
   )
 
 function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
@@ -113,16 +113,16 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-black/40 backdrop-blur-xl border-r border-white/10 transform transition-transform duration-300 md:relative md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-white/80 backdrop-blur-xl border-r border-gray-200/60 transform transition-transform duration-300 md:relative md:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/60">
           <img src={logoUrl} alt="SD3 Logo" className="h-8 object-contain" />
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-gray-400 hover:text-white hover:bg-white/5"
+            className="md:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             onClick={() => setIsOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -182,7 +182,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
             {canSeeAdmin && (
               <div className="pt-5">
                 <div className="px-3 mb-2">
-                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">
                     Administração
                   </span>
                 </div>
