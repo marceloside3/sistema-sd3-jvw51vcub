@@ -232,8 +232,8 @@ export default function PaperEditPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
-  if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
+  if (loading) return <div className="p-8 text-center text-zinc-500">Carregando...</div>
+  if (!project) return <div className="p-8 text-center text-zinc-500">Projeto não encontrado</div>
 
   const canReview = isAdmin || isPlanningDirector
   const latestReview = reviews.length > 0 ? reviews[0] : null
@@ -252,13 +252,13 @@ export default function PaperEditPage() {
             <h1 className="text-2xl font-bold">Paper do Projeto</h1>
             {currentPaper ? (
               <>
-                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
+                <Badge variant="outline" className="bg-zinc-100 text-zinc-800 border-zinc-300">
                   v{currentPaper.version}
                 </Badge>
                 <G3StatusBadge paper={currentPaper} approverName={approverName} />
               </>
             ) : (
-              <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+              <Badge variant="outline" className="bg-zinc-100 text-zinc-600 border-zinc-200">
                 Novo Rascunho
               </Badge>
             )}
@@ -433,7 +433,7 @@ export default function PaperEditPage() {
                   )}
                 </div>
                 <Button
-                  className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                  className="transition-all duration-300 ease-smooth hover:scale-[1.02] hover:shadow-md"
                   onClick={handleSubmitToG3}
                   disabled={submitting || missingFields.length > 0}
                 >
@@ -459,7 +459,7 @@ export default function PaperEditPage() {
                 </p>
               )}
               <Button
-                className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                className="transition-all duration-300 ease-smooth hover:scale-[1.02] hover:shadow-md"
                 onClick={handleCreateVersion}
                 disabled={creatingVersion}
                 variant="default"
@@ -522,13 +522,13 @@ export default function PaperEditPage() {
               )}
 
               {!canReview && currentPaper.status !== 'submitted' && (
-                <div className="p-8 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50">
+                <div className="p-8 text-center text-zinc-500 border border-dashed rounded-lg bg-zinc-50">
                   O painel de revisão G3 aparece quando há um paper aguardando aprovação.
                 </div>
               )}
             </>
           ) : (
-            <div className="p-8 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50">
+            <div className="p-8 text-center text-zinc-500 border border-dashed rounded-lg bg-zinc-50">
               Crie um paper primeiro para acessar o Gate G3.
             </div>
           )}

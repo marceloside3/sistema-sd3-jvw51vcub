@@ -33,42 +33,39 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-200 px-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/8 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
         <div className="text-center mb-8 flex flex-col items-center">
-          <img src={logoUrl} alt="SD3 Logo" className="h-14 object-contain mb-6 drop-shadow-lg" />
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">
+          <img src={logoUrl} alt="SD3 Logo" className="h-20 object-contain mb-6 drop-shadow-sm" />
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 mb-2">
             Sistema Operacional
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-zinc-500 text-sm">
             Agência de Marketing — Plataforma de Gestão Integrada
           </p>
         </div>
 
-        <div className="glass-card rounded-2xl p-8 shadow-premium-lg">
+        <div className="glass-card rounded-2xl p-8 premium-shadow-lg">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="text-center mb-2">
-              <h2 className="text-xl font-bold text-white">Bem-vindo de volta</h2>
-              <p className="text-gray-400 text-sm mt-1">Acesse sua conta para continuar</p>
+              <h2 className="text-xl font-bold text-zinc-900">Bem-vindo de volta</h2>
+              <p className="text-zinc-500 text-sm mt-1">Acesse sua conta para continuar</p>
             </div>
 
             {error && (
-              <Alert
-                variant="destructive"
-                className="py-2.5 bg-red-500/10 border-red-500/20 text-red-300"
-              >
+              <Alert variant="destructive" className="py-2.5 bg-red-50 border-red-200 text-red-700">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="ml-2 font-medium">{error}</AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300 text-sm font-medium">
+              <Label htmlFor="email" className="text-zinc-700 text-sm font-medium">
                 Email
               </Label>
               <Input
@@ -78,18 +75,18 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-orange-500/50 focus:bg-white/10 transition-all duration-200"
+                className="bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-orange-500/50 focus:ring-orange-500/20 transition-all duration-300 ease-smooth"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-gray-300 text-sm font-medium">
+                <Label htmlFor="password" className="text-zinc-700 text-sm font-medium">
                   Senha
                 </Label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs font-medium text-orange-400 hover:text-orange-300 transition-colors"
+                  className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors duration-300 ease-smooth"
                 >
                   Esqueci minha senha
                 </Link>
@@ -100,13 +97,13 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-orange-500/50 focus:bg-white/10 transition-all duration-200"
+                className="bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-orange-500/50 focus:ring-orange-500/20 transition-all duration-300 ease-smooth"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300 hover:scale-[1.02] group"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/30 transition-all duration-300 ease-smooth hover:scale-[1.02] group"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -117,14 +114,14 @@ export default function Login() {
               ) : (
                 <>
                   Entrar
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 ease-smooth group-hover:translate-x-0.5" />
                 </>
               )}
             </Button>
           </form>
         </div>
 
-        <p className="text-center text-gray-500 text-xs mt-6">
+        <p className="text-center text-zinc-400 text-xs mt-6">
           © 2026 SD3 — Agência de Marketing. Todos os direitos reservados.
         </p>
       </div>

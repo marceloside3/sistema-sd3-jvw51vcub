@@ -22,74 +22,12 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import logoUrl from '@/assets/logoside3-0c37e.png'
 
-const useQueryClient = () => {
-  const { clearCache } = useCurrentUser()
-  return {
-    clear: () => {
-      if (typeof clearCache === 'function') {
-        clearCache()
-      }
-    },
-  }
-}
-
-function BrandLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = {
-    sm: { box: 'w-8 h-8', text: 'text-lg' },
-    md: { box: 'w-10 h-10', text: 'text-xl' },
-    lg: { box: 'w-14 h-14', text: 'text-2xl' },
-  }
-  const s = sizes[size]
-
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className={cn(
-          s.box,
-          'rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-brand shrink-0',
-        )}
-      >
-        <span className="text-white font-extrabold tracking-tighter">SD3</span>
-      </div>
-      {size !== 'sm' && (
-        <span className={cn(s.text, 'font-extrabold tracking-tighter text-gray-900')}>
-          Sistema <span className="text-orange-500">Operacional</span>
-        </span>
-      )}
-    </div>
-  )
-}
-
-function BrandLogoDark({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const sizes = {
-    sm: { box: 'w-8 h-8', text: 'text-lg' },
-    md: { box: 'w-10 h-10', text: 'text-xl' },
-  }
-  const s = sizes[size]
-
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className={cn(
-          s.box,
-          'rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0',
-        )}
-      >
-        <span className="text-white font-extrabold tracking-tighter text-sm">SD3</span>
-      </div>
-      {size === 'md' && (
-        <span className={cn(s.text, 'font-extrabold tracking-tighter text-white')}>SD3</span>
-      )}
-    </div>
-  )
-}
-
 const navLinkClass = (isActive: boolean) =>
   cn(
-    'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+    'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 ease-smooth',
     isActive
-      ? 'bg-orange-500/15 text-orange-600 border-l-[3px] border-orange-500'
-      : 'text-black hover:bg-black/5 hover:text-gray-900 border-l-[3px] border-transparent',
+      ? 'bg-orange-500/15 text-orange-400 border-l-[3px] border-orange-500'
+      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 border-l-[3px] border-transparent',
   )
 
 function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
@@ -98,7 +36,6 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
   const canSeeAdmin = data?.profile?.is_admin || data?.profile?.is_director
   const canSeeHub =
     data?.profile && ['super_admin', 'atendimento', 'planejamento'].includes(data.profile.code)
-
   const canSeeAudit =
     data?.profile?.is_admin || (data?.profile?.is_director && data?.areas?.some((a) => a.is_hub))
 
@@ -106,23 +43,23 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-white/80 backdrop-blur-xl border-r border-gray-200/60 transform transition-transform duration-300 md:relative md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 transform transition-transform duration-300 ease-smooth md:relative md:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/60">
-          <img src={logoUrl} alt="SD3 Logo" className="h-8 object-contain" />
+        <div className="h-16 flex items-center justify-between px-5 border-b border-zinc-800">
+          <img src={logoUrl} alt="SD3" className="h-9 object-contain" />
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-300 ease-smooth"
             onClick={() => setIsOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -140,7 +77,6 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <Home fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Início
             </Link>
-
             <Link
               to="/projetos"
               onClick={() => setIsOpen(false)}
@@ -149,7 +85,6 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <FolderKanban fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Projetos
             </Link>
-
             <Link
               to="/minhas-demandas"
               onClick={() => setIsOpen(false)}
@@ -158,7 +93,6 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <CheckSquare fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Minhas Demandas
             </Link>
-
             <Link
               to="/notificacoes"
               onClick={() => setIsOpen(false)}
@@ -167,7 +101,6 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <Bell fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Notificações
             </Link>
-
             {canSeeHub && (
               <Link
                 to="/hub"
@@ -178,11 +111,10 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                 HUB Atendimento
               </Link>
             )}
-
             {canSeeAdmin && (
               <div className="pt-5">
                 <div className="px-3 mb-2">
-                  <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
                     Administração
                   </span>
                 </div>
@@ -241,46 +173,43 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
 
 function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const { signOut } = useAuth()
-  const { data } = useCurrentUser()
+  const { data, clearCache } = useCurrentUser() as any
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
 
   const handleLogout = async () => {
-    queryClient.clear()
+    if (typeof clearCache === 'function') clearCache()
     await signOut()
     navigate('/login', { replace: true })
   }
 
   return (
-    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-10">
+    <header className="h-16 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md border-b border-zinc-200 sticky top-0 z-10">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden text-gray-600"
+          className="md:hidden text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-300 ease-smooth"
           onClick={onMenuClick}
         >
           <Menu className="w-5 h-5" />
         </Button>
-        <div className="md:hidden">
-          <img src={logoUrl} alt="SD3 Logo" className="h-8 object-contain" />
-        </div>
+        <img src={logoUrl} alt="SD3" className="h-8 object-contain md:hidden" />
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
         <NotificationBell />
         {data && (
           <div className="flex flex-col items-end">
-            <span className="text-sm font-medium text-gray-900 leading-none">{data.full_name}</span>
-            <span className="text-xs text-gray-500 mt-1">{data.profile?.name || 'Sem perfil'}</span>
+            <span className="text-sm font-medium text-zinc-900 leading-none">{data.full_name}</span>
+            <span className="text-xs text-zinc-500 mt-1">{data.profile?.name || 'Sem perfil'}</span>
           </div>
         )}
-        <div className="w-px h-8 bg-gray-200" />
+        <div className="w-px h-8 bg-zinc-200" />
         <Button
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
+          className="text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300 ease-smooth"
         >
           <LogOut className="w-4 h-4 md:mr-2" />
           <span className="hidden md:inline">Sair</span>
@@ -294,7 +223,7 @@ export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-zinc-50">
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />
