@@ -64,6 +64,8 @@ export default function ProjetoDetalhePage() {
   const [loading, setLoading] = useState(true)
   const [userLoaded, setUserLoaded] = useState(false)
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
+  const [distributing, setDistributing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -129,7 +131,7 @@ export default function ProjetoDetalhePage() {
 
   const isDataReady = !loading && !userLoading && !!project && !!userCtx
 
-  if (loading || isDistributionModalOpen) {
+  if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
         <div className="flex items-center gap-4">
@@ -138,7 +140,7 @@ export default function ProjetoDetalhePage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-300">Carregando projeto...</h1>
-            <p className="text-sm text-gray-400">Aguarde enquanto processamos a distribuição.</p>
+            <p className="text-sm text-gray-400">Aguarde enquanto carregamos os dados.</p>
           </div>
         </div>
         <div className="border rounded-lg bg-white p-12 shadow-sm text-center">
@@ -236,9 +238,16 @@ export default function ProjetoDetalhePage() {
                 size="sm"
                 className="ml-2"
                 onClick={() => setIsDistributionModalOpen(true)}
-                disabled={!isDataReady}
+                disabled={!isDataReady || distributing}
               >
-                Distribuir para áreas
+                {distributing ? (
+                  <>
+                    <div className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    Distribuindo...
+                  </>
+                ) : (
+                  'Distribuir para áreas'
+                )}
               </Button>
             )}
             {project.distributed_at && (
@@ -515,13 +524,13 @@ export default function ProjetoDetalhePage() {
         </TabsContent>
       </Tabs>
 
-      {isDistributionModalOpen && userLoaded && (
+      {isDistributionModalOpen && (
         <DistributionModal
           projectId={project.id}
           projectAreas={project.areas}
           onSuccess={() => {
             setIsDistributionModalOpen(false)
-            setLoading(true)
+            setRefreshing(true)
             Promise.all([
               getProjectById(id || ''),
               getProjectDemands(id || ''),
@@ -540,10 +549,16 @@ export default function ProjetoDetalhePage() {
                     'Distribuição concluída, mas houve erro ao recarregar os dados. Recarregue a página.',
                 })
               })
-              .finally(() => setLoading(false))
+              .finally(() => setRefreshing(false))
           }}
           onClose={() => setIsDistributionModalOpen(false)}
         />
+      )}
+
+      {refreshing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+        </div>
       )}
     </div>
   )
