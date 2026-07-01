@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2, Save, CheckCircle2, CloudOff } from 'lucide-react'
+import { Loader2, Save, CheckCircle2, CloudOff, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -69,7 +69,7 @@ interface PaperInputsTabProps {
 }
 
 export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInputsTabProps) {
-  const { user } = useCurrentUser()
+  const { data: currentUser } = useCurrentUser()
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -87,6 +87,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
   const [loading, setLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [retrySignal, setRetrySignal] = useState(0)
 
   const onReloadRef = useRef(onReload)
   onReloadRef.current = onReload
@@ -95,6 +96,8 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
   const paperRef = useRef(paper)
   paperRef.current = paper
   const lastSavedFormRef = useRef<Record<string, string> | null>(null)
+  const currentUserRef = useRef(currentUser)
+  currentUserRef.current = currentUser
 
   useEffect(() => {
     if (paper) {
@@ -137,8 +140,13 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         form.budget_allocation !== parseJsonArrayToString(currentPaper.budget_allocation)
       : Object.values(form).some((v) => v.trim() !== '')
 
-    if (!hasChanges) {
+    if (!hasChanges && retrySignal === 0) {
       if (saveStatus !== 'idle' && saveStatus !== 'error') setSaveStatus('idle')
+      return
+    }
+
+    if (!hasChanges && saveStatus !== 'error') {
+      if (saveStatus !== 'idle') setSaveStatus('idle')
       return
     }
 
@@ -182,13 +190,13 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
           if (error) throw error
           lastSavedFormRef.current = { ...form }
           onReloadRef.current()
-        } else if (project?.id && user?.id) {
+        } else if (project?.id && currentUserRef.current?.id) {
           const { error } = await supabase.from('project_papers').insert({
             ...payload,
             project_id: project.id,
             status: 'draft',
             version: 1,
-            created_by: user.id,
+            created_by: currentUserRef.current.id,
           })
           if (error) throw error
           onReloadRef.current()
@@ -202,17 +210,21 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         setSaveStatus('error')
         toastRef.current({
           title: 'Erro no salvamento automático',
-          description: 'Verifique sua conexão. Tentaremos salvar novamente.',
+          description: 'Verifique sua conexão. Clique em "Tentar novamente" para repetir.',
           variant: 'destructive',
         })
       }
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [form, readOnly, project?.id, user?.id])
+  }, [form, readOnly, project?.id, retrySignal])
+
+  const handleRetry = () => {
+    setRetrySignal((s) => s + 1)
+  }
 
   const handleSave = async () => {
-    if (!project || !user) return
+    if (!project || !currentUser) return
     setLoading(true)
     setSaveStatus('saving')
 
@@ -250,7 +262,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         const { error } = await supabase.from('project_papers').insert({
           ...payload,
           version: 1,
-          created_by: user.id,
+          created_by: currentUser.id,
         })
         if (error) throw error
         eventType = 'paper_created'
@@ -308,8 +320,19 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
             </span>
           )}
           {saveStatus === 'error' && (
-            <span className="flex items-center text-sm text-red-500 gap-1">
-              <CloudOff className="w-3 h-3" /> Erro ao salvar
+            <span className="flex items-center gap-2">
+              <span className="flex items-center text-sm text-red-500 gap-1">
+                <CloudOff className="w-3 h-3" /> Erro ao salvar
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRetry}
+                className="h-7 text-xs gap-1"
+              >
+                <RotateCw className="w-3 h-3" />
+                Tentar novamente
+              </Button>
             </span>
           )}
         </div>
