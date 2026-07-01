@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import logoUrl from '@/assets/logoside3-0c37e.png'
+import iconUrl from '@/assets/icone3-6f0c6.png'
 
 const navLinkClass = (isActive: boolean) =>
   cn(
@@ -33,11 +33,14 @@ const navLinkClass = (isActive: boolean) =>
 function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
   const location = useLocation()
   const { data } = useCurrentUser()
-  const canSeeAdmin = data?.profile?.is_admin || data?.profile?.is_director
+  const canSeeAdmin =
+    data?.profile?.is_admin || data?.profile?.is_director || data?.profile?.is_system
   const canSeeHub =
     data?.profile && ['super_admin', 'atendimento', 'planejamento'].includes(data.profile.code)
   const canSeeAudit =
-    data?.profile?.is_admin || (data?.profile?.is_director && data?.areas?.some((a) => a.is_hub))
+    data?.profile?.is_admin ||
+    data?.profile?.is_system ||
+    (data?.profile?.is_director && data?.areas?.some((a) => a.is_hub))
 
   return (
     <>
@@ -55,7 +58,13 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
         )}
       >
         <div className="h-16 flex items-center justify-between px-5 border-b border-zinc-800">
-          <img src={logoUrl} alt="SD3" className="h-9 object-contain" />
+          <div className="flex-shrink-0 flex items-center justify-start h-full w-[30%] max-w-[80px]">
+            <img
+              src={iconUrl}
+              alt="SD3"
+              className="w-full h-auto object-contain transform origin-left transition-transform duration-300 ease-smooth"
+            />
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -193,7 +202,13 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
         >
           <Menu className="w-5 h-5" />
         </Button>
-        <img src={logoUrl} alt="SD3" className="h-8 object-contain md:hidden" />
+        <div className="md:hidden flex-shrink-0 flex items-center justify-end h-full w-[30%] max-w-[60px]">
+          <img
+            src={iconUrl}
+            alt="SD3"
+            className="w-full h-auto object-contain transform origin-right transition-transform duration-300 ease-smooth"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-4 ml-auto">

@@ -23,6 +23,7 @@ interface Profile {
   name: string
   is_admin: boolean
   is_director: boolean
+  is_system: boolean
   is_active: boolean
 }
 
@@ -70,7 +71,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
             .from('users')
             .select(
               `id, email, full_name, is_active,
-              profile:profiles(id, code, name, is_admin, is_director, is_active)`,
+              profile:profiles(id, code, name, is_admin, is_director, is_system, is_active)`,
             )
             .eq('id', user.id)
             .maybeSingle(),

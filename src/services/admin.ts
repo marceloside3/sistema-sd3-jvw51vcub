@@ -10,7 +10,7 @@ export const getUsers = async (
   let query = supabase.from('users').select(
     `
     id, full_name, email, is_active, last_login_at, profile_id,
-    profile:profiles(id, name, is_admin),
+    profile:profiles(id, name, is_admin, is_system),
     areas:area_responsibles(is_principal, area:areas(id, name))
   `,
     { count: 'exact' },

@@ -43,7 +43,8 @@ import { Search, Plus, Edit2 } from 'lucide-react'
 
 export default function UsersPage() {
   const { data: currentUser } = useCurrentUser()
-  const isAdmin = currentUser?.profile?.is_admin === true
+  const isAdmin =
+    currentUser?.profile?.is_admin === true || currentUser?.profile?.is_system === true
 
   const [users, setUsers] = useState<any[]>([])
   const [profiles, setProfiles] = useState<any[]>([])
