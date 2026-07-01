@@ -266,10 +266,15 @@ BEGIN
     -- Ensure user is linked to planejamento area as principal
     SELECT id INTO v_area_id FROM public.areas WHERE code = 'planejamento';
     IF v_area_id IS NOT NULL THEN
+      -- Demote any existing principal for this area to respect the
+      -- unique_principal_per_area partial unique index (one principal per area)
+      UPDATE public.area_responsibles
+      SET is_principal = false, updated_at = NOW()
+      WHERE area_id = v_area_id AND is_principal = true AND user_id <> v_user_id;
+
       INSERT INTO public.area_responsibles (user_id, area_id, is_principal)
       VALUES (v_user_id, v_area_id, true)
       ON CONFLICT (user_id, area_id) DO UPDATE SET
         is_principal = true;
-    END IF;
-  END IF;
+    END IF;  END IF;
 END $$;
