@@ -49,13 +49,20 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 export default function ProjetoDetalhePage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data: userCtx } = useCurrentUser()
+  const { data: userCtx, loading: userLoading } = useCurrentUser()
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (!userLoading && userCtx) {
+      setUserLoaded(true)
+    }
+  }, [userCtx, userLoading])
 
   const [project, setProject] = useState<any>(null)
   const [demands, setDemands] = useState<any[]>([])
   const [papers, setPapers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [userLoading, setUserLoading] = useState(true)
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
 
   useEffect(() => {
@@ -119,6 +126,14 @@ export default function ProjetoDetalhePage() {
       })
     }
   }
+
+  useEffect(() => {
+    if (userCtx !== undefined && userCtx !== null) {
+      setUserLoading(false)
+    }
+  }, [userCtx])
+
+  const isDataReady = !loading && !userLoading && !!project && !!userCtx
 
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
   if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
@@ -205,7 +220,12 @@ export default function ProjetoDetalhePage() {
               </Button>
             )}
             {canDistribute && (
-              <Button size="sm" className="ml-2" onClick={() => setIsDistributionModalOpen(true)}>
+              <Button
+                size="sm"
+                className="ml-2"
+                onClick={() => setIsDistributionModalOpen(true)}
+                disabled={!isDataReady}
+              >
                 Distribuir para áreas
               </Button>
             )}
@@ -483,7 +503,7 @@ export default function ProjetoDetalhePage() {
         </TabsContent>
       </Tabs>
 
-      {isDistributionModalOpen && (
+      {isDistributionModalOpen && userLoaded && (
         <DistributionModal
           projectId={project.id}
           projectAreas={project.areas}

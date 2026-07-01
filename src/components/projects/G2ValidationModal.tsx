@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { CheckCircle2, AlertCircle, XCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle, XCircle, Loader2 } from 'lucide-react'
 
 interface Issue {
   rule: string
@@ -19,8 +19,8 @@ interface Issue {
 
 interface ValidationResult {
   is_valid: boolean
-  issues_count: number
-  issues: Issue[]
+  issues_count?: number
+  issues?: Issue[] | null
 }
 
 interface Props {
@@ -42,9 +42,21 @@ export function G2ValidationModal({
 }: Props) {
   const [reason, setReason] = useState('')
 
+  useEffect(() => {
+    if (!open) {
+      setReason('')
+    }
+  }, [open])
+
   if (!validationResult) return null
 
-  const isValid = validationResult.is_valid
+  const issues: Issue[] = Array.isArray(validationResult.issues) ? validationResult.issues : []
+
+  const isValid = validationResult.is_valid === true
+  const issuesCount =
+    typeof validationResult.issues_count === 'number'
+      ? validationResult.issues_count
+      : issues.length
 
   return (
     <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
@@ -64,18 +76,41 @@ export function G2ValidationModal({
           <DialogDescription>
             {isValid
               ? 'O projeto atende a todos os requisitos de qualidade para distribuição.'
-              : 'Foram encontradas não conformidades no briefing. Revise as pendências abaixo.'}
-          </DialogDescription>
+              : `${issuesCount} ${issuesCount === 1 ? 'pendência encontrada' : 'pendências encontradas'} no briefing. Revise abaixo.`}
+          </DialogDescription>{' '}
         </DialogHeader>
 
         <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-          {!isValid && (
+          {isValid && (
+            <Alert className="border-green-200 bg-green-50 text-green-800">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-sm font-medium">
+                Tudo certo! O projeto está pronto para ser distribuído às áreas.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!isValid && issues.length === 0 && (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm">
+                A validação retornou pendências, mas não foi possível detalhar os itens. Verifique o
+                briefing manualmente antes de prosseguir.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!isValid && issues.length > 0 && (
             <div className="space-y-3">
-              {validationResult.issues.map((issue, idx) => (
+              {issues.map((issue, idx) => (
                 <Alert key={idx} variant="destructive">
                   <XCircle className="h-4 w-4" />
-                  <AlertTitle className="text-sm font-semibold">{issue.rule}</AlertTitle>
-                  <AlertDescription className="text-xs mt-1">{issue.message}</AlertDescription>
+                  <AlertTitle className="text-sm font-semibold">
+                    {issue.rule || 'Pendência'}
+                  </AlertTitle>
+                  <AlertDescription className="text-xs mt-1">
+                    {issue.message || 'Sem descrição detalhada.'}
+                  </AlertDescription>
                 </Alert>
               ))}
             </div>
@@ -120,7 +155,14 @@ export function G2ValidationModal({
         <DialogFooter>
           {isValid ? (
             <Button onClick={() => onConfirm()} disabled={submitting}>
-              {submitting ? 'Distribuindo...' : 'Prosseguir com Distribuição'}
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Distribuindo...
+                </>
+              ) : (
+                'Prosseguir com Distribuição'
+              )}
             </Button>
           ) : (
             <div className="flex gap-2 w-full justify-end">
@@ -139,7 +181,14 @@ export function G2ValidationModal({
                     onClick={() => onConfirm(reason)}
                     disabled={reason.length < 30 || submitting}
                   >
-                    {submitting ? 'Distribuindo...' : 'Forçar Distribuição'}
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Distribuindo...
+                      </>
+                    ) : (
+                      'Forçar Distribuição'
+                    )}
                   </Button>
                 </>
               )}

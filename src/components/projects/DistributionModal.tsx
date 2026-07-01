@@ -54,6 +54,7 @@ export function DistributionModal({
   const [valModalOpen, setValModalOpen] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
   const [canOverride, setCanOverride] = useState(false)
+  const [userReady, setUserReady] = useState(false)
 
   useEffect(() => {
     async function fetchPrincipals() {
@@ -121,6 +122,16 @@ export function DistributionModal({
       return
     }
 
+    if (!projectId) {
+      toast({
+        title: 'Erro',
+        description: 'ID do projeto não encontrado.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setUserReady(true)
     setSubmitting(true)
     try {
       const [valRes, canOverrideRes] = await Promise.all([
@@ -128,8 +139,19 @@ export function DistributionModal({
         checkCanOverrideG2(),
       ])
 
-      setValidationResult(valRes)
-      setCanOverride(canOverrideRes)
+      const safeResult = {
+        is_valid: valRes?.is_valid === true,
+        issues_count:
+          typeof valRes?.issues_count === 'number'
+            ? valRes.issues_count
+            : Array.isArray(valRes?.issues)
+              ? valRes.issues.length
+              : 0,
+        issues: Array.isArray(valRes?.issues) ? valRes.issues : [],
+      }
+
+      setValidationResult(safeResult)
+      setCanOverride(canOverrideRes === true)
       setValModalOpen(true)
     } catch (err: any) {
       const isPermissionError = err?.code === '42501' || err?.message?.includes('permission')
@@ -161,14 +183,22 @@ export function DistributionModal({
         description: `Distribuição concluída — demandas criadas`,
       })
       setValModalOpen(false)
+      setValidationResult(null)
       onSuccess()
     } catch (err: any) {
       const isPermissionError = err?.code === '42501' || err?.message?.includes('permission')
+      const isUniqueViolation = err?.code === '23505' || err?.message?.includes('unique')
       toast({
-        title: isPermissionError ? 'Acesso Negado' : 'Erro',
+        title: isPermissionError
+          ? 'Acesso Negado'
+          : isUniqueViolation
+            ? 'Conflito de Dados'
+            : 'Erro',
         description: isPermissionError
           ? 'Privilégios insuficientes para distribuir projetos.'
-          : err.message || 'Falha ao distribuir',
+          : isUniqueViolation
+            ? 'Já existe um registro de distribuição para este projeto. Recarregue a página.'
+            : err.message || 'Falha ao distribuir',
         variant: 'destructive',
       })
     } finally {
@@ -239,8 +269,11 @@ export function DistributionModal({
       </DialogContent>
 
       <G2ValidationModal
-        open={valModalOpen}
-        onClose={() => setValModalOpen(false)}
+        open={valModalOpen && userReady}
+        onClose={() => {
+          setValModalOpen(false)
+          setUserReady(false)
+        }}
         onConfirm={handleConfirmDistribution}
         validationResult={validationResult}
         canOverride={canOverride}
