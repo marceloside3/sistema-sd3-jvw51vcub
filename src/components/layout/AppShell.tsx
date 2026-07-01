@@ -36,7 +36,12 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
   const canSeeAdmin =
     data?.profile?.is_admin || data?.profile?.is_director || data?.profile?.is_system
   const canSeeHub =
-    data?.profile && ['super_admin', 'atendimento', 'planejamento'].includes(data.profile.code)
+    (data?.profile &&
+      ['super_admin', 'atendimento', 'planejamento', 'admin', 'diretor'].includes(
+        data.profile.code,
+      )) ||
+    data?.profile?.is_admin ||
+    data?.profile?.is_director
   const canSeeAudit =
     data?.profile?.is_admin ||
     data?.profile?.is_system ||
