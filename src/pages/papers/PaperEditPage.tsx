@@ -155,13 +155,14 @@ export default function PaperEditPage() {
     return currentUserData.areas?.some((a) => a.code?.toLowerCase() === 'planejamento') ?? false
   }, [currentUserData])
 
+  const isDirector = currentUserData?.profile?.is_director ?? false
+
   const isPlanningDirector = useMemo(() => {
     if (!currentUserData) return false
-    const isDirector = currentUserData.profile?.is_director ?? false
     return isDirector && isPlanningArea
-  }, [currentUserData, isPlanningArea])
+  }, [currentUserData, isPlanningArea, isDirector])
 
-  const canEditPaper = isPaperOwner || isPlanningArea || isAdmin
+  const canEditPaper = isPaperOwner || isPlanningArea || isAdmin || isDirector
 
   const missingFields = useMemo(() => {
     if (!currentPaper) return REQUIRED_FIELDS.map((f) => f.label)
