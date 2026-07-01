@@ -66,8 +66,16 @@ export default function ProjetoDetalhePage() {
         setDemands(demandsData || [])
         setPapers(papersData || [])
       })
+      .catch((error) => {
+        console.error('Error loading project data:', error)
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível carregar os dados do projeto.',
+          variant: 'destructive',
+        })
+      })
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, toast])
 
   const handleCreatePaper = () => {
     if (!id) return
@@ -76,6 +84,14 @@ export default function ProjetoDetalhePage() {
 
   const handleStatusChange = async (newStatus: string) => {
     if (!project || project.status === newStatus) return
+    if (!userCtx?.id) {
+      toast({
+        title: 'Aguarde',
+        description: 'Carregando dados do usuário. Tente novamente em instantes.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     const confirmed = window.confirm(
       `Mudar status para "${STATUS_LABELS[newStatus] || newStatus}"? Diretores serão notificados.`,
@@ -87,8 +103,8 @@ export default function ProjetoDetalhePage() {
         project.id,
         newStatus,
         project.name,
-        userCtx?.id || '',
-        userCtx?.full_name || 'Usuário',
+        userCtx.id,
+        userCtx.full_name || 'Usuário',
       )
       setProject((prev: any) => ({ ...prev, status: newStatus }))
       toast({ title: 'Sucesso', description: 'Status do projeto atualizado com sucesso.' })
@@ -121,7 +137,7 @@ export default function ProjetoDetalhePage() {
   const isAllowedToDistribute = isAdmin || isDirector || isPlanningArea
 
   const canViewPaperSection = !!project.distributed_at
-  const canCreatePaper = project.distributed_at && (isAdmin || isDirector || isPlanningArea)
+  const canCreatePaper = !!project.distributed_at && (isAdmin || isDirector || isPlanningArea)
   const currentPaper = papers[0]
 
   const canDistribute =
@@ -483,6 +499,14 @@ export default function ProjetoDetalhePage() {
                 setProject(projData)
                 setDemands(demandsData || [])
                 setPapers(papersData || [])
+              })
+              .catch((error) => {
+                console.error('Error reloading project after distribution:', error)
+                toast({
+                  title: 'Aviso',
+                  description:
+                    'Distribuição concluída, mas houve erro ao recarregar os dados. Recarregue a página.',
+                })
               })
               .finally(() => setLoading(false))
           }}
