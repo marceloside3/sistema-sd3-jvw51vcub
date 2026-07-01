@@ -126,50 +126,8 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
             <h4 className="text-sm font-medium mb-3">Resumo dos 8 Inputs Estratégicos</h4>
             <dl className="space-y-2 text-sm">
               <div>
-                <dt className="text-muted-foreground">Objetivo Refinado:</dt>
+                <dt className="text-muted-foreground">Informações Paper:</dt>
                 <dd className="whitespace-pre-wrap">{paper.refined_objective || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Mensagem Principal:</dt>
-                <dd className="whitespace-pre-wrap">{paper.key_message || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Premissas e Restrições:</dt>
-                <dd className="whitespace-pre-wrap">{paper.premises_restrictions || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">KPIs:</dt>
-                <dd className="whitespace-pre-wrap">
-                  {Array.isArray(paper.kpis) ? paper.kpis.join(', ') : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Personas:</dt>
-                <dd className="whitespace-pre-wrap">
-                  {Array.isArray(paper.personas) ? paper.personas.join(', ') : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Prioridade de Canais:</dt>
-                <dd className="whitespace-pre-wrap">
-                  {Array.isArray(paper.channels_priority)
-                    ? paper.channels_priority.join(', ')
-                    : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Alocação de Verba:</dt>
-                <dd className="whitespace-pre-wrap">
-                  {Array.isArray(paper.budget_allocation)
-                    ? paper.budget_allocation.join(', ')
-                    : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Timeline:</dt>
-                <dd className="whitespace-pre-wrap">
-                  {Array.isArray(paper.timeline) ? paper.timeline.join(', ') : '—'}
-                </dd>
               </div>
             </dl>
           </div>

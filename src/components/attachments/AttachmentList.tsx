@@ -86,7 +86,7 @@ export function AttachmentList({ kind, entityId, refreshKey = 0 }: AttachmentLis
   const canDelete = (attachment: Attachment) => {
     if (!currentUser) return false
     if (currentUser.profile?.is_admin || currentUser.profile?.is_director) return true
-    return attachment.uploaded_by === currentUser.user.id
+    return attachment.uploaded_by === currentUser.id
   }
 
   if (isLoading) {

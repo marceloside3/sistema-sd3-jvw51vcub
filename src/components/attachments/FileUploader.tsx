@@ -19,7 +19,7 @@ export function FileUploader({ kind, entityId, onUploaded }: FileUploaderProps) 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
-    if (!currentUser?.user?.id) {
+    if (!currentUser?.id) {
       toast.error('Usuário não autenticado.')
       return
     }
@@ -34,7 +34,7 @@ export function FileUploader({ kind, entityId, onUploaded }: FileUploaderProps) 
       }
 
       try {
-        await uploadAttachment(kind, entityId, file, currentUser.user.id)
+        await uploadAttachment(kind, entityId, file, currentUser.id)
         toast.success(`${file.name} enviado com sucesso`)
         uploadedCount++
       } catch (error: any) {

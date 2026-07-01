@@ -29,16 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const REQUIRED_FIELDS = [
-  { key: 'refined_objective', label: 'Objetivo Refinado' },
-  { key: 'personas', label: 'Personas', isArray: true },
-  { key: 'key_message', label: 'Mensagem Principal' },
-  { key: 'channels_priority', label: 'Prioridade de Canais', isArray: true },
-  { key: 'kpis', label: 'KPIs', isArray: true },
-  { key: 'timeline', label: 'Timeline', isArray: true },
-  { key: 'budget_allocation', label: 'Alocação de Verba', isArray: true },
-  { key: 'premises_restrictions', label: 'Premissas e Restrições' },
-]
+const REQUIRED_FIELDS = [{ key: 'refined_objective', label: 'Informações Paper' }]
 
 export default function PaperEditPage() {
   const { projectId } = useParams()
@@ -289,7 +280,7 @@ export default function PaperEditPage() {
       <Tabs defaultValue="inputs" className="w-full">
         <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="gerais">Dados Gerais</TabsTrigger>
-          <TabsTrigger value="inputs">8 Inputs Estratégicos</TabsTrigger>
+          <TabsTrigger value="inputs">Informações Paper</TabsTrigger>
           <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
           <TabsTrigger value="reuniao">Reunião de Passagem</TabsTrigger>
           <TabsTrigger value="g3">G3</TabsTrigger>
@@ -429,7 +420,7 @@ export default function PaperEditPage() {
                     </p>
                   ) : (
                     <p className="text-xs text-green-600 mt-1">
-                      Todos os 8 inputs estão preenchidos. Pronto para submeter.
+                      Informações Paper preenchida. Pronto para submeter.
                     </p>
                   )}
                 </div>
