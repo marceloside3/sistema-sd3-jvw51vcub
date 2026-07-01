@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import {
   getUsers,
@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/use-toast'
 import {
   Dialog,
@@ -41,12 +42,34 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { format } from 'date-fns'
 import { Search, Plus, Edit2 } from 'lucide-react'
 
+interface UserArea {
+  is_principal: boolean
+  area: { id: string; name: string } | null
+}
+
+interface UserRow {
+  id: string
+  full_name: string
+  email: string
+  is_active: boolean
+  last_login_at: string | null
+  profile_id: string | null
+  profile: { id: string; name: string; is_admin: boolean; is_system: boolean } | null
+  areas: UserArea[] | null
+}
+
+function safeAreas(areas: UserArea[] | null | undefined): UserArea[] {
+  if (!Array.isArray(areas)) return []
+  return areas.filter((a) => a && a.area && a.area.id)
+}
+
 export default function UsersPage() {
-  const { data: currentUser } = useCurrentUser()
+  const { data: currentUser, loading: currentUserLoading } = useCurrentUser()
   const isAdmin =
     currentUser?.profile?.is_admin === true || currentUser?.profile?.is_system === true
+  const currentUserId = currentUser?.id ?? null
 
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<UserRow[]>([])
   const [profiles, setProfiles] = useState<any[]>([])
   const [allAreas, setAllAreas] = useState<any[]>([])
 
@@ -67,16 +90,26 @@ export default function UsersPage() {
     areas: [] as { area_id: string; is_principal: boolean }[],
   })
 
+  const isPageLoading = loading || currentUserLoading
+
+  const safeUsers = useMemo(
+    () => (Array.isArray(users) ? users.filter((u) => u && u.id && u.email) : []),
+    [users],
+  )
+
   useEffect(() => {
     loadData()
-    loadFilters()
   }, [page, search, profileFilter, statusFilter])
+
+  useEffect(() => {
+    loadFilters()
+  }, [])
 
   const loadData = async () => {
     setLoading(true)
     try {
       const res = await getUsers(page, 25, search, profileFilter, statusFilter)
-      setUsers(res.data || [])
+      setUsers((res.data || []) as UserRow[])
       setTotalPages(res.totalPages || 1)
     } catch (error) {
       toast({ title: 'Erro ao carregar usuários', variant: 'destructive' })
@@ -99,15 +132,16 @@ export default function UsersPage() {
     setIsModalOpen(true)
   }
 
-  const openEditUser = (u: any) => {
+  const openEditUser = (u: UserRow) => {
     setEditingUser(u)
     setFormData({
-      full_name: u.full_name,
-      email: u.email,
-      profile_id: u.profile_id,
-      areas: (u.areas || [])
-        .filter((a: any) => a?.area?.id)
-        .map((a: any) => ({ area_id: a.area!.id, is_principal: a.is_principal })),
+      full_name: u.full_name || '',
+      email: u.email || '',
+      profile_id: u.profile_id || '',
+      areas: safeAreas(u.areas).map((a) => ({
+        area_id: a.area!.id,
+        is_principal: a.is_principal,
+      })),
     })
     setIsModalOpen(true)
   }
@@ -139,8 +173,8 @@ export default function UsersPage() {
     }
   }
 
-  const handleToggleStatus = async (u: any) => {
-    if (u.id === currentUser?.user.id) {
+  const handleToggleStatus = async (u: UserRow) => {
+    if (!currentUserId || u.id === currentUserId) {
       return toast({
         title: 'Ação não permitida',
         description: 'Não pode desativar o próprio usuário',
@@ -166,15 +200,42 @@ export default function UsersPage() {
         full_name: u.full_name,
         profile_id: u.profile_id,
         is_active: !u.is_active,
-        areas: (u.areas || [])
-          .filter((a: any) => a?.area?.id)
-          .map((a: any) => ({ area_id: a.area!.id, is_principal: a.is_principal })),
+        areas: safeAreas(u.areas).map((a) => ({
+          area_id: a.area!.id,
+          is_principal: a.is_principal,
+        })),
       })
       toast({ title: u.is_active ? 'Usuário desativado' : 'Usuário reativado' })
       loadData()
     } catch (error: any) {
       toast({ title: 'Erro ao alterar status', variant: 'destructive' })
     }
+  }
+
+  if (isPageLoading && safeUsers.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-40" />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-lg border">
+          <Skeleton className="flex-1 h-10" />
+          <Skeleton className="w-[180px] h-10" />
+          <Skeleton className="w-[180px] h-10" />
+        </div>
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -246,79 +307,90 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => (
-              <TableRow key={u.id} className={!u.is_active ? 'opacity-60' : ''}>
-                <TableCell className="font-medium">{u.full_name}</TableCell>
-                <TableCell>{u.email}</TableCell>
-                <TableCell>{u.profile?.name}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1 flex-wrap">
-                    {(u.areas || [])
-                      .filter((a: any) => a?.area?.id)
-                      .map((a: any) => (
+            {safeUsers.length === 0 && !isPageLoading && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  Nenhum usuário encontrado.
+                </TableCell>
+              </TableRow>
+            )}
+            {safeUsers.map((u) => {
+              const userAreas = safeAreas(u.areas)
+              return (
+                <TableRow key={u.id} className={!u.is_active ? 'opacity-60' : ''}>
+                  <TableCell className="font-medium">{u.full_name}</TableCell>
+                  <TableCell>{u.email}</TableCell>
+                  <TableCell>{u.profile?.name ?? '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 flex-wrap">
+                      {userAreas.length === 0 && (
+                        <span className="text-xs text-muted-foreground">Sem área</span>
+                      )}
+                      {userAreas.map((a) => (
                         <Badge
-                          key={a.area!.id}
+                          key={a.area?.id}
                           variant={a.is_principal ? 'default' : 'secondary'}
                           className="text-xs"
                         >
                           {a.is_principal && <span className="mr-1">⭐</span>}
-                          {a.area?.name ?? 'Área removida'} {a.is_principal && '(Principal)'}
+                          {a.area?.name ?? 'Área removida'}
                         </Badge>
                       ))}
-                  </div>
-                </TableCell>{' '}
-                <TableCell>
-                  <Badge
-                    variant={u.is_active ? 'outline' : 'destructive'}
-                    className={u.is_active ? 'bg-green-50 text-green-700 border-green-200' : ''}
-                  >
-                    {u.is_active ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-gray-500">
-                  {u.last_login_at
-                    ? format(new Date(u.last_login_at), 'dd/MM/yyyy HH:mm')
-                    : 'Nunca'}
-                </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditUser(u)}
-                          disabled={!isAdmin || u.id === currentUser?.user.id}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {!isAdmin && <TooltipContent>Apenas administradores</TooltipContent>}
-                    {isAdmin && u.id === currentUser?.user.id && (
-                      <TooltipContent>Não é possível editar o próprio usuário</TooltipContent>
-                    )}
-                  </Tooltip>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={u.is_active ? 'outline' : 'destructive'}
+                      className={u.is_active ? 'bg-green-50 text-green-700 border-green-200' : ''}
+                    >
+                      {u.is_active ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-500">
+                    {u.last_login_at
+                      ? format(new Date(u.last_login_at), 'dd/MM/yyyy HH:mm')
+                      : 'Nunca'}
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditUser(u)}
+                            disabled={!isAdmin || u.id === currentUserId}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!isAdmin && <TooltipContent>Apenas administradores</TooltipContent>}
+                      {isAdmin && u.id === currentUserId && (
+                        <TooltipContent>Não é possível editar o próprio usuário</TooltipContent>
+                      )}
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          variant={u.is_active ? 'ghost' : 'default'}
-                          size="sm"
-                          onClick={() => handleToggleStatus(u)}
-                          disabled={!isAdmin || u.id === currentUser?.user.id}
-                          className={u.is_active ? 'text-red-600 hover:text-red-700' : ''}
-                        >
-                          {u.is_active ? 'Desativar' : 'Reativar'}
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {!isAdmin && <TooltipContent>Apenas administradores</TooltipContent>}
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            variant={u.is_active ? 'ghost' : 'default'}
+                            size="sm"
+                            onClick={() => handleToggleStatus(u)}
+                            disabled={!isAdmin || u.id === currentUserId}
+                            className={u.is_active ? 'text-red-600 hover:text-red-700' : ''}
+                          >
+                            {u.is_active ? 'Desativar' : 'Reativar'}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!isAdmin && <TooltipContent>Apenas administradores</TooltipContent>}
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -381,7 +453,7 @@ export default function UsersPage() {
               <Select
                 value={formData.profile_id}
                 onValueChange={(v) => setFormData({ ...formData, profile_id: v })}
-                disabled={!!editingUser && editingUser.id === currentUser?.user.id}
+                disabled={!!editingUser && editingUser.id === currentUserId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />

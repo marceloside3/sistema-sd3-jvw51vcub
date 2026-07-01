@@ -38,6 +38,7 @@ interface CurrentUserData {
 interface CurrentUserContextType {
   data: CurrentUserData | null
   loading: boolean
+  clearCache: () => void
 }
 
 const CurrentUserContext = createContext<CurrentUserContextType | undefined>(undefined)
@@ -54,6 +55,11 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [data, setData] = useState<CurrentUserData | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const clearCache = () => {
+    setData(null)
+    setLoading(true)
+  }
 
   useEffect(() => {
     if (!user) {
@@ -119,5 +125,9 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
-  return createElement(CurrentUserContext.Provider, { value: { data, loading } }, children)
+  return createElement(
+    CurrentUserContext.Provider,
+    { value: { data, loading, clearCache } },
+    children,
+  )
 }

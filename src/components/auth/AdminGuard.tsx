@@ -4,9 +4,9 @@ import { useCurrentUser } from '@/hooks/use-current-user'
 import { toast } from '@/components/ui/use-toast'
 
 export function AdminGuard({ children }: { children: ReactNode }) {
-  const { data, isLoading } = useCurrentUser()
+  const { data, loading } = useCurrentUser()
 
-  if (isLoading) {
+  if (loading) {
     return <div className="p-8 text-center text-gray-500">Verificando permissões...</div>
   }
 

@@ -182,7 +182,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
 
 function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const { signOut } = useAuth()
-  const { data, clearCache } = useCurrentUser() as any
+  const { data, clearCache } = useCurrentUser()
   const navigate = useNavigate()
 
   const handleLogout = async () => {

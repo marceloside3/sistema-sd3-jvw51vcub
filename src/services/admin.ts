@@ -28,8 +28,10 @@ export const getUsers = async (
     .range(from, to)
   if (error) throw error
 
+  const sanitizedData = (data || []).filter((u: any) => u && u.id && u.email)
+
   return {
-    data,
+    data: sanitizedData,
     total: count || 0,
     totalPages: Math.ceil((count || 0) / limit),
   }
