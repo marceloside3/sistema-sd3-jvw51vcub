@@ -19,9 +19,8 @@ import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
-// Local implementation to satisfy the user story requirement of using useQueryClient
-// without breaking the strict system rule of importing unauthorized packages.
 const useQueryClient = () => {
   const { clearCache } = useCurrentUser()
   return {
@@ -32,6 +31,65 @@ const useQueryClient = () => {
     },
   }
 }
+
+function BrandLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const sizes = {
+    sm: { box: 'w-8 h-8', text: 'text-lg' },
+    md: { box: 'w-10 h-10', text: 'text-xl' },
+    lg: { box: 'w-14 h-14', text: 'text-2xl' },
+  }
+  const s = sizes[size]
+
+  return (
+    <div className="flex items-center gap-2.5">
+      <div
+        className={cn(
+          s.box,
+          'rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-brand shrink-0',
+        )}
+      >
+        <span className="text-white font-extrabold tracking-tighter">SD3</span>
+      </div>
+      {size !== 'sm' && (
+        <span className={cn(s.text, 'font-extrabold tracking-tighter text-gray-900')}>
+          Sistema <span className="text-orange-500">Operacional</span>
+        </span>
+      )}
+    </div>
+  )
+}
+
+function BrandLogoDark({ size = 'md' }: { size?: 'sm' | 'md' }) {
+  const sizes = {
+    sm: { box: 'w-8 h-8', text: 'text-lg' },
+    md: { box: 'w-10 h-10', text: 'text-xl' },
+  }
+  const s = sizes[size]
+
+  return (
+    <div className="flex items-center gap-2.5">
+      <div
+        className={cn(
+          s.box,
+          'rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0',
+        )}
+      >
+        <span className="text-white font-extrabold tracking-tighter text-sm">SD3</span>
+      </div>
+      {size === 'md' && (
+        <span className={cn(s.text, 'font-extrabold tracking-tighter text-white')}>SD3</span>
+      )}
+    </div>
+  )
+}
+
+const navLinkClass = (isActive: boolean) =>
+  cn(
+    'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+    isActive
+      ? 'bg-orange-500/15 text-orange-400 border-l-[3px] border-orange-500'
+      : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-[3px] border-transparent',
+  )
 
 function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
   const location = useLocation()
@@ -45,82 +103,67 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
 
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 md:relative md:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-64 bg-[hsl(220_26%_11%)] border-r border-white/5 transform transition-transform duration-300 md:relative md:translate-x-0',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
       >
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
-          <span className="text-xl font-bold text-blue-600 tracking-tight">SD3</span>
+        <div className="h-16 flex items-center justify-between px-5 border-b border-white/5">
+          <BrandLogoDark size="md" />
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden text-gray-400 hover:text-white hover:bg-white/5"
             onClick={() => setIsOpen(false)}
           >
             <X className="w-5 h-5" />
           </Button>
         </div>
-        <div className="p-4">
-          <nav className="space-y-1">
+        <div className="p-3 overflow-y-auto h-[calc(100vh-4rem)]">
+          <nav className="space-y-0.5">
             <Link
               to="/"
               onClick={() => setIsOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname === '/' || location.pathname === '/dashboard'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={navLinkClass(
+                location.pathname === '/' || location.pathname === '/dashboard',
+              )}
             >
-              <Home className="w-4 h-4 mr-3" />
+              <Home className="w-4 h-4 mr-3 shrink-0" />
               Início
             </Link>
 
             <Link
               to="/projetos"
               onClick={() => setIsOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname.startsWith('/projetos')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={navLinkClass(location.pathname.startsWith('/projetos'))}
             >
-              <FolderKanban className="w-4 h-4 mr-3" />
+              <FolderKanban className="w-4 h-4 mr-3 shrink-0" />
               Projetos
             </Link>
 
             <Link
               to="/minhas-demandas"
               onClick={() => setIsOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname.startsWith('/minhas-demandas')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={navLinkClass(location.pathname.startsWith('/minhas-demandas'))}
             >
-              <CheckSquare className="w-4 h-4 mr-3" />
+              <CheckSquare className="w-4 h-4 mr-3 shrink-0" />
               Minhas Demandas
             </Link>
 
             <Link
               to="/notificacoes"
               onClick={() => setIsOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                location.pathname.startsWith('/notificacoes')
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={navLinkClass(location.pathname.startsWith('/notificacoes'))}
             >
-              <Bell className="w-4 h-4 mr-3" />
+              <Bell className="w-4 h-4 mr-3 shrink-0" />
               Notificações
             </Link>
 
@@ -128,84 +171,60 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <Link
                 to="/hub"
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  location.pathname.startsWith('/hub')
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={navLinkClass(location.pathname.startsWith('/hub'))}
               >
-                <Inbox className="w-4 h-4 mr-3" />
+                <Inbox className="w-4 h-4 mr-3 shrink-0" />
                 HUB Atendimento
               </Link>
             )}
 
             {canSeeAdmin && (
-              <div className="pt-6">
+              <div className="pt-5">
                 <div className="px-3 mb-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                     Administração
                   </span>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <Link
                     to="/admin/usuarios"
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.startsWith('/admin/usuarios')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={navLinkClass(location.pathname.startsWith('/admin/usuarios'))}
                   >
-                    <Users className="w-4 h-4 mr-3" />
+                    <Users className="w-4 h-4 mr-3 shrink-0" />
                     Usuários
                   </Link>
                   <Link
                     to="/admin/areas"
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.startsWith('/admin/areas')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={navLinkClass(location.pathname.startsWith('/admin/areas'))}
                   >
-                    <Map className="w-4 h-4 mr-3" />
+                    <Map className="w-4 h-4 mr-3 shrink-0" />
                     Áreas
                   </Link>
                   <Link
                     to="/admin/perfis"
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.startsWith('/admin/perfis')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={navLinkClass(location.pathname.startsWith('/admin/perfis'))}
                   >
-                    <Shield className="w-4 h-4 mr-3" />
+                    <Shield className="w-4 h-4 mr-3 shrink-0" />
                     Perfis
                   </Link>
                   <Link
                     to="/admin/clientes"
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname.startsWith('/admin/clientes')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={navLinkClass(location.pathname.startsWith('/admin/clientes'))}
                   >
-                    <Briefcase className="w-4 h-4 mr-3" />
+                    <Briefcase className="w-4 h-4 mr-3 shrink-0" />
                     Clientes
                   </Link>
                   {canSeeAudit && (
                     <Link
                       to="/auditoria"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                        location.pathname.startsWith('/auditoria')
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                      className={navLinkClass(location.pathname.startsWith('/auditoria'))}
                     >
-                      <ShieldCheck className="w-4 h-4 mr-3" />
+                      <ShieldCheck className="w-4 h-4 mr-3 shrink-0" />
                       Auditoria
                     </Link>
                   )}
@@ -232,12 +251,21 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   }
 
   return (
-    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 md:px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-10">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden text-gray-600"
+          onClick={onMenuClick}
+        >
           <Menu className="w-5 h-5" />
         </Button>
-        <span className="text-xl font-bold text-blue-600 tracking-tight md:hidden">SD3</span>
+        <div className="md:hidden">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-brand">
+            <span className="text-white font-extrabold text-xs tracking-tighter">SD3</span>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
@@ -248,11 +276,12 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             <span className="text-xs text-gray-500 mt-1">{data.profile?.name || 'Sem perfil'}</span>
           </div>
         )}
+        <div className="w-px h-8 bg-gray-200" />
         <Button
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
         >
           <LogOut className="w-4 h-4 md:mr-2" />
           <span className="hidden md:inline">Sair</span>
@@ -266,7 +295,7 @@ export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50/50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />

@@ -74,63 +74,71 @@ export default function SetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center text-blue-600 mb-4">
-          <ShieldCheck className="w-12 h-12" />
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Definir nova senha
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Crie uma senha forte para sua conta
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl text-center">Nova Senha</CardTitle>
-            <CardDescription className="text-center">
+      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-2xl shadow-orange-500/30 mb-5">
+            <ShieldCheck className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white mb-2">
+            Definir Nova Senha
+          </h1>
+          <p className="text-gray-400 text-sm">Crie uma senha forte para sua conta</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-8 shadow-premium-lg">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <p className="text-center text-gray-400 text-sm">
               Requisitos: mínimo 8 caracteres, maiúscula, minúscula, número e símbolo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center">
-                  {error}
-                </div>
-              )}
+            </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-300 p-3 rounded-lg text-sm text-center">
+                {error}
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-gray-300 text-sm font-medium">
+                Senha
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-orange-500/50 focus:bg-white/10 transition-all duration-200"
+              />
+            </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Salvando...' : 'Definir Senha'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-gray-300 text-sm font-medium">
+                Confirmar senha
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-orange-500/50 focus:bg-white/10 transition-all duration-200"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300"
+              disabled={loading}
+            >
+              {loading ? 'Salvando...' : 'Definir Senha'}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   )

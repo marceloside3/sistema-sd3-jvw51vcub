@@ -57,10 +57,14 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative hover:bg-orange-50 transition-colors"
+        >
           <Bell className="w-5 h-5 text-gray-600" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -69,7 +73,10 @@ export function NotificationBell() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="font-semibold text-sm">Notificações</h3>
-          <Link to="/notificacoes" className="text-xs text-blue-600 hover:underline">
+          <Link
+            to="/notificacoes"
+            className="text-xs text-orange-500 hover:text-orange-600 hover:underline transition-colors"
+          >
             Ver todas
           </Link>
         </div>
@@ -80,13 +87,13 @@ export function NotificationBell() {
             notifications.map((n) => (
               <div
                 key={n.id}
-                className={`p-3 border-b last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-blue-50/50' : ''}`}
+                className={`p-3 border-b last:border-0 cursor-pointer hover:bg-orange-50/50 transition-colors ${!n.is_read ? 'bg-orange-50/30' : ''}`}
                 onClick={() => handleRead(n)}
               >
                 <div className="flex justify-between items-start mb-1 gap-2">
                   <span className="font-medium text-sm text-gray-900 leading-tight">{n.title}</span>
                   {!n.is_read && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600 mt-1" />
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500 mt-1" />
                   )}
                 </div>
                 <p className="text-xs text-gray-600 line-clamp-2 mt-1">{n.message}</p>

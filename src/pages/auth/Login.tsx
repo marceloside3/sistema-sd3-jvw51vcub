@@ -4,15 +4,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, ArrowRight } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function Login() {
@@ -40,33 +32,46 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
-        <CardHeader className="space-y-1 text-center pb-6">
-          <div className="flex justify-center mb-4">
-            <img
-              src="https://img.usecurling.com/i?q=cube&color=blue&shape=fill"
-              alt="SD3 Logo"
-              className="w-12 h-12 rounded-xl"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-2xl shadow-orange-500/30 mb-5">
+            <span className="text-white font-extrabold text-2xl tracking-tighter">SD3</span>
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight text-blue-950">
-            Bem-vindo de volta
-          </CardTitle>
-          <CardDescription className="text-gray-500">
-            Entre com suas credenciais para acessar o Sistema Operacional SD3
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">
+            Sistema Operacional
+          </h1>
+          <p className="text-gray-400 text-sm">
+            Agência de Marketing — Plataforma de Gestão Integrada
+          </p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-8 shadow-premium-lg">
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="text-center mb-2">
+              <h2 className="text-xl font-bold text-white">Bem-vindo de volta</h2>
+              <p className="text-gray-400 text-sm mt-1">Acesse sua conta para continuar</p>
+            </div>
+
             {error && (
-              <Alert variant="destructive" className="py-2.5">
+              <Alert
+                variant="destructive"
+                className="py-2.5 bg-red-500/10 border-red-500/20 text-red-300"
+              >
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="ml-2 font-medium">{error}</AlertDescription>
               </Alert>
             )}
-            <div className="space-y-2 text-left">
-              <Label htmlFor="email">Email</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-gray-300 text-sm font-medium">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -74,15 +79,18 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-gray-50/50"
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-orange-500/50 focus:bg-white/10 transition-all duration-200"
               />
             </div>
-            <div className="space-y-2 text-left">
+
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password" className="text-gray-300 text-sm font-medium">
+                  Senha
+                </Label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-xs font-medium text-orange-400 hover:text-orange-300 transition-colors"
                 >
                   Esqueci minha senha
                 </Link>
@@ -93,14 +101,13 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-gray-50/50"
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-orange-500/50 focus:bg-white/10 transition-all duration-200"
               />
             </div>
-          </CardContent>
-          <CardFooter>
+
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300 group"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -109,12 +116,19 @@ export default function Login() {
                   Entrando...
                 </>
               ) : (
-                'Entrar'
+                <>
+                  Entrar
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </>
               )}
             </Button>
-          </CardFooter>
-        </form>
-      </Card>
+          </form>
+        </div>
+
+        <p className="text-center text-gray-500 text-xs mt-6">
+          © 2026 SD3 — Agência de Marketing. Todos os direitos reservados.
+        </p>
+      </div>
     </div>
   )
 }
