@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { supabase } from '@/lib/supabase/client'
 
 const REQUIRED_FIELDS = [
   { key: 'refined_objective', label: 'Objetivo Refinado' },
@@ -45,7 +44,7 @@ export default function PaperEditPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { user: currentUser } = useCurrentUser()
+  const { data: currentUserData } = useCurrentUser()
 
   const [project, setProject] = useState<any>(null)
   const [papers, setPapers] = useState<any[]>([])
@@ -55,7 +54,6 @@ export default function PaperEditPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [creatingVersion, setCreatingVersion] = useState(false)
-  const [userProfile, setUserProfile] = useState<any>(null)
 
   const loadData = useCallback(async () => {
     if (!projectId) return
@@ -142,30 +140,21 @@ export default function PaperEditPage() {
       .catch(() => setReviews([]))
   }, [papers, selectedVersion])
 
-  useEffect(() => {
-    if (currentUser) {
-      supabase
-        .from('profiles')
-        .select('is_admin, is_director')
-        .eq('id', currentUser.id)
-        .single()
-        .then(({ data }) => {
-          if (data) setUserProfile(data)
-        })
-    }
-  }, [currentUser])
-
   const currentPaper =
     papers.length > 0 ? papers.find((p) => p.id === selectedVersion) || papers[0] : null
   const isLatest = papers.length === 0 || papers[0].id === currentPaper?.id
-  const isAdmin = userProfile?.is_admin ?? false
+  const isAdmin = currentUserData?.profile?.is_admin ?? false
 
-  const isPaperOwner = currentUser?.id === currentPaper?.created_by
+  const isPaperOwner = currentUserData?.id === currentPaper?.created_by
 
   const isPlanningDirector = useMemo(() => {
-    if (!currentUser || !project) return false
-    return false
-  }, [currentUser, project])
+    if (!currentUserData || !project) return false
+    const isDirector = currentUserData.profile?.is_director ?? false
+    const isPlanningArea = currentUserData.areas?.some(
+      (a) => a.code?.toLowerCase() === 'planejamento',
+    )
+    return isDirector || isPlanningArea
+  }, [currentUserData, project])
 
   const missingFields = useMemo(() => {
     if (!currentPaper) return REQUIRED_FIELDS.map((f) => f.label)
@@ -421,56 +410,61 @@ export default function PaperEditPage() {
             readOnly={currentPaper ? !isLatest || currentPaper.status !== 'draft' : false}
             onReload={refreshPapers}
           />
-          {currentPaper && isLatest && currentPaper.status === 'draft' && isPaperOwner && (
-            <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Submeter ao Gate G3</h4>
-                  {missingFields.length > 0 ? (
-                    <p className="text-xs text-red-500 mt-1">
-                      Campos faltando: {missingFields.join(', ')}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-green-600 mt-1">
-                      Todos os 8 inputs estão preenchidos. Pronto para submeter.
-                    </p>
-                  )}
+          {currentPaper &&
+            isLatest &&
+            currentPaper.status === 'draft' &&
+            (isPaperOwner || isPlanningDirector || isAdmin) && (
+              <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium">Submeter ao Gate G3</h4>
+                    {missingFields.length > 0 ? (
+                      <p className="text-xs text-red-500 mt-1">
+                        Campos faltando: {missingFields.join(', ')}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-green-600 mt-1">
+                        Todos os 8 inputs estão preenchidos. Pronto para submeter.
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleSubmitToG3}
+                    disabled={submitting || missingFields.length > 0}
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    Submeter ao G3
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleSubmitToG3}
-                  disabled={submitting || missingFields.length > 0}
-                >
-                  {submitting ? (
+              </div>
+            )}
+          {currentPaper &&
+            currentPaper.status === 'rejected' &&
+            (isPaperOwner || isPlanningDirector || isAdmin) && (
+              <div className="mt-4 border rounded-lg bg-red-50 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageCircle className="w-4 h-4 text-red-500" />
+                  <h4 className="text-sm font-medium text-red-700">Paper recusado</h4>
+                </div>
+                {latestReview && latestReview.comment && (
+                  <p className="text-sm text-red-600 italic mb-3">
+                    &quot;{latestReview.comment}&quot;
+                  </p>
+                )}
+                <Button onClick={handleCreateVersion} disabled={creatingVersion} variant="default">
+                  {creatingVersion ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <Send className="w-4 h-4 mr-2" />
+                    <FilePlus2 className="w-4 h-4 mr-2" />
                   )}
-                  Submeter ao G3
+                  Criar nova versão
                 </Button>
               </div>
-            </div>
-          )}
-          {currentPaper && currentPaper.status === 'rejected' && isPaperOwner && (
-            <div className="mt-4 border rounded-lg bg-red-50 p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageCircle className="w-4 h-4 text-red-500" />
-                <h4 className="text-sm font-medium text-red-700">Paper recusado</h4>
-              </div>
-              {latestReview && latestReview.comment && (
-                <p className="text-sm text-red-600 italic mb-3">
-                  &quot;{latestReview.comment}&quot;
-                </p>
-              )}
-              <Button onClick={handleCreateVersion} disabled={creatingVersion} variant="default">
-                {creatingVersion ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <FilePlus2 className="w-4 h-4 mr-2" />
-                )}
-                Criar nova versão
-              </Button>
-            </div>
-          )}
+            )}
         </TabsContent>
 
         <TabsContent value="benchmarks" className="mt-6">
