@@ -351,7 +351,7 @@ export default function ProjectFormPage() {
         {[1, 2, 3].map((s) => (
           <div
             key={s}
-            className={`flex-1 h-2 rounded-full ${step >= s ? 'bg-blue-600' : 'bg-gray-200'}`}
+            className={`flex-1 h-2 rounded-full ${step >= s ? 'bg-orange-600' : 'bg-gray-200'}`}
           />
         ))}
       </div>
