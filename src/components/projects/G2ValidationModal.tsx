@@ -53,6 +53,7 @@ export function G2ValidationModal({
   const issues: Issue[] = Array.isArray(validationResult.issues) ? validationResult.issues : []
 
   const isValid = validationResult.is_valid === true
+  const hasDetailedIssues = issues.length > 0
   const issuesCount =
     typeof validationResult.issues_count === 'number'
       ? validationResult.issues_count
@@ -67,17 +68,23 @@ export function G2ValidationModal({
               <>
                 <CheckCircle2 className="h-5 w-5 text-green-500" /> Gate G2 Aprovado
               </>
-            ) : (
+            ) : hasDetailedIssues ? (
               <>
                 <AlertCircle className="h-5 w-5 text-red-500" /> Gate G2 — Pendências encontradas
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-5 w-5 text-amber-500" /> Gate G2 — Validação pendente
               </>
             )}
           </DialogTitle>
           <DialogDescription>
             {isValid
               ? 'O projeto atende a todos os requisitos de qualidade para distribuição.'
-              : `${issuesCount} ${issuesCount === 1 ? 'pendência encontrada' : 'pendências encontradas'} no briefing. Revise abaixo.`}
-          </DialogDescription>{' '}
+              : hasDetailedIssues
+                ? `${issuesCount} ${issuesCount === 1 ? 'pendência encontrada' : 'pendências encontradas'} no briefing. Revise abaixo.`
+                : 'A validação não pôde ser concluída automaticamente. Você pode prosseguir com uma justificativa se tiver permissão.'}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
@@ -90,17 +97,27 @@ export function G2ValidationModal({
             </Alert>
           )}
 
-          {!isValid && issues.length === 0 && (
+          {!isValid && !hasDetailedIssues && issuesCount === 0 && (
             <Alert className="border-amber-200 bg-amber-50 text-amber-800">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-sm">
-                A validação retornou pendências, mas não foi possível detalhar os itens. Verifique o
-                briefing manualmente antes de prosseguir.
+                A validação não identificou pendências específicas, mas o projeto ainda não passou
+                no gate G2. Se você tem permissão, pode forçar a distribuição com uma justificativa.
               </AlertDescription>
             </Alert>
           )}
 
-          {!isValid && issues.length > 0 && (
+          {!isValid && !hasDetailedIssues && issuesCount > 0 && (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm">
+                A validação retornou {issuesCount} pendência(s), mas não foi possível detalhar os
+                itens. Verifique o briefing manualmente antes de prosseguir.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!isValid && hasDetailedIssues && (
             <div className="space-y-3">
               {issues.map((issue, idx) => (
                 <Alert key={idx} variant="destructive">

@@ -129,7 +129,25 @@ export default function ProjetoDetalhePage() {
 
   const isDataReady = !loading && !userLoading && !!project && !!userCtx
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>
+  if (loading || isDistributionModalOpen) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" disabled>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-300">Carregando projeto...</h1>
+            <p className="text-sm text-gray-400">Aguarde enquanto processamos a distribuição.</p>
+          </div>
+        </div>
+        <div className="border rounded-lg bg-white p-12 shadow-sm text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+          <p className="mt-4 text-sm text-gray-500">Processando...</p>
+        </div>
+      </div>
+    )
+  }
   if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
 
   const leadArea = project.areas?.find((a: any) => a.is_lead)?.area?.name

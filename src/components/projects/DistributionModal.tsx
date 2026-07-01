@@ -40,6 +40,38 @@ interface DistributionModalProps {
   onClose: () => void
 }
 
+interface NormalizedValidationResult {
+  is_valid: boolean
+  issues_count: number
+  issues: { rule: string; message: string }[]
+}
+
+function normalizeValidationResult(valRes: any): NormalizedValidationResult {
+  const isValid = valRes?.is_valid === true || valRes?.valid === true
+
+  let issues: { rule: string; message: string }[] = []
+
+  if (Array.isArray(valRes?.issues)) {
+    issues = valRes.issues.map((i: any) => ({
+      rule: i.rule || i.label || i.field || 'Pendência',
+      message: i.message || `Campo "${i.label || i.field || 'desconhecido'}" não atendido.`,
+    }))
+  } else if (Array.isArray(valRes?.checks)) {
+    issues = valRes.checks
+      .filter((c: any) => c.passed === false)
+      .map((c: any) => ({
+        rule: c.label || c.field || 'Pendência',
+        message:
+          c.message ||
+          `Campo "${c.label || c.field || 'desconhecido'}" não foi preenchido corretamente.`,
+      }))
+  }
+
+  const issuesCount = typeof valRes?.issues_count === 'number' ? valRes.issues_count : issues.length
+
+  return { is_valid: isValid, issues_count: issuesCount, issues }
+}
+
 export function DistributionModal({
   projectId,
   projectAreas,
@@ -52,7 +84,7 @@ export function DistributionModal({
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [valModalOpen, setValModalOpen] = useState(false)
-  const [validationResult, setValidationResult] = useState<any>(null)
+  const [validationResult, setValidationResult] = useState<NormalizedValidationResult | null>(null)
   const [canOverride, setCanOverride] = useState(false)
   const [userReady, setUserReady] = useState(false)
 
@@ -111,63 +143,7 @@ export function DistributionModal({
     fetchPrincipals()
   }, [projectAreas, toast])
 
-  const handleDistribute = async () => {
-    const missing = projectAreas.some((pa) => pa.area && !assignments[pa.area.id])
-    if (missing) {
-      toast({
-        title: 'Atenção',
-        description: 'Selecione um responsável para todas as áreas.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (!projectId) {
-      toast({
-        title: 'Erro',
-        description: 'ID do projeto não encontrado.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    setUserReady(true)
-    setSubmitting(true)
-    try {
-      const [valRes, canOverrideRes] = await Promise.all([
-        validateBriefingForDistribution(projectId),
-        checkCanOverrideG2(),
-      ])
-
-      const safeResult = {
-        is_valid: valRes?.is_valid === true,
-        issues_count:
-          typeof valRes?.issues_count === 'number'
-            ? valRes.issues_count
-            : Array.isArray(valRes?.issues)
-              ? valRes.issues.length
-              : 0,
-        issues: Array.isArray(valRes?.issues) ? valRes.issues : [],
-      }
-
-      setValidationResult(safeResult)
-      setCanOverride(canOverrideRes === true)
-      setValModalOpen(true)
-    } catch (err: any) {
-      const isPermissionError = err?.code === '42501' || err?.message?.includes('permission')
-      toast({
-        title: isPermissionError ? 'Acesso Negado' : 'Erro',
-        description: isPermissionError
-          ? 'Privilégios insuficientes para distribuir projetos.'
-          : err.message || 'Falha ao validar G2',
-        variant: 'destructive',
-      })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleConfirmDistribution = async (overrideReason?: string) => {
+  const performDistribution = async (overrideReason?: string) => {
     setSubmitting(true)
     try {
       const payload = projectAreas
@@ -204,6 +180,61 @@ export function DistributionModal({
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleDistribute = async () => {
+    const missing = projectAreas.some((pa) => pa.area && !assignments[pa.area.id])
+    if (missing) {
+      toast({
+        title: 'Atenção',
+        description: 'Selecione um responsável para todas as áreas.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!projectId) {
+      toast({
+        title: 'Erro',
+        description: 'ID do projeto não encontrado.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setUserReady(true)
+    setSubmitting(true)
+    try {
+      const [valRes, canOverrideRes] = await Promise.all([
+        validateBriefingForDistribution(projectId),
+        checkCanOverrideG2(),
+      ])
+
+      const safeResult = normalizeValidationResult(valRes)
+      setValidationResult(safeResult)
+      setCanOverride(canOverrideRes === true)
+
+      if (safeResult.is_valid) {
+        await performDistribution()
+      } else {
+        setSubmitting(false)
+        setValModalOpen(true)
+      }
+    } catch (err: any) {
+      const isPermissionError = err?.code === '42501' || err?.message?.includes('permission')
+      toast({
+        title: isPermissionError ? 'Acesso Negado' : 'Erro',
+        description: isPermissionError
+          ? 'Privilégios insuficientes para distribuir projetos.'
+          : err.message || 'Falha ao validar G2',
+        variant: 'destructive',
+      })
+      setSubmitting(false)
+    }
+  }
+
+  const handleConfirmDistribution = async (overrideReason?: string) => {
+    await performDistribution(overrideReason)
   }
 
   return (
