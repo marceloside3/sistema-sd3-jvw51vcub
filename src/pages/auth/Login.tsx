@@ -42,19 +42,12 @@ export default function Login() {
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
         <div className="text-center mb-8 flex flex-col items-center">
           <img src={logoUrl} alt="SD3 Logo" className="h-20 object-contain mb-6 drop-shadow-sm" />
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 mb-2">
-            Sistema Operacional
-          </h1>
-          <p className="text-zinc-500 text-sm">
-            Agência de Marketing — Plataforma de Gestão Integrada
-          </p>
         </div>
 
         <div className="glass-card rounded-2xl p-8 premium-shadow-lg">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="text-center mb-2">
               <h2 className="text-xl font-bold text-zinc-900">Bem vindo ao Sistema SD3</h2>
-              <p className="text-zinc-500 text-sm mt-1">Acesse sua conta para continuar</p>
             </div>
 
             {error && (
