@@ -62,7 +62,7 @@ export default function ProjetoDetalhePage() {
   const [demands, setDemands] = useState<any[]>([])
   const [papers, setPapers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [userLoading, setUserLoading] = useState(true)
+  const [userLoaded, setUserLoaded] = useState(false)
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false)
 
   useEffect(() => {
@@ -126,12 +126,6 @@ export default function ProjetoDetalhePage() {
       })
     }
   }
-
-  useEffect(() => {
-    if (userCtx !== undefined && userCtx !== null) {
-      setUserLoading(false)
-    }
-  }, [userCtx])
 
   const isDataReady = !loading && !userLoading && !!project && !!userCtx
 
