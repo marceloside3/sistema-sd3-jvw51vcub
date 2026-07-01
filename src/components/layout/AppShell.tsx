@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import logoUrl from '@/assets/logoside3-0c37e.png'
 
 const useQueryClient = () => {
   const { clearCache } = useCurrentUser()
@@ -112,12 +113,12 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-[hsl(220_26%_11%)] border-r border-white/5 transform transition-transform duration-300 md:relative md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-black/40 backdrop-blur-xl border-r border-white/10 transform transition-transform duration-300 md:relative md:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="h-16 flex items-center justify-between px-5 border-b border-white/5">
-          <BrandLogoDark size="md" />
+        <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
+          <img src={logoUrl} alt="SD3 Logo" className="h-8 object-contain" />
           <Button
             variant="ghost"
             size="icon"
@@ -136,7 +137,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                 location.pathname === '/' || location.pathname === '/dashboard',
               )}
             >
-              <Home className="w-4 h-4 mr-3 shrink-0" />
+              <Home fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Início
             </Link>
 
@@ -145,7 +146,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               onClick={() => setIsOpen(false)}
               className={navLinkClass(location.pathname.startsWith('/projetos'))}
             >
-              <FolderKanban className="w-4 h-4 mr-3 shrink-0" />
+              <FolderKanban fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Projetos
             </Link>
 
@@ -154,7 +155,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               onClick={() => setIsOpen(false)}
               className={navLinkClass(location.pathname.startsWith('/minhas-demandas'))}
             >
-              <CheckSquare className="w-4 h-4 mr-3 shrink-0" />
+              <CheckSquare fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Minhas Demandas
             </Link>
 
@@ -163,7 +164,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               onClick={() => setIsOpen(false)}
               className={navLinkClass(location.pathname.startsWith('/notificacoes'))}
             >
-              <Bell className="w-4 h-4 mr-3 shrink-0" />
+              <Bell fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Notificações
             </Link>
 
@@ -173,7 +174,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                 onClick={() => setIsOpen(false)}
                 className={navLinkClass(location.pathname.startsWith('/hub'))}
               >
-                <Inbox className="w-4 h-4 mr-3 shrink-0" />
+                <Inbox fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
                 HUB Atendimento
               </Link>
             )}
@@ -191,7 +192,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                     onClick={() => setIsOpen(false)}
                     className={navLinkClass(location.pathname.startsWith('/admin/usuarios'))}
                   >
-                    <Users className="w-4 h-4 mr-3 shrink-0" />
+                    <Users fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
                     Usuários
                   </Link>
                   <Link
@@ -199,7 +200,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                     onClick={() => setIsOpen(false)}
                     className={navLinkClass(location.pathname.startsWith('/admin/areas'))}
                   >
-                    <Map className="w-4 h-4 mr-3 shrink-0" />
+                    <Map fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
                     Áreas
                   </Link>
                   <Link
@@ -207,7 +208,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                     onClick={() => setIsOpen(false)}
                     className={navLinkClass(location.pathname.startsWith('/admin/perfis'))}
                   >
-                    <Shield className="w-4 h-4 mr-3 shrink-0" />
+                    <Shield fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
                     Perfis
                   </Link>
                   <Link
@@ -215,7 +216,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                     onClick={() => setIsOpen(false)}
                     className={navLinkClass(location.pathname.startsWith('/admin/clientes'))}
                   >
-                    <Briefcase className="w-4 h-4 mr-3 shrink-0" />
+                    <Briefcase fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
                     Clientes
                   </Link>
                   {canSeeAudit && (
@@ -224,7 +225,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
                       onClick={() => setIsOpen(false)}
                       className={navLinkClass(location.pathname.startsWith('/auditoria'))}
                     >
-                      <ShieldCheck className="w-4 h-4 mr-3 shrink-0" />
+                      <ShieldCheck fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
                       Auditoria
                     </Link>
                   )}
@@ -262,9 +263,7 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <Menu className="w-5 h-5" />
         </Button>
         <div className="md:hidden">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-brand">
-            <span className="text-white font-extrabold text-xs tracking-tighter">SD3</span>
-          </div>
+          <img src={logoUrl} alt="SD3 Logo" className="h-8 object-contain" />
         </div>
       </div>
 

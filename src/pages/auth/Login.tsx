@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, AlertCircle, ArrowRight } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import logoUrl from '@/assets/logoside3-0c37e.png'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -39,10 +40,8 @@ export default function Login() {
       </div>
 
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-2xl shadow-orange-500/30 mb-5">
-            <span className="text-white font-extrabold text-2xl tracking-tighter">SD3</span>
-          </div>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img src={logoUrl} alt="SD3 Logo" className="h-14 object-contain mb-6 drop-shadow-lg" />
           <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">
             Sistema Operacional
           </h1>
@@ -107,7 +106,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300 group"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300 hover:scale-[1.02] group"
               disabled={isLoading}
             >
               {isLoading ? (

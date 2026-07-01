@@ -79,10 +79,10 @@ export function ProjectsTable() {
                     asChild
                     variant="ghost"
                     size="icon"
-                    className="hover:bg-primary/10 hover:text-primary"
+                    className="hover:bg-primary/10 hover:text-primary transition-all duration-300 hover:scale-110"
                   >
                     <Link to={`/projeto/${project.project_id}`}>
-                      <Eye className="h-4 w-4" />
+                      <Eye fill="currentColor" className="h-4 w-4" />
                     </Link>
                   </Button>
                 </TableCell>

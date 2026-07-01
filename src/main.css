@@ -195,7 +195,7 @@
   }
 
   .hover-card-elevate {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:scale-[1.02];
   }
 
   .sidebar-link-active {

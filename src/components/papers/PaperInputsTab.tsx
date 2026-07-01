@@ -314,11 +314,15 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
           )}
         </div>
         {!readOnly && (
-          <Button onClick={handleSave} disabled={loading || saveStatus === 'saving'}>
+          <Button
+            className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+            onClick={handleSave}
+            disabled={loading || saveStatus === 'saving'}
+          >
             {loading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Save className="w-4 h-4 mr-2" />
+              <Save fill="currentColor" className="w-4 h-4 mr-2" />
             )}
             Salvar Manualmente
           </Button>

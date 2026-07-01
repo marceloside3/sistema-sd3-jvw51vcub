@@ -41,7 +41,7 @@ export function GateAlerts() {
                   asChild
                   variant="outline"
                   size="sm"
-                  className="bg-background text-foreground hover:bg-background/90"
+                  className="bg-background text-foreground hover:bg-background/90 transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
                 >
                   <Link to={`/projeto/${alert.project_id}`}>
                     Ver Projeto <ArrowRight className="ml-2 h-4 w-4" />

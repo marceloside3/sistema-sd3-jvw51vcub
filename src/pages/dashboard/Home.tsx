@@ -43,7 +43,7 @@ export default function Home() {
         <Card className="shadow-premium border-gray-100 hover-card-elevate">
           <CardHeader className="pb-3 flex flex-row items-center space-y-0 gap-3">
             <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
-              <User className="h-5 w-5" />
+              <User fill="currentColor" className="h-5 w-5" />
             </div>
             <div>
               <CardTitle className="text-lg">Seu Perfil</CardTitle>
@@ -81,7 +81,7 @@ export default function Home() {
         <Card className="shadow-premium border-gray-100 hover-card-elevate">
           <CardHeader className="pb-3 flex flex-row items-center space-y-0 gap-3">
             <div className="p-2.5 bg-gray-100 text-gray-700 rounded-xl">
-              <MapPin className="h-5 w-5" />
+              <MapPin fill="currentColor" className="h-5 w-5" />
             </div>
             <div>
               <CardTitle className="text-lg">Suas Áreas</CardTitle>
@@ -129,7 +129,7 @@ export default function Home() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl" />
           <CardHeader className="pb-3 flex flex-row items-center space-y-0 gap-3 relative z-10">
             <div className="p-2.5 bg-orange-500/20 text-orange-400 rounded-xl">
-              <LayoutDashboard className="h-5 w-5" />
+              <LayoutDashboard fill="currentColor" className="h-5 w-5" />
             </div>
             <div>
               <CardTitle className="text-lg text-white">Próximos passos</CardTitle>

@@ -64,9 +64,12 @@ export default function ProjetosListPage() {
           <p className="text-sm text-gray-500">Gerencie e acompanhe o andamento dos projetos.</p>
         </div>
         {canCreate && (
-          <Button asChild>
+          <Button
+            asChild
+            className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+          >
             <Link to="/projetos/novo">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus fill="currentColor" className="w-4 h-4 mr-2" />
               Novo Projeto
             </Link>
           </Button>
@@ -114,7 +117,7 @@ export default function ProjetosListPage() {
                 <TableRow key={p.id}>
                   <TableCell className="font-mono text-sm">
                     {p.project_code ? (
-                      <Link to={`/projetos/${p.id}`} className="text-blue-600 hover:underline">
+                      <Link to={`/projetos/${p.id}`} className="text-orange-600 hover:underline">
                         {p.project_code}
                       </Link>
                     ) : (
@@ -124,7 +127,7 @@ export default function ProjetosListPage() {
                   <TableCell>
                     <Link
                       to={`/projetos/${p.id}`}
-                      className="font-medium text-blue-600 hover:underline"
+                      className="font-medium text-orange-600 hover:underline"
                     >
                       {p.name}
                     </Link>

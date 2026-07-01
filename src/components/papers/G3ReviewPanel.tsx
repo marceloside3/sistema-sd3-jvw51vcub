@@ -108,8 +108,13 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Revisão G3 — Diretor de Planejamento</h3>
         {isAdmin && paper.status !== 'approved' && paper.status !== 'override' && (
-          <Button variant="destructive" size="sm" onClick={() => setOverrideOpen(true)}>
-            <AlertTriangle className="w-4 h-4 mr-1" />
+          <Button
+            variant="destructive"
+            size="sm"
+            className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+            onClick={() => setOverrideOpen(true)}
+          >
+            <AlertTriangle fill="currentColor" className="w-4 h-4 mr-1" />
             Override
           </Button>
         )}
@@ -202,7 +207,11 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
             </div>
           ) : (
             <div className="flex gap-2">
-              <Button onClick={handleApprove} disabled={submitting}>
+              <Button
+                className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                onClick={handleApprove}
+                disabled={submitting}
+              >
                 {submitting ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
@@ -212,10 +221,11 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
               </Button>
               <Button
                 variant="destructive"
+                className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
                 onClick={() => setRejecting(true)}
                 disabled={submitting}
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
+                <MessageSquare fill="currentColor" className="w-4 h-4 mr-2" />
                 Recusar
               </Button>
             </div>

@@ -63,16 +63,23 @@ export function PaperMeetingTab({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Reuniões de Passagem</h3>
-        <Button onClick={() => setModalOpen(true)}>
-          <Calendar className="w-4 h-4 mr-2" /> Agendar Reunião
+        <Button
+          className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+          onClick={() => setModalOpen(true)}
+        >
+          <Calendar fill="currentColor" className="w-4 h-4 mr-2" /> Agendar Reunião
         </Button>
       </div>
 
       {meetings.length === 0 ? (
         <div className="p-12 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50 flex flex-col items-center justify-center">
-          <Calendar className="w-12 h-12 text-gray-300 mb-4" />
+          <Calendar fill="currentColor" className="w-12 h-12 text-gray-300 mb-4" />
           <p className="text-lg mb-2">Nenhuma reunião agendada ainda.</p>
-          <Button variant="link" onClick={() => setModalOpen(true)}>
+          <Button
+            variant="link"
+            className="text-orange-500 hover:text-orange-600"
+            onClick={() => setModalOpen(true)}
+          >
             Agendar Reunião de Passagem
           </Button>
         </div>
@@ -104,12 +111,23 @@ export function PaperMeetingTab({
                     </p>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleDownloadIcs(m.id)}>
+                    <Button
+                      className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadIcs(m.id)}
+                    >
                       <Download className="w-4 h-4 mr-2" /> Baixar .ics
                     </Button>
                     {m.status !== 'completed' && (
-                      <Button variant="default" size="sm" onClick={() => handleComplete(m)}>
-                        <CheckCircle className="w-4 h-4 mr-2" /> Marcar como Concluída
+                      <Button
+                        className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleComplete(m)}
+                      >
+                        <CheckCircle fill="currentColor" className="w-4 h-4 mr-2" /> Marcar como
+                        Concluída
                       </Button>
                     )}
                   </div>
@@ -140,7 +158,7 @@ export function PaperMeetingTab({
                       className="min-h-[100px]"
                     />
                     {savingNotes === m.id && (
-                      <span className="absolute bottom-2 right-2 text-xs text-blue-500">
+                      <span className="absolute bottom-2 right-2 text-xs text-orange-500">
                         Salvando...
                       </span>
                     )}

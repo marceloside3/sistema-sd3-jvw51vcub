@@ -14,20 +14,20 @@ export function StatCards() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-      <Card className="hover-card-elevate border-l-4 border-l-primary">
+      <Card className="hover-card-elevate border-l-4 border-l-orange-500">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Em Briefing</CardTitle>
-          <FileText className="h-4 w-4 text-primary" />
+          <FileText fill="currentColor" className="h-4 w-4 text-orange-500" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.briefing}</div>
         </CardContent>
       </Card>
 
-      <Card className="hover-card-elevate border-l-4 border-l-blue-500">
+      <Card className="hover-card-elevate border-l-4 border-l-gray-800">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Em Execução</CardTitle>
-          <PlayCircle className="h-4 w-4 text-blue-500" />
+          <PlayCircle fill="currentColor" className="h-4 w-4 text-gray-800" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.execution}</div>
@@ -37,7 +37,7 @@ export function StatCards() {
       <Card className="hover-card-elevate border-l-4 border-l-destructive">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Aguardando Gate</CardTitle>
-          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <ShieldAlert fill="currentColor" className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.blocked}</div>
@@ -47,10 +47,10 @@ export function StatCards() {
         </CardContent>
       </Card>
 
-      <Card className="hover-card-elevate border-l-4 border-l-green-500">
+      <Card className="hover-card-elevate border-l-4 border-l-green-600">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Finalizados</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <CheckCircle2 fill="currentColor" className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.finalized}</div>

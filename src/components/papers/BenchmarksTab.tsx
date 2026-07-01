@@ -124,6 +124,7 @@ export function BenchmarksTab({ paper, readOnly, onReload }: BenchmarksTabProps)
           <p className="text-sm text-muted-foreground">{card.description}</p>
           <Button
             size="sm"
+            className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
             variant={isAdded ? 'outline' : 'default'}
             disabled={readOnly || isAdded}
             onClick={() => handleAddToPaper(card)}
@@ -134,7 +135,7 @@ export function BenchmarksTab({ paper, readOnly, onReload }: BenchmarksTabProps)
               </>
             ) : (
               <>
-                <Plus className="w-3.5 h-3.5 mr-1" /> Adicionar ao Paper
+                <Plus fill="currentColor" className="w-3.5 h-3.5 mr-1" /> Adicionar ao Paper
               </>
             )}
           </Button>

@@ -252,13 +252,13 @@ export default function PaperEditPage() {
             <h1 className="text-2xl font-bold">Paper do Projeto</h1>
             {currentPaper ? (
               <>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
                   v{currentPaper.version}
                 </Badge>
                 <G3StatusBadge paper={currentPaper} approverName={approverName} />
               </>
             ) : (
-              <Badge variant="outline" className="bg-gray-100 text-gray-600">
+              <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
                 Novo Rascunho
               </Badge>
             )}
@@ -433,13 +433,14 @@ export default function PaperEditPage() {
                   )}
                 </div>
                 <Button
+                  className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
                   onClick={handleSubmitToG3}
                   disabled={submitting || missingFields.length > 0}
                 >
                   {submitting ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <Send className="w-4 h-4 mr-2" />
+                    <Send fill="currentColor" className="w-4 h-4 mr-2" />
                   )}
                   Submeter ao G3
                 </Button>
@@ -457,11 +458,16 @@ export default function PaperEditPage() {
                   &quot;{latestReview.comment}&quot;
                 </p>
               )}
-              <Button onClick={handleCreateVersion} disabled={creatingVersion} variant="default">
+              <Button
+                className="transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                onClick={handleCreateVersion}
+                disabled={creatingVersion}
+                variant="default"
+              >
                 {creatingVersion ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <FilePlus2 className="w-4 h-4 mr-2" />
+                  <FilePlus2 fill="currentColor" className="w-4 h-4 mr-2" />
                 )}
                 Criar nova versão
               </Button>
