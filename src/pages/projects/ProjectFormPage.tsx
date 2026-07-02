@@ -13,22 +13,21 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
 import { getClients } from '@/services/clients'
 import { createProject, getProjectById } from '@/services/projects'
+import { uploadAttachment } from '@/services/attachments'
 import { useToast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
+import { DynamicBriefingStep } from '@/components/projects/DynamicBriefingStep'
+import { getBriefingFieldsForAreas } from '@/lib/briefing-fields'
+import { cn } from '@/lib/utils'
 
 export default function ProjectFormPage() {
   const { id } = useParams()
   const isEditMode = !!id
   const editingId = id
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
   const [step, setStep] = useState(1)
   const [clients, setClients] = useState<any[]>([])
@@ -36,9 +35,8 @@ export default function ProjectFormPage() {
   const [loading, setLoading] = useState(false)
   const [isLoadingProject, setIsLoadingProject] = useState(false)
   const [isProjectCompleted, setIsProjectCompleted] = useState(false)
-  const navigate = useNavigate()
-  const { toast } = useToast()
-  const { user } = useAuth()
+  const [briefingData, setBriefingData] = useState<Record<string, string>>({})
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -47,18 +45,9 @@ export default function ProjectFormPage() {
     start_date: '',
     end_date: '',
     status: 'active',
+    origin_type: 'manual',
     selectedAreas: [] as string[],
     leadArea: '',
-    origin_type: 'manual',
-    briefing_data: {
-      objetivo: '',
-      publico_alvo: '',
-      canais: '',
-      prazo: '',
-      budget: '',
-      restricoes: '',
-      referencias: '',
-    },
   })
 
   useEffect(() => {
@@ -80,9 +69,6 @@ export default function ProjectFormPage() {
           if (proj) {
             const projectAreas = areasRes.data || []
             setIsProjectCompleted(proj.status === 'completed')
-
-            const bData = proj.briefing_data || {}
-
             setFormData({
               client_id: proj.client_id || '',
               name: proj.name || '',
@@ -90,111 +76,54 @@ export default function ProjectFormPage() {
               start_date: proj.start_date ? proj.start_date.split('T')[0] : '',
               end_date: proj.end_date ? proj.end_date.split('T')[0] : '',
               status: proj.status || 'active',
+              origin_type: proj.origin_type || 'manual',
               selectedAreas: projectAreas.map((a: any) => a.area_id) || [],
               leadArea: projectAreas.find((a: any) => a.is_lead)?.area_id || '',
-              origin_type: proj.origin_type || 'manual',
-              briefing_data: {
-                objetivo: bData.objetivo || '',
-                publico_alvo: bData.publico_alvo || '',
-                canais: bData.canais || '',
-                prazo: bData.prazo || '',
-                budget: bData.budget || '',
-                restricoes: bData.restricoes || '',
-                referencias: bData.referencias || '',
-              },
             })
+            setBriefingData((proj.briefing_data as Record<string, string>) || {})
           }
         })
         .finally(() => setIsLoadingProject(false))
     }
   }, [isEditMode, editingId])
 
+  const selectedAreaCodes = areas
+    .filter((a) => formData.selectedAreas.includes(a.id))
+    .map((a) => a.code)
+
   const handleNext = () => {
     if (step === 1 && !formData.client_id)
       return toast({ title: 'Selecione um cliente', variant: 'destructive' })
     if (step === 2 && !formData.name)
       return toast({ title: 'Preencha o nome do projeto', variant: 'destructive' })
+    if (step === 2 && !formData.end_date)
+      return toast({ title: 'Preencha a data de fim prevista', variant: 'destructive' })
+    if (step === 3) {
+      if (formData.selectedAreas.length === 0)
+        return toast({ title: 'Selecione ao menos uma área', variant: 'destructive' })
+      if (!formData.leadArea || !formData.selectedAreas.includes(formData.leadArea))
+        return toast({ title: 'Selecione a área líder dentre as marcadas', variant: 'destructive' })
+    }
     setStep((s) => s + 1)
   }
 
-  const handleBudgetChange = (val: string) => {
-    const numeric = val.replace(/\D/g, '')
-    if (!numeric) {
-      setFormData((f) => ({ ...f, briefing_data: { ...f.briefing_data, budget: '' } }))
-      return
-    }
-    const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-    const masked = formatter.format(Number(numeric) / 100)
-    setFormData((f) => ({ ...f, briefing_data: { ...f.briefing_data, budget: masked } }))
-  }
-
   const handleSubmit = async () => {
+    const fields = getBriefingFieldsForAreas(selectedAreaCodes)
+    const emptyFields = fields.filter((f) => !briefingData[f.key]?.trim())
+    if (emptyFields.length > 0) {
+      return toast({
+        title: 'Preencha todos os campos do briefing',
+        description: `Faltam: ${emptyFields.map((f) => f.label).join(', ')}`,
+        variant: 'destructive',
+      })
+    }
+
     const {
       data: { user: sessionUser },
-      error: sessionError,
     } = await supabase.auth.getUser()
-    if (sessionError || !sessionUser?.id) {
-      toast({
-        title: 'Sessão expirada',
-        description: 'Não foi possível identificar seu usuário. Faça login novamente.',
-        variant: 'destructive',
-      })
-      return
+    if (!sessionUser?.id) {
+      return toast({ title: 'Sessão expirada', variant: 'destructive' })
     }
-    const validUserId = sessionUser.id
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!UUID_REGEX.test(validUserId)) {
-      toast({
-        title: 'ID de usuário inválido',
-        description: 'O ID da sessão não é um UUID válido. Faça login novamente.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (!formData.name || !formData.name.trim()) {
-      toast({
-        title: 'Campo obrigatório',
-        description: 'O nome do projeto é obrigatório.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (!formData.client_id) {
-      toast({
-        title: 'Campo obrigatório',
-        description: 'O cliente é obrigatório.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (!formData.end_date) {
-      toast({
-        title: 'Campo obrigatório',
-        description: 'Data de Fim Prevista é obrigatória.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (formData.selectedAreas.length === 0)
-      return toast({ title: 'Selecione ao menos uma área', variant: 'destructive' })
-    if (!formData.leadArea || !formData.selectedAreas.includes(formData.leadArea))
-      return toast({ title: 'Selecione a área líder dentre as marcadas', variant: 'destructive' })
-
-    const b = formData.briefing_data
-    const isBriefingComplete = Boolean(
-      b.objetivo &&
-      b.publico_alvo &&
-      b.canais &&
-      b.prazo &&
-      b.budget &&
-      b.restricoes &&
-      b.referencias,
-    )
-    const briefingCompletedAt = isBriefingComplete ? new Date().toISOString() : null
 
     setLoading(true)
     try {
@@ -202,6 +131,8 @@ export default function ProjectFormPage() {
         area_id: a,
         is_lead: a === formData.leadArea,
       }))
+      const briefingCompletedAt =
+        fields.length > 0 && emptyFields.length === 0 ? new Date().toISOString() : null
 
       if (isEditMode && editingId) {
         const { error: updateError } = await supabase
@@ -214,125 +145,60 @@ export default function ProjectFormPage() {
             client_id: formData.client_id,
             status: formData.status,
             origin_type: formData.origin_type,
-            briefing_data: formData.briefing_data,
+            briefing_data: briefingData,
             briefing_completed_at: briefingCompletedAt,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingId)
+        if (updateError) throw updateError
 
-        if (updateError) {
-          console.error('[ProjectFormPage] Error updating project:', {
-            message: updateError.message,
-            code: updateError.code,
-            details: updateError.details,
-            hint: updateError.hint,
-            editingId,
-          })
-          throw updateError
-        }
-
-        const { error: delError } = await supabase
-          .from('project_areas')
-          .delete()
-          .eq('project_id', editingId)
-
-        if (delError) {
-          console.error('[ProjectFormPage] Error deleting project areas:', {
-            message: delError.message,
-            code: delError.code,
-            details: delError.details,
-            hint: delError.hint,
-            editingId,
-          })
-          throw delError
-        }
-
+        await supabase.from('project_areas').delete().eq('project_id', editingId)
         const { error: insError } = await supabase
           .from('project_areas')
           .insert(areaPayload.map((a) => ({ ...a, project_id: editingId })))
-
-        if (insError) {
-          console.error('[ProjectFormPage] Error inserting project areas:', {
-            message: insError.message,
-            code: insError.code,
-            details: insError.details,
-            hint: insError.hint,
-            editingId,
-            areaPayload,
-          })
-          throw insError
-        }
+        if (insError) throw insError
 
         toast({ title: 'Projeto atualizado com sucesso!' })
         navigate(`/projetos/${editingId}`)
       } else {
-        const projectPayload = {
-          name: formData.name,
-          description: formData.description,
-          start_date: formData.start_date || new Date().toISOString().split('T')[0],
-          end_date: formData.end_date,
-          client_id: formData.client_id,
-          status: formData.status,
-          origin_type: formData.origin_type,
-          briefing_data: formData.briefing_data,
-          briefing_completed_at: briefingCompletedAt,
-          created_by: validUserId,
-        }
+        const project = await createProject(
+          {
+            name: formData.name,
+            description: formData.description,
+            start_date: formData.start_date || new Date().toISOString().split('T')[0],
+            end_date: formData.end_date,
+            client_id: formData.client_id,
+            status: formData.status,
+            origin_type: formData.origin_type,
+            briefing_data: briefingData,
+            briefing_completed_at: briefingCompletedAt,
+            created_by: sessionUser.id,
+          },
+          areaPayload,
+        )
 
-        const project = await createProject(projectPayload, areaPayload)
+        if (!project) throw new Error('Falha ao criar projeto: resposta vazia do servidor.')
 
-        if (!project) {
-          throw new Error('Falha ao criar projeto: resposta vazia do servidor.')
+        for (const file of pendingFiles) {
+          try {
+            await uploadAttachment('project', project.id, file, sessionUser.id)
+          } catch (e) {
+            console.error('File upload error:', e)
+          }
         }
 
         toast({ title: 'Projeto criado com sucesso!' })
         navigate(`/projetos/${project.id}`)
       }
     } catch (err: any) {
-      console.error('[ProjectFormPage] Erro ao salvar projeto:', {
-        error: err,
-        message: err?.message,
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint,
-        techAlert: err?.techAlert,
-        isEditMode,
-        editingId,
-        validUserId,
-        formData: {
-          name: formData.name,
-          client_id: formData.client_id,
-          selectedAreas: formData.selectedAreas,
-          leadArea: formData.leadArea,
-        },
-      })
-      let errorTitle = isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto'
-      let errorDesc =
-        err?.message || 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.'
-
-      if (err?.techAlert) {
-        errorDesc = err.techAlert
-      }
-
-      if (err?.code === '42501') {
-        errorTitle = 'Permissão negada (RLS Policy Violation)'
-        errorDesc =
-          err?.techAlert ||
-          'Você não tem permissão para realizar esta operação. Verifique se seu perfil está corretamente configurado ou contate o administrador.'
-      } else if (err?.code === '23503') {
-        errorTitle = 'Erro de integridade'
-        errorDesc =
-          'Referência inválida. Verifique se o cliente e as áreas selecionadas são válidos.'
-      } else if (err?.code === '23505') {
-        errorTitle = 'Duplicidade'
-        errorDesc = 'Já existe um projeto com estes dados.'
-      } else if (err?.message?.includes('não está registrado')) {
-        errorTitle = 'Usuário não registrado'
-        errorDesc = err.message
-      }
-
+      let errorDesc = err?.message || 'Ocorreu um erro inesperado.'
+      if (err?.code === '42501')
+        errorDesc = 'Permissão negada. Verifique seu perfil ou contate o administrador.'
+      else if (err?.code === '23503')
+        errorDesc = 'Referência inválida. Verifique cliente e áreas selecionadas.'
+      else if (err?.code === '23505') errorDesc = 'Já existe um projeto com estes dados.'
       toast({
-        title: errorTitle,
+        title: isEditMode ? 'Erro ao atualizar projeto' : 'Erro ao criar projeto',
         description: errorDesc,
         variant: 'destructive',
       })
@@ -345,24 +211,45 @@ export default function ProjectFormPage() {
     return <div className="p-8 text-center">Carregando projeto...</div>
   }
 
+  const stepTitles = ['Cliente', 'Informações', 'Áreas', 'Briefing']
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4 mb-8">
-        {[1, 2, 3].map((s) => (
-          <div
-            key={s}
-            className={`flex-1 h-2 rounded-full ${step >= s ? 'bg-orange-600' : 'bg-gray-200'}`}
-          />
+      <div className="flex items-center gap-2">
+        {stepTitles.map((title, i) => (
+          <div key={i} className="flex items-center gap-2 flex-1 last:flex-none">
+            <div
+              className={cn(
+                'flex items-center gap-2',
+                step >= i + 1 ? 'text-orange-600' : 'text-muted-foreground',
+              )}
+            >
+              <div
+                className={cn(
+                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors',
+                  step >= i + 1 ? 'bg-orange-600 text-white' : 'bg-muted',
+                )}
+              >
+                {i + 1}
+              </div>
+              <span className="text-sm font-medium hidden sm:inline">{title}</span>
+            </div>
+            {i < stepTitles.length - 1 && (
+              <div
+                className={cn(
+                  'flex-1 h-0.5 transition-colors',
+                  step > i + 1 ? 'bg-orange-600' : 'bg-muted',
+                )}
+              />
+            )}
+          </div>
         ))}
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>
-            {isEditMode ? 'Editar Projeto' : 'Novo Projeto'} -{' '}
-            {step === 1 && 'Passo 1: Selecione o Cliente'}
-            {step === 2 && 'Passo 2: Informações Básicas e Briefing'}
-            {step === 3 && 'Passo 3: Áreas Envolvidas'}
+            {isEditMode ? 'Editar Projeto' : 'Novo Projeto'} — {stepTitles[step - 1]}
           </CardTitle>
           <CardDescription>
             {isEditMode ? 'Atualize os dados do projeto.' : 'Preencha os dados do novo projeto.'}
@@ -370,8 +257,7 @@ export default function ProjectFormPage() {
         </CardHeader>
         {isProjectCompleted && (
           <div className="mx-6 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm mb-4">
-            Projeto Concluído. Apenas descrição, status e áreas podem ser editados. Campos críticos
-            (nome, datas, cliente, prioridade) estão bloqueados.
+            Projeto Concluído. Campos críticos estão bloqueados.
           </div>
         )}
         <CardContent className="space-y-6">
@@ -400,7 +286,9 @@ export default function ProjectFormPage() {
           {step === 2 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Nome do Projeto</Label>
+                <Label>
+                  Nome do Projeto <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   disabled={isProjectCompleted}
                   value={formData.name}
@@ -430,111 +318,28 @@ export default function ProjectFormPage() {
                   </Label>
                   <Input
                     type="date"
-                    required
                     disabled={isProjectCompleted}
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                   />
                 </div>
               </div>
-
-              <Accordion type="single" collapsible className="w-full border rounded-md px-4 mt-6">
-                <AccordionItem value="briefing" className="border-b-0">
-                  <AccordionTrigger className="text-lg font-semibold hover:no-underline">
-                    Briefing do Projeto
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4 pb-4">
-                    <div className="space-y-2">
-                      <Label>1. Objetivo</Label>
-                      <Textarea
-                        placeholder="Qual é o objetivo principal do projeto?"
-                        value={formData.briefing_data.objetivo}
-                        onChange={(e) =>
-                          setFormData((f) => ({
-                            ...f,
-                            briefing_data: { ...f.briefing_data, objetivo: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>2. Público-alvo</Label>
-                      <Textarea
-                        placeholder="Quem queremos atingir?"
-                        value={formData.briefing_data.publico_alvo}
-                        onChange={(e) =>
-                          setFormData((f) => ({
-                            ...f,
-                            briefing_data: { ...f.briefing_data, publico_alvo: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>3. Canais</Label>
-                      <Textarea
-                        placeholder="Onde será veiculado? (ex: Instagram, E-mail, Site)"
-                        value={formData.briefing_data.canais}
-                        onChange={(e) =>
-                          setFormData((f) => ({
-                            ...f,
-                            briefing_data: { ...f.briefing_data, canais: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>4. Prazo</Label>
-                        <Input
-                          type="date"
-                          value={formData.briefing_data.prazo}
-                          onChange={(e) =>
-                            setFormData((f) => ({
-                              ...f,
-                              briefing_data: { ...f.briefing_data, prazo: e.target.value },
-                            }))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>5. Budget</Label>
-                        <Input
-                          placeholder="R$ 0,00"
-                          value={formData.briefing_data.budget}
-                          onChange={(e) => handleBudgetChange(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>6. Restrições</Label>
-                      <Textarea
-                        placeholder="O que não pode ser feito ou dito?"
-                        value={formData.briefing_data.restricoes}
-                        onChange={(e) =>
-                          setFormData((f) => ({
-                            ...f,
-                            briefing_data: { ...f.briefing_data, restricoes: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>7. Referências</Label>
-                      <Textarea
-                        placeholder="Links ou ideias de referência"
-                        value={formData.briefing_data.referencias}
-                        onChange={(e) =>
-                          setFormData((f) => ({
-                            ...f,
-                            briefing_data: { ...f.briefing_data, referencias: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <div className="space-y-2">
+                <Label>Tipo de Origem</Label>
+                <Select
+                  value={formData.origin_type}
+                  disabled={isProjectCompleted}
+                  onValueChange={(v) => setFormData({ ...formData, origin_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="briefing">Briefing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
@@ -570,7 +375,6 @@ export default function ProjectFormPage() {
                   ))}
                 </div>
               </div>
-
               {formData.selectedAreas.length > 0 && (
                 <div className="space-y-2 pt-4 border-t">
                   <Label>Qual será a Área Líder (Lead)?</Label>
@@ -596,6 +400,18 @@ export default function ProjectFormPage() {
             </div>
           )}
 
+          {step === 4 && (
+            <DynamicBriefingStep
+              areaCodes={selectedAreaCodes}
+              briefingData={briefingData}
+              onBriefingChange={(key, value) => setBriefingData({ ...briefingData, [key]: value })}
+              isEditMode={isEditMode}
+              projectId={editingId}
+              pendingFiles={pendingFiles}
+              onFilesChange={setPendingFiles}
+            />
+          )}
+
           <div className="flex justify-between pt-6">
             <Button
               variant="outline"
@@ -611,11 +427,11 @@ export default function ProjectFormPage() {
             >
               {step === 1 ? 'Cancelar' : 'Voltar'}
             </Button>
-            {step < 3 ? (
+            {step < 4 ? (
               <Button onClick={handleNext}>Próximo</Button>
             ) : (
               <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? 'Processando...' : isEditMode ? 'Salvar Alterações' : 'Criar Projeto'}
+                {loading ? 'Processando...' : isEditMode ? 'Salvar Alterações' : 'Finalizar'}
               </Button>
             )}
           </div>
