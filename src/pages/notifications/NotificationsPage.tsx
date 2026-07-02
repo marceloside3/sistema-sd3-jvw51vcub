@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase/client'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { getNotifications, markAsRead, markAllAsRead } from '@/services/notifications'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 
 const RedirectLink = ({ url }: { url: string }) => {
@@ -25,13 +25,13 @@ const RedirectLink = ({ url }: { url: string }) => {
 }
 
 export default function NotificationsPage() {
-  const { data: userCtx } = useCurrentUser()
+  const { data: userCtx, loading: userLoading } = useCurrentUser()
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    const userId = userCtx?.user?.id
+    const userId = userCtx?.id
     if (!userId) return
 
     let isMounted = true
@@ -62,7 +62,7 @@ export default function NotificationsPage() {
       clearInterval(intervalId)
       window.removeEventListener('focus', onFocus)
     }
-  }, [userCtx?.user?.id])
+  }, [userCtx?.id])
 
   const handleRead = async (n: any) => {
     if (!n.is_read) {
@@ -73,10 +73,18 @@ export default function NotificationsPage() {
   }
 
   const handleMarkAll = async () => {
-    const userId = userCtx?.user?.id
+    const userId = userCtx?.id
     if (!userId) return
     await markAllAsRead(userId)
     setNotifications((prev) => prev.map((x) => ({ ...x, is_read: true })))
+  }
+
+  if (userLoading) {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+      </div>
+    )
   }
 
   return (

@@ -11,11 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Loader2 } from 'lucide-react'
 import { getMyDemands } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 
 export default function MyDemandsPage() {
-  const { data: userCtx } = useCurrentUser()
+  const { data: userCtx, loading: userLoading } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<'received' | 'sent' | 'completed'>('received')
   const [demands, setDemands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,16 +24,16 @@ export default function MyDemandsPage() {
   const [counts, setCounts] = useState({ received: 0, sent: 0, completed: 0 })
 
   useEffect(() => {
-    if (userCtx?.user?.id) fetchDemands()
-  }, [activeTab, userCtx?.user?.id, statusFilter])
+    if (userCtx?.id) fetchDemands()
+  }, [activeTab, userCtx?.id, statusFilter])
 
   useEffect(() => {
-    if (!userCtx?.user?.id) return
+    if (!userCtx?.id) return
 
     Promise.all([
-      getMyDemands(userCtx.user.id, 'received', { status: 'all' }),
-      getMyDemands(userCtx.user.id, 'sent', { status: 'all' }),
-      getMyDemands(userCtx.user.id, 'completed', { status: 'all' }),
+      getMyDemands(userCtx.id, 'received', { status: 'all' }),
+      getMyDemands(userCtx.id, 'sent', { status: 'all' }),
+      getMyDemands(userCtx.id, 'completed', { status: 'all' }),
     ])
       .then(([received, sent, completed]) => {
         setCounts({
@@ -42,12 +43,12 @@ export default function MyDemandsPage() {
         })
       })
       .catch(console.error)
-  }, [userCtx?.user?.id, demands])
+  }, [userCtx?.id, demands])
 
   async function fetchDemands() {
     setLoading(true)
     try {
-      const data = await getMyDemands(userCtx!.user.id, activeTab, { status: statusFilter })
+      const data = await getMyDemands(userCtx!.id, activeTab, { status: statusFilter })
       setDemands(data || [])
     } catch (err) {
       console.error(err)
@@ -97,6 +98,14 @@ export default function MyDemandsPage() {
       </CardContent>
     </Card>
   )
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

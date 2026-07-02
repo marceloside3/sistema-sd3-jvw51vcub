@@ -91,6 +91,11 @@ export default function ProjectFormPage() {
     .filter((a) => formData.selectedAreas.includes(a.id))
     .map((a) => a.code)
 
+  const briefingFields = getBriefingFieldsForAreas(selectedAreaCodes)
+  const allBriefingFieldsFilled =
+    briefingFields.length > 0 &&
+    briefingFields.every((f) => (briefingData[f.key] || '').trim().length > 0)
+
   const handleNext = () => {
     if (step === 1 && !formData.client_id)
       return toast({ title: 'Selecione um cliente', variant: 'destructive' })
@@ -430,7 +435,10 @@ export default function ProjectFormPage() {
             {step < 4 ? (
               <Button onClick={handleNext}>Próximo</Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={loading}>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || (step === 4 && !allBriefingFieldsFilled)}
+              >
                 {loading ? 'Processando...' : isEditMode ? 'Salvar Alterações' : 'Finalizar'}
               </Button>
             )}
