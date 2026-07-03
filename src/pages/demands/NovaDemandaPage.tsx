@@ -96,8 +96,8 @@ export default function NovaDemandaPage() {
     try {
       const payload = {
         project_id: formData.project_id,
-        from_user_id: currentUser?.user?.id,
-        from_area_id: currentUser?.areas?.[0]?.id || null,
+        from_user_id: currentUser?.data?.id,
+        from_area_id: currentUser?.data?.areas?.[0]?.id || null,
         to_area_id: formData.to_area_id,
         to_user_id: formData.to_user_id === 'any' ? null : formData.to_user_id,
         title: formData.title,
@@ -109,14 +109,14 @@ export default function NovaDemandaPage() {
 
       const newDemand = await createDemand(payload)
 
-      if (pendingFiles.length > 0 && currentUser?.user?.id) {
+      if (pendingFiles.length > 0 && currentUser?.data?.id) {
         setUploadProgress({ current: 0, total: pendingFiles.length })
         let successes = 0
         let failures = 0
 
         for (let i = 0; i < pendingFiles.length; i++) {
           try {
-            await uploadAttachment('demand', newDemand.id, pendingFiles[i], currentUser.user.id)
+            await uploadAttachment('demand', newDemand.id, pendingFiles[i], currentUser.data!.id)
             successes++
           } catch (uploadErr) {
             console.error('Upload error:', uploadErr)
