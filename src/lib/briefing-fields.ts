@@ -99,7 +99,11 @@ export function getBriefingFieldsForAreas(areaCodes: string[]): BriefingFieldDef
   const fieldKeys = new Set<string>()
   for (const code of areaCodes) {
     const fields = AREA_BRIEFING_FIELDS[code]
-    if (fields) fields.forEach((f) => fieldKeys.add(f))
+    if (fields) {
+      fields.forEach((f) => fieldKeys.add(f))
+    } else {
+      fieldKeys.add('reuniao_passagem_briefing')
+    }
   }
   return Array.from(fieldKeys)
     .sort((a, b) => FIELD_ORDER.indexOf(a) - FIELD_ORDER.indexOf(b))
