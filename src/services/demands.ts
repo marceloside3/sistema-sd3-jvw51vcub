@@ -113,6 +113,24 @@ export async function createDemandComment(payload: any) {
   return data
 }
 
+export async function getAllUserDemands(userId: string) {
+  const { data, error } = await supabase
+    .from('demands')
+    .select(`
+      *,
+      project:projects(id, name, project_code),
+      from_user:users!demands_from_user_id_fkey(id, full_name),
+      to_user:users!demands_to_user_id_fkey(id, full_name),
+      from_area:areas!demands_from_area_id_fkey(id, name),
+      to_area:areas!demands_to_area_id_fkey(id, name)
+    `)
+    .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
 export const getDemandDetails = getDemandById
 
 export async function addDemandComment(demandId: string, userId: string, content: string) {

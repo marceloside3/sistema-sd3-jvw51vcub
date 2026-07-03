@@ -1,8 +1,18 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { format } from 'date-fns'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent } from '@/components/ui/card'
+import { useEffect, useState, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Plus, Search, X, Loader2, ArrowUpDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -11,45 +21,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
-import { getMyDemands } from '@/services/demands'
+import { formatDateBR, cn } from '@/lib/utils'
+import { getAllUserDemands } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
+import { DemandKpiCards } from '@/components/demands/DemandKpiCards'
+import { DEMAND_PRIORITY_CONFIG, DEMAND_STATUS_CONFIG } from '@/lib/constants/demand-status'
+
+type TabKey = 'received' | 'sent' | 'completed'
+type SortKey = 'title' | 'due_date' | 'priority' | 'status'
 
 export default function MyDemandsPage() {
   const { data: userCtx, loading: userLoading } = useCurrentUser()
-  const [activeTab, setActiveTab] = useState<'received' | 'sent' | 'completed'>('received')
-  const [demands, setDemands] = useState<any[]>([])
+  const [allDemands, setAllDemands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<TabKey>('received')
+  const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [counts, setCounts] = useState({ received: 0, sent: 0, completed: 0 })
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [sortBy, setSortBy] = useState<SortKey>('due_date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (userCtx?.id) fetchDemands()
-  }, [activeTab, userCtx?.id, statusFilter])
-
-  useEffect(() => {
-    if (!userCtx?.id) return
-
-    Promise.all([
-      getMyDemands(userCtx.id, 'received', { status: 'all' }),
-      getMyDemands(userCtx.id, 'sent', { status: 'all' }),
-      getMyDemands(userCtx.id, 'completed', { status: 'all' }),
-    ])
-      .then(([received, sent, completed]) => {
-        setCounts({
-          received: received?.length || 0,
-          sent: sent?.length || 0,
-          completed: completed?.length || 0,
-        })
-      })
-      .catch(console.error)
-  }, [userCtx?.id, demands])
+  }, [userCtx?.id])
 
   async function fetchDemands() {
     setLoading(true)
     try {
-      const data = await getMyDemands(userCtx!.id, activeTab, { status: statusFilter })
-      setDemands(data || [])
+      const data = await getAllUserDemands(userCtx!.id)
+      setAllDemands(data || [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -57,47 +58,79 @@ export default function MyDemandsPage() {
     }
   }
 
-  const renderDemandCard = (d: any) => (
-    <Card key={d.id} className="hover:border-blue-300 transition-colors">
-      <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <Link
-              to={`/demandas/${d.id}`}
-              className="font-semibold hover:text-blue-600 transition-colors text-lg"
-            >
-              {d.title}
-            </Link>
-            <Badge variant="secondary" className="text-[10px]">
-              {d.project?.project_code}
-            </Badge>
-          </div>
-          <p className="text-sm text-gray-500 mb-2">Projeto: {d.project?.name}</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="text-xs">
-              De: {d.from_user?.full_name.split(' ')[0]} ({d.from_area?.name})
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              Para: {d.to_user?.full_name.split(' ')[0] || 'Área'} ({d.to_area?.name})
-            </Badge>
-            {d.priority === 'urgent' && (
-              <Badge variant="destructive" className="text-xs">
-                Urgente
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="text-right shrink-0 flex flex-col items-end">
-          <Badge className="mb-2 uppercase" variant={d.status === 'done' ? 'default' : 'secondary'}>
-            {d.status}
-          </Badge>
-          <span className="text-xs text-gray-400">
-            Prazo: {d.due_date ? format(new Date(d.due_date), 'dd/MM/yyyy') : '-'}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  )
+  const kpiData = useMemo(() => {
+    const uid = userCtx?.id
+    if (!uid) return { received: 0, sent: 0, completed: 0, overdue: 0 }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    let received = 0,
+      sent = 0,
+      completed = 0,
+      overdue = 0
+    allDemands.forEach((d) => {
+      const isTo = d.to_user_id === uid
+      const isFrom = d.from_user_id === uid
+      const isDone = d.status === 'done'
+      const isCancelled = d.status === 'cancelled'
+      if (isTo && !isDone && !isCancelled) received++
+      if (isFrom && !isDone && !isCancelled) sent++
+      if (isDone && (isTo || isFrom)) completed++
+      if (d.due_date && new Date(d.due_date) < today && !isDone && !isCancelled && (isTo || isFrom))
+        overdue++
+    })
+    return { received, sent, completed, overdue }
+  }, [allDemands, userCtx?.id])
+
+  const filteredDemands = useMemo(() => {
+    const uid = userCtx?.id
+    if (!uid) return []
+    const result = allDemands.filter((d) => {
+      const isTo = d.to_user_id === uid
+      const isFrom = d.from_user_id === uid
+      if (activeTab === 'received' && !(isTo && d.status !== 'done' && d.status !== 'cancelled'))
+        return false
+      if (activeTab === 'sent' && !(isFrom && d.status !== 'done' && d.status !== 'cancelled'))
+        return false
+      if (activeTab === 'completed' && !(d.status === 'done' && (isTo || isFrom))) return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (
+          !d.title?.toLowerCase().includes(q) &&
+          !d.project?.name?.toLowerCase().includes(q) &&
+          !d.project?.project_code?.toLowerCase().includes(q)
+        )
+          return false
+      }
+      if (statusFilter !== 'all' && d.status !== statusFilter) return false
+      if (priorityFilter !== 'all' && d.priority !== priorityFilter) return false
+      return true
+    })
+    result.sort((a, b) => {
+      let cmp = 0
+      if (sortBy === 'title') cmp = (a.title || '').localeCompare(b.title || '')
+      else if (sortBy === 'due_date') cmp = (a.due_date || '').localeCompare(b.due_date || '')
+      else if (sortBy === 'priority') cmp = (a.priority || '').localeCompare(b.priority || '')
+      else if (sortBy === 'status') cmp = (a.status || '').localeCompare(b.status || '')
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return result
+  }, [allDemands, activeTab, search, statusFilter, priorityFilter, sortBy, sortDir, userCtx?.id])
+
+  const hasFilters = search !== '' || statusFilter !== 'all' || priorityFilter !== 'all'
+
+  function clearFilters() {
+    setSearch('')
+    setStatusFilter('all')
+    setPriorityFilter('all')
+  }
+
+  function toggleSort(col: SortKey) {
+    if (sortBy === col) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    else {
+      setSortBy(col)
+      setSortDir('asc')
+    }
+  }
 
   if (userLoading) {
     return (
@@ -108,41 +141,171 @@ export default function MyDemandsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Minhas Demandas</h1>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="in_progress">Em Andamento</SelectItem>
-            <SelectItem value="review">Em Revisão</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Minhas Demandas</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gerencie as tarefas que você pediu ou que pediram para você.
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/demandas/nova">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Demanda
+          </Link>
+        </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="received">Recebidas ({counts.received})</TabsTrigger>
-          <TabsTrigger value="sent">Enviadas ({counts.sent})</TabsTrigger>
-          <TabsTrigger value="completed">Concluídas ({counts.completed})</TabsTrigger>
-        </TabsList>
+      <DemandKpiCards {...kpiData} />
 
-        <div className="space-y-4">
-          {loading ? (
-            <div className="py-8 text-center text-gray-500">Carregando...</div>
-          ) : demands.length === 0 ? (
-            <div className="py-12 text-center text-gray-500 bg-white rounded-lg border border-dashed">
-              Nenhuma demanda encontrada nesta aba.
-            </div>
-          ) : (
-            demands.map(renderDemandCard)
-          )}
-        </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="received">Recebidas ({kpiData.received})</TabsTrigger>
+          <TabsTrigger value="sent">Enviadas ({kpiData.sent})</TabsTrigger>
+          <TabsTrigger value="completed">Concluídas ({kpiData.completed})</TabsTrigger>
+        </TabsList>
       </Tabs>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium">Filtros</CardTitle>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">
+                <X className="w-3 h-3 mr-1" />
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título, projeto ou código..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="in_progress">Em Andamento</SelectItem>
+                <SelectItem value="review">Em Revisão</SelectItem>
+                <SelectItem value="done">Concluída</SelectItem>
+                <SelectItem value="cancelled">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Prioridades</SelectItem>
+                <SelectItem value="urgent">Urgente</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="bg-white rounded-md border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('title')}>
+                <span className="inline-flex items-center gap-1">
+                  Título <ArrowUpDown className="h-3 w-3" />
+                </span>
+              </TableHead>
+              <TableHead>Projeto</TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => toggleSort('priority')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Prioridade <ArrowUpDown className="h-3 w-3" />
+                </span>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => toggleSort('due_date')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Prazo <ArrowUpDown className="h-3 w-3" />
+                </span>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => toggleSort('status')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Status <ArrowUpDown className="h-3 w-3" />
+                </span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                  Carregando...
+                </TableCell>
+              </TableRow>
+            ) : filteredDemands.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                  Nenhuma demanda encontrada.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredDemands.map((d) => {
+                const pCfg = DEMAND_PRIORITY_CONFIG[d.priority] || DEMAND_PRIORITY_CONFIG.normal
+                const sCfg = DEMAND_STATUS_CONFIG[d.status] || {
+                  label: d.status,
+                  className: 'bg-zinc-100 text-zinc-600 border-zinc-200',
+                }
+                return (
+                  <TableRow
+                    key={d.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => navigate(`/demandas/${d.id}`)}
+                  >
+                    <TableCell className="font-medium text-blue-600">{d.title}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <span className="font-medium">{d.project?.project_code || '-'}</span>
+                      <span className="block text-xs text-gray-400">{d.project?.name}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={pCfg.className}>
+                        {pCfg.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {formatDateBR(d.due_date)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={sCfg.className}>
+                        {sCfg.label}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
