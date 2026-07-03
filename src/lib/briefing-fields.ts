@@ -16,6 +16,7 @@ const AREA_BRIEFING_FIELDS: Record<string, string[]> = {
     'referencias',
   ],
   criacao: [
+    'reuniao_passagem_briefing',
     'contexto_projeto',
     'especificacoes_tecnicas',
     'infos_comerciais',
@@ -25,6 +26,7 @@ const AREA_BRIEFING_FIELDS: Record<string, string[]> = {
     'referencias',
   ],
   producao: [
+    'reuniao_passagem_briefing',
     'contexto_projeto',
     'especificacoes_tecnicas',
     'infos_comerciais',
