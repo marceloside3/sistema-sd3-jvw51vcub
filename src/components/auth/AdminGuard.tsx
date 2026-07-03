@@ -10,8 +10,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     return <div className="p-8 text-center text-gray-500">Verificando permissões...</div>
   }
 
-  const hasAccess =
-    data?.profile?.is_admin || data?.profile?.is_director || data?.profile?.is_system
+  const hasAccess = data?.profile?.is_admin === true
 
   if (!hasAccess) {
     setTimeout(() => {

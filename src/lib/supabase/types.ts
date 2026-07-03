@@ -1108,6 +1108,7 @@ export type Database = {
         | 'g3_approved'
         | 'g3_rejected'
         | 'g3_override'
+        | 'project_redistribution_triggered'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1266,6 +1267,7 @@ export const Constants = {
         'g3_approved',
         'g3_rejected',
         'g3_override',
+        'project_redistribution_triggered',
       ],
     },
   },

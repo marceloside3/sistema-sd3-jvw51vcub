@@ -33,8 +33,7 @@ const navLinkClass = (isActive: boolean) =>
 function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
   const location = useLocation()
   const { data } = useCurrentUser()
-  const canSeeAdmin =
-    data?.profile?.is_admin || data?.profile?.is_director || data?.profile?.is_system
+  const canSeeAdmin = data?.profile?.is_admin === true
   const canSeeHub =
     (data?.profile &&
       ['super_admin', 'atendimento', 'planejamento', 'admin', 'diretor'].includes(
