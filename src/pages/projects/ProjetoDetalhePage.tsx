@@ -12,6 +12,7 @@ import { AiAnalysisModal } from '@/components/project/AiAnalysisModal'
 import { getProjectDemands } from '@/services/demands'
 import { getProjectPapers } from '@/services/papers'
 import { formatDateBR } from '@/lib/utils'
+import { getDynamicBriefingEntries } from '@/lib/briefing-fields'
 import {
   Table,
   TableBody,
@@ -165,8 +166,12 @@ export default function ProjetoDetalhePage() {
   const isPlanningArea = userAreaCodes.includes('planejamento')
   const isAllowedToDistribute = isAdmin || isDirector || isPlanningArea
 
-  const canViewPaperSection = !!project.distributed_at
-  const canCreatePaper = !!project.distributed_at && (isAdmin || isDirector || isPlanningArea)
+  const projectAreaCodes = (project.areas || []).map((a: any) => a.area?.code?.toLowerCase() || '')
+  const hasPlanningArea = projectAreaCodes.includes('planejamento')
+
+  const canViewPaperSection = !!project.distributed_at && hasPlanningArea
+  const canCreatePaper =
+    !!project.distributed_at && hasPlanningArea && (isAdmin || isDirector || isPlanningArea)
   const currentPaper = papers[0]
 
   const canDistribute =
@@ -474,48 +479,26 @@ export default function ProjetoDetalhePage() {
 
           <div className="border rounded-lg bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-6">Briefing do Projeto</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Objetivo</div>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {project.briefing_data?.objetivo || 'Não informado'}
-                  </div>
+            {(() => {
+              const briefingEntries = getDynamicBriefingEntries(project.briefing_data)
+              if (briefingEntries.length === 0) {
+                return (
+                  <p className="text-sm text-gray-500">
+                    Nenhum dado de briefing preenchido para este projeto.
+                  </p>
+                )
+              }
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {briefingEntries.map((entry) => (
+                    <div key={entry.key}>
+                      <div className="text-sm text-gray-500 mb-1">{entry.label}</div>
+                      <div className="text-sm whitespace-pre-wrap break-words">{entry.value}</div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Público-alvo</div>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {project.briefing_data?.publico_alvo || 'Não informado'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Canais</div>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {project.briefing_data?.canais || 'Não informado'}
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Orçamento</div>
-                  <div className="text-sm font-medium">
-                    {project.briefing_data?.budget || 'Não informado'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Restrições</div>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {project.briefing_data?.restricoes || 'Não informado'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Referências</div>
-                  <div className="text-sm whitespace-pre-wrap break-words">
-                    {project.briefing_data?.referencias || 'Não informado'}
-                  </div>
-                </div>
-              </div>
-            </div>
+              )
+            })()}
           </div>
         </TabsContent>
 

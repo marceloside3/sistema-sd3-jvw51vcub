@@ -103,3 +103,31 @@ export function getBriefingFieldsForAreas(areaCodes: string[]): BriefingFieldDef
     .sort((a, b) => FIELD_ORDER.indexOf(a) - FIELD_ORDER.indexOf(b))
     .map((key) => ({ key, label: FIELD_LABELS[key] || key }))
 }
+
+export function getBriefingFieldLabel(key: string): string {
+  return FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+export interface BriefingDisplayEntry {
+  key: string
+  label: string
+  value: string
+}
+
+export function getDynamicBriefingEntries(
+  briefingData: Record<string, unknown> | null | undefined,
+): BriefingDisplayEntry[] {
+  if (!briefingData || typeof briefingData !== 'object') return []
+  return Object.entries(briefingData)
+    .filter(([, value]) => {
+      if (value === null || value === undefined) return false
+      const str = String(value).trim()
+      return str !== ''
+    })
+    .map(([key, value]) => ({
+      key,
+      label: getBriefingFieldLabel(key),
+      value: String(value),
+    }))
+    .sort((a, b) => FIELD_ORDER.indexOf(a.key) - FIELD_ORDER.indexOf(b.key))
+}

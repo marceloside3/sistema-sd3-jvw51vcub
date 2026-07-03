@@ -781,6 +781,8 @@ export type Database = {
           briefing_completed_at: string | null
           briefing_data: Json
           client_id: string
+          competence_month: number | null
+          competence_year: number | null
           created_at: string
           created_by: string
           description: string | null
@@ -802,6 +804,8 @@ export type Database = {
           briefing_completed_at?: string | null
           briefing_data?: Json
           client_id: string
+          competence_month?: number | null
+          competence_year?: number | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -823,6 +827,8 @@ export type Database = {
           briefing_completed_at?: string | null
           briefing_data?: Json
           client_id?: string
+          competence_month?: number | null
+          competence_year?: number | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -986,7 +992,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      generate_project_code: { Args: { p_client_id: string }; Returns: string }
+      generate_project_code:
+        | { Args: { p_client_id: string }; Returns: string }
+        | {
+            Args: {
+              p_client_id: string
+              p_competence_month?: number
+              p_competence_year?: number
+            }
+            Returns: string
+          }
       get_auth_diagnostic: { Args: never; Returns: Json }
       get_project_audit_log: {
         Args: {
