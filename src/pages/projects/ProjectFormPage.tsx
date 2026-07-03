@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { getClients } from '@/services/clients'
 import { createProject, getProjectById } from '@/services/projects'
 import { uploadAttachment } from '@/services/attachments'
@@ -21,6 +22,27 @@ import { supabase } from '@/lib/supabase/client'
 import { DynamicBriefingStep } from '@/components/projects/DynamicBriefingStep'
 import { getBriefingFieldsForAreas } from '@/lib/briefing-fields'
 import { cn } from '@/lib/utils'
+
+const MONTHS = [
+  { value: '1', label: 'Janeiro' },
+  { value: '2', label: 'Fevereiro' },
+  { value: '3', label: 'Março' },
+  { value: '4', label: 'Abril' },
+  { value: '5', label: 'Maio' },
+  { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' },
+  { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Setembro' },
+  { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' },
+  { value: '12', label: 'Dezembro' },
+]
+
+const CURRENT_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map((y) => ({
+  value: String(y),
+  label: String(y),
+}))
 
 export default function ProjectFormPage() {
   const { id } = useParams()
@@ -48,6 +70,8 @@ export default function ProjectFormPage() {
     origin_type: 'manual',
     selectedAreas: [] as string[],
     leadArea: '',
+    competence_month: '',
+    competence_year: String(CURRENT_YEAR),
   })
 
   useEffect(() => {
@@ -79,6 +103,10 @@ export default function ProjectFormPage() {
               origin_type: proj.origin_type || 'manual',
               selectedAreas: projectAreas.map((a: any) => a.area_id) || [],
               leadArea: projectAreas.find((a: any) => a.is_lead)?.area_id || '',
+              competence_month: proj.competence_month ? String(proj.competence_month) : '',
+              competence_year: proj.competence_year
+                ? String(proj.competence_year)
+                : String(CURRENT_YEAR),
             })
             setBriefingData((proj.briefing_data as Record<string, string>) || {})
           }
@@ -96,9 +124,25 @@ export default function ProjectFormPage() {
     briefingFields.length > 0 &&
     briefingFields.every((f) => (briefingData[f.key] || '').trim().length > 0)
 
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === formData.client_id),
+    [clients, formData.client_id],
+  )
+
+  const projectCodePreview = useMemo(() => {
+    if (!selectedClient || !formData.competence_month) return null
+    const mm = String(formData.competence_month).padStart(2, '0')
+    const yyyy = formData.competence_year
+    return `${selectedClient.code}-${mm}-${yyyy}-001`
+  }, [selectedClient, formData.competence_month, formData.competence_year])
+
   const handleNext = () => {
-    if (step === 1 && !formData.client_id)
-      return toast({ title: 'Selecione um cliente', variant: 'destructive' })
+    if (step === 1) {
+      if (!formData.client_id)
+        return toast({ title: 'Selecione um cliente', variant: 'destructive' })
+      if (!formData.competence_month)
+        return toast({ title: 'Selecione o mês de competência', variant: 'destructive' })
+    }
     if (step === 2 && !formData.name)
       return toast({ title: 'Preencha o nome do projeto', variant: 'destructive' })
     if (step === 2 && !formData.end_date)
@@ -140,20 +184,24 @@ export default function ProjectFormPage() {
         fields.length > 0 && emptyFields.length === 0 ? new Date().toISOString() : null
 
       if (isEditMode && editingId) {
+        const updatePayload: any = {
+          name: formData.name,
+          description: formData.description,
+          start_date: formData.start_date || null,
+          end_date: formData.end_date,
+          client_id: formData.client_id,
+          status: formData.status,
+          origin_type: formData.origin_type,
+          briefing_data: briefingData,
+          briefing_completed_at: briefingCompletedAt,
+          competence_month: formData.competence_month ? parseInt(formData.competence_month) : null,
+          competence_year: formData.competence_year ? parseInt(formData.competence_year) : null,
+          updated_at: new Date().toISOString(),
+        }
+
         const { error: updateError } = await supabase
           .from('projects')
-          .update({
-            name: formData.name,
-            description: formData.description,
-            start_date: formData.start_date || null,
-            end_date: formData.end_date,
-            client_id: formData.client_id,
-            status: formData.status,
-            origin_type: formData.origin_type,
-            briefing_data: briefingData,
-            briefing_completed_at: briefingCompletedAt,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq('id', editingId)
         if (updateError) throw updateError
 
@@ -178,6 +226,8 @@ export default function ProjectFormPage() {
             briefing_data: briefingData,
             briefing_completed_at: briefingCompletedAt,
             created_by: sessionUser.id,
+            competence_month: parseInt(formData.competence_month),
+            competence_year: parseInt(formData.competence_year),
           },
           areaPayload,
         )
@@ -268,23 +318,79 @@ export default function ProjectFormPage() {
         <CardContent className="space-y-6">
           {step === 1 && (
             <div className="space-y-4">
-              <Label>Cliente</Label>
-              <Select
-                disabled={isProjectCompleted}
-                value={formData.client_id}
-                onValueChange={(v) => setFormData({ ...formData, client_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente ativo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} ({c.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Cliente</Label>
+                <Select
+                  disabled={isProjectCompleted}
+                  value={formData.client_id}
+                  onValueChange={(v) => setFormData({ ...formData, client_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente ativo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} ({c.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>
+                    Mês de Competência <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    disabled={isProjectCompleted}
+                    value={formData.competence_month}
+                    onValueChange={(v) => setFormData({ ...formData, competence_month: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o mês" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTHS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Ano de Competência</Label>
+                  <Select
+                    disabled={isProjectCompleted}
+                    value={formData.competence_year}
+                    onValueChange={(v) => setFormData({ ...formData, competence_year: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {YEAR_OPTIONS.map((y) => (
+                        <SelectItem key={y.value} value={y.value}>
+                          {y.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {projectCodePreview && (
+                <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 flex items-center gap-3 animate-fade-in">
+                  <Badge variant="outline" className="bg-orange-600 text-white border-orange-600">
+                    Prévia do Código
+                  </Badge>
+                  <span className="text-sm font-mono font-semibold text-orange-900">
+                    {projectCodePreview}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

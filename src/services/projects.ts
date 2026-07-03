@@ -80,7 +80,9 @@ export async function createProject(
 
   const { data: projectCode, error: rpcError } = await supabase.rpc('generate_project_code', {
     p_client_id: payload.client_id,
-  })
+    p_competence_month: payload.competence_month ?? null,
+    p_competence_year: payload.competence_year ?? null,
+  } as any)
 
   if (rpcError) {
     console.error('[createProject] Error generating project code:', {
