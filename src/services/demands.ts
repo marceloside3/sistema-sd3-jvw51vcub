@@ -154,3 +154,51 @@ export async function getMyDemands(
   }
   return getDemands(queryFilters)
 }
+
+export async function checkAndNotifyDeadlineAlerts(userId: string) {
+  const now = new Date()
+  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+  const { data: upcomingDemands, error: demandsError } = await supabase
+    .from('demands')
+    .select('id, title, due_date, to_user_id, status')
+    .eq('to_user_id', userId)
+    .in('status', ['pending', 'in_progress', 'review'])
+    .not('due_date', 'is', null)
+    .lte('due_date', twentyFourHoursFromNow.toISOString().split('T')[0])
+    .gte('due_date', now.toISOString().split('T')[0])
+
+  if (demandsError) throw demandsError
+  if (!upcomingDemands || upcomingDemands.length === 0) return
+
+  const demandIds = upcomingDemands.map((d) => d.id)
+  const demandLinks = demandIds.map((id) => `/demandas/${id}`)
+
+  const { data: existingAlerts, error: alertsError } = await supabase
+    .from('notifications')
+    .select('link_to')
+    .eq('user_id', userId)
+    .eq('type', 'deadline_alert')
+    .in('link_to', demandLinks)
+
+  if (alertsError) throw alertsError
+
+  const existingLinks = new Set((existingAlerts || []).map((n) => n.link_to))
+
+  const newNotifications = upcomingDemands
+    .filter((d) => !existingLinks.has(`/demandas/${d.id}`))
+    .map((d) => ({
+      user_id: userId,
+      type: 'deadline_alert',
+      title: 'Atenção: Prazo de Demanda Próximo',
+      message: `A demanda '${d.title}' vence em menos de 24 horas. Fique atento ao prazo!`,
+      link_to: `/demandas/${d.id}`,
+      is_read: false,
+      should_send_email: false,
+    }))
+
+  if (newNotifications.length > 0) {
+    const { error: insertError } = await supabase.from('notifications').insert(newNotifications)
+    if (insertError) throw insertError
+  }
+}

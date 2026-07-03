@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, X, Loader2, ArrowUpDown, AlertTriangle } from 'lucide-react'
+import { Search, X, Loader2, ArrowUpDown, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatDateBR, cn } from '@/lib/utils'
-import { getAllUserDemands } from '@/services/demands'
+import { getAllUserDemands, checkAndNotifyDeadlineAlerts } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { DemandKpiCards, type KpiCardKey } from '@/components/demands/DemandKpiCards'
 import { DEMAND_PRIORITY_CONFIG, DEMAND_STATUS_CONFIG } from '@/lib/constants/demand-status'
@@ -71,7 +71,12 @@ export default function MyDemandsPage() {
   }
 
   useEffect(() => {
-    if (userCtx?.id) fetchDemands()
+    if (userCtx?.id) {
+      fetchDemands()
+      checkAndNotifyDeadlineAlerts(userCtx.id).catch((err) =>
+        console.error('Failed to check deadline alerts:', err),
+      )
+    }
   }, [userCtx?.id])
 
   async function fetchDemands() {
@@ -196,19 +201,11 @@ export default function MyDemandsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Minhas Demandas</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie as tarefas que você pediu ou que pediram para você.
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/demandas/nova">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Demanda
-          </Link>
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Minhas Demandas</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Gerencie as tarefas que você pediu ou que pediram para você.
+        </p>
       </div>
 
       <DemandKpiCards {...kpiData} activeCard={activeCard} onCardClick={handleCardClick} />
