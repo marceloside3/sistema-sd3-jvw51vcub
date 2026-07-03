@@ -238,6 +238,14 @@ export default function ProjetoDetalhePage() {
                 </Link>
               </Button>
             )}
+            {canDistribute && demands.length > 0 && (
+              <Badge
+                variant="outline"
+                className="ml-2 text-amber-700 border-amber-600 bg-amber-50 uppercase tracking-wider text-[10px]"
+              >
+                Redistribuição
+              </Badge>
+            )}
             {canDistribute && (
               <Button
                 size="sm"
@@ -250,6 +258,8 @@ export default function ProjetoDetalhePage() {
                     <div className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
                     Distribuindo...
                   </>
+                ) : demands.length > 0 ? (
+                  'Redistribuir para áreas'
                 ) : (
                   'Distribuir para áreas'
                 )}
