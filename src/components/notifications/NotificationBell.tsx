@@ -20,7 +20,7 @@ export function NotificationBell() {
 
     let isMounted = true
 
-    async function loadNotifications() {
+    const fetchNotifications = async () => {
       const data = await getNotifications(userId, 10)
       if (isMounted) {
         setNotifications(data || [])
@@ -28,28 +28,47 @@ export function NotificationBell() {
       }
     }
 
-    loadNotifications()
+    fetchNotifications()
 
-    const intervalId = setInterval(loadNotifications, 30000)
-
-    const onFocus = () => {
-      loadNotifications()
-    }
-    window.addEventListener('focus', onFocus)
+    const channel = supabase
+      .channel('notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          if (isMounted) fetchNotifications()
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          if (isMounted) fetchNotifications()
+        },
+      )
+      .subscribe()
 
     return () => {
       isMounted = false
-      clearInterval(intervalId)
-      window.removeEventListener('focus', onFocus)
+      supabase.removeChannel(channel)
     }
   }, [userCtx?.user?.id])
 
   const handleRead = async (n: any) => {
     if (!n.is_read) {
       await markAsRead(n.id)
-      const fresh = await getNotifications(userCtx!.user!.id, 10)
-      setNotifications(fresh || [])
-      setUnreadCount((fresh || []).filter((x: any) => !x.is_read).length)
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
+      setUnreadCount((prev) => Math.max(0, prev - 1))
     }
     if (n.link_to) navigate(n.link_to)
   }
@@ -64,7 +83,7 @@ export function NotificationBell() {
         >
           <Bell className="w-5 h-5 text-gray-600" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white animate-fade-in">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
