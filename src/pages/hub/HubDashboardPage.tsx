@@ -25,7 +25,7 @@ import { formatDateBR } from '@/lib/utils'
 import { getProjectStatusBadge, PROJECT_STATUS_LABELS } from '@/lib/constants/project-status'
 import { useSlaConfig } from '@/hooks/use-sla-config'
 import { calculateSla } from '@/lib/sla'
-import { HubKpiCards } from '@/components/hub/HubKpiCards'
+import { HubKpiCards, type HubKpiCardKey } from '@/components/hub/HubKpiCards'
 import { HubExpandedRow } from '@/components/hub/HubExpandedRow'
 
 export default function HubDashboardPage() {
@@ -36,6 +36,7 @@ export default function HubDashboardPage() {
   const [originFilter, setOriginFilter] = useState('all')
   const [slaFilter, setSlaFilter] = useState('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [activeCard, setActiveCard] = useState<HubKpiCardKey | null>(null)
   const navigate = useNavigate()
   const { configs } = useSlaConfig()
 
@@ -60,16 +61,32 @@ export default function HubDashboardPage() {
       overdue = 0,
       pendingDist = 0
     projects.forEach((p) => {
-      const { status } = calculateSla(p.distributed_at, slaLimit)
-      if (status === 'not_distributed') pendingDist++
-      else if (status === 'safe') onTrack++
-      else if (status === 'overdue') overdue++
+      if (!p.distributed_at) {
+        pendingDist++
+      } else {
+        const { status } = calculateSla(p.distributed_at, slaLimit)
+        if (status === 'safe') onTrack++
+        else if (status === 'overdue') overdue++
+      }
     })
-    return { total: projects.length, onTrack, overdue, pendingDist }
+    return { total: projects.length, onTrack, overdue, pendingDistribution: pendingDist }
   }, [projects, slaLimit])
 
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
+      if (activeCard) {
+        if (activeCard === 'pendingDistribution') {
+          if (p.distributed_at) return false
+        } else if (activeCard === 'onTrack') {
+          if (!p.distributed_at) return false
+          const { status } = calculateSla(p.distributed_at, slaLimit)
+          if (status !== 'safe') return false
+        } else if (activeCard === 'overdue') {
+          if (!p.distributed_at) return false
+          const { status } = calculateSla(p.distributed_at, slaLimit)
+          if (status !== 'overdue') return false
+        }
+      }
       if (search) {
         const q = search.toLowerCase()
         if (
@@ -87,16 +104,29 @@ export default function HubDashboardPage() {
       }
       return true
     })
-  }, [projects, search, statusFilter, originFilter, slaFilter, slaLimit])
+  }, [projects, search, statusFilter, originFilter, slaFilter, slaLimit, activeCard])
 
   const hasFilters =
-    search !== '' || statusFilter !== 'all' || originFilter !== 'all' || slaFilter !== 'all'
+    search !== '' ||
+    statusFilter !== 'all' ||
+    originFilter !== 'all' ||
+    slaFilter !== 'all' ||
+    activeCard !== null
 
   function clearFilters() {
     setSearch('')
     setStatusFilter('all')
     setOriginFilter('all')
     setSlaFilter('all')
+    setActiveCard(null)
+  }
+
+  function handleCardClick(card: HubKpiCardKey) {
+    if (activeCard === card) {
+      setActiveCard(null)
+    } else {
+      setActiveCard(card)
+    }
   }
 
   function getLeadArea(p: any): string {
@@ -117,7 +147,7 @@ export default function HubDashboardPage() {
         </Button>
       </div>
 
-      <HubKpiCards {...kpiData} />
+      <HubKpiCards {...kpiData} activeCard={activeCard} onCardClick={handleCardClick} />
 
       <Card>
         <CardHeader className="pb-3">
