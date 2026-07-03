@@ -60,19 +60,47 @@ export const updateUser = async (id: string, payload: any) => {
   if (userError) throw userError
 
   if (areas) {
-    await supabase.from('area_responsibles').delete().eq('user_id', id)
-    if (areas.length > 0) {
-      const validAreas = areas.filter((a: any) => a?.area_id)
-      if (validAreas.length > 0) {
-        const { error: areaError } = await supabase.from('area_responsibles').insert(
-          validAreas.map((a: any) => ({
-            user_id: id,
-            area_id: a.area_id,
-            is_principal: a.is_principal,
-          })),
-        )
-        if (areaError) throw areaError
+    const validAreas = areas.filter((a: any) => a?.area_id)
+
+    // Delete area_responsibles for this user that are no longer selected
+    const newAreaIds = validAreas.map((a: any) => a.area_id)
+    if (newAreaIds.length > 0) {
+      await supabase
+        .from('area_responsibles')
+        .delete()
+        .eq('user_id', id)
+        .not('area_id', 'in', `(${newAreaIds.join(',')})`)
+    } else {
+      await supabase.from('area_responsibles').delete().eq('user_id', id)
+    }
+
+    if (validAreas.length > 0) {
+      // For each area where this user will be principal,
+      // first demote any OTHER user who is currently principal for that area
+      const principalAreaIds = validAreas
+        .filter((a: any) => a.is_principal)
+        .map((a: any) => a.area_id)
+
+      if (principalAreaIds.length > 0) {
+        const { error: demoteError } = await supabase
+          .from('area_responsibles')
+          .update({ is_principal: false })
+          .in('area_id', principalAreaIds)
+          .neq('user_id', id)
+          .eq('is_principal', true)
+        if (demoteError) throw demoteError
       }
+
+      // Upsert (handle the unique user_id+area_id constraint)
+      const { error: areaError } = await supabase.from('area_responsibles').upsert(
+        validAreas.map((a: any) => ({
+          user_id: id,
+          area_id: a.area_id,
+          is_principal: a.is_principal,
+        })),
+        { onConflict: 'user_id,area_id' },
+      )
+      if (areaError) throw areaError
     }
   }
   return true
