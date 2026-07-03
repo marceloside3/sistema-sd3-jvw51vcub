@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { createDemand } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
+import { useAuth } from '@/hooks/use-auth'
 import { getProjects } from '@/services/projects'
 import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
@@ -25,8 +26,11 @@ export default function NovaDemandaPage() {
   const initialProjectId = searchParams.get('projectId') || ''
 
   const { data: currentUser } = useCurrentUser()
+  const { user: authUser } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
+
+  const currentUserId = currentUser?.data?.id ?? authUser?.id ?? null
 
   const [projects, setProjects] = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
@@ -92,11 +96,21 @@ export default function NovaDemandaPage() {
       return
     }
 
+    if (!currentUserId) {
+      toast({
+        title: 'Erro de sessão',
+        description:
+          'Não foi possível identificar o usuário. Recarregue a página ou faça login novamente.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const payload = {
         project_id: formData.project_id,
-        from_user_id: currentUser?.data?.id,
+        from_user_id: currentUserId,
         from_area_id: currentUser?.data?.areas?.[0]?.id || null,
         to_area_id: formData.to_area_id,
         to_user_id: formData.to_user_id === 'any' ? null : formData.to_user_id,
@@ -109,14 +123,14 @@ export default function NovaDemandaPage() {
 
       const newDemand = await createDemand(payload)
 
-      if (pendingFiles.length > 0 && currentUser?.data?.id) {
+      if (pendingFiles.length > 0 && currentUserId) {
         setUploadProgress({ current: 0, total: pendingFiles.length })
         let successes = 0
         let failures = 0
 
         for (let i = 0; i < pendingFiles.length; i++) {
           try {
-            await uploadAttachment('demand', newDemand.id, pendingFiles[i], currentUser.data!.id)
+            await uploadAttachment('demand', newDemand.id, pendingFiles[i], currentUserId)
             successes++
           } catch (uploadErr) {
             console.error('Upload error:', uploadErr)
@@ -279,7 +293,7 @@ export default function NovaDemandaPage() {
               Enviando anexos: {uploadProgress.current} de {uploadProgress.total}...
             </span>
           )}
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || !currentUserId}>
             {loading ? 'Enviando...' : 'Criar Demanda'}
           </Button>
         </div>
