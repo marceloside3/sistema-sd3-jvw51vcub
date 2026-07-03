@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { toast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
 
 export function HubGuard({ children }: { children: ReactNode }) {
   const { data, loading } = useCurrentUser()
@@ -27,5 +28,5 @@ export function HubGuard({ children }: { children: ReactNode }) {
     return <Navigate to="/" replace />
   }
 
-  return <>{children}</>
+  return <div className={cn('contents')}>{children}</div>
 }

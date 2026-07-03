@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, X, ChevronRight, ChevronDown } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
@@ -208,9 +208,10 @@ export default function HubDashboardPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProjects.map((p) => (
-                <Fragment key={p.id}>
+              filteredProjects.flatMap((p) => {
+                const rows = [
                   <TableRow
+                    key={p.id}
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => navigate(`/projetos/${p.id}`)}
                   >
@@ -243,12 +244,20 @@ export default function HubDashboardPage() {
                         {getLeadArea(p)}
                       </Badge>
                     </TableCell>
-                  </TableRow>
-                  {expandedId === p.id && (
-                    <HubExpandedRow project={p} slaLimit={slaLimit} colSpan={7} />
-                  )}
-                </Fragment>
-              ))
+                  </TableRow>,
+                ]
+                if (expandedId === p.id) {
+                  rows.push(
+                    <HubExpandedRow
+                      key={`${p.id}-expanded`}
+                      project={p}
+                      slaLimit={slaLimit}
+                      colSpan={7}
+                    />,
+                  )
+                }
+                return rows
+              })
             )}
           </TableBody>
         </Table>
