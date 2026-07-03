@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, X, Loader2, ArrowUpDown } from 'lucide-react'
+import { Plus, Search, X, Loader2, ArrowUpDown, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,7 +24,7 @@ import {
 import { formatDateBR, cn } from '@/lib/utils'
 import { getAllUserDemands } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { DemandKpiCards } from '@/components/demands/DemandKpiCards'
+import { DemandKpiCards, type KpiCardKey } from '@/components/demands/DemandKpiCards'
 import { DEMAND_PRIORITY_CONFIG, DEMAND_STATUS_CONFIG } from '@/lib/constants/demand-status'
 
 type TabKey = 'received' | 'sent' | 'completed'
@@ -40,7 +40,35 @@ export default function MyDemandsPage() {
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [sortBy, setSortBy] = useState<SortKey>('due_date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [overdueOnly, setOverdueOnly] = useState(false)
+  const [activeCard, setActiveCard] = useState<KpiCardKey | null>(null)
   const navigate = useNavigate()
+
+  function handleCardClick(card: KpiCardKey) {
+    if (card === 'overdue') {
+      if (activeCard === 'overdue') {
+        setOverdueOnly(false)
+        setActiveCard(null)
+      } else {
+        setOverdueOnly(true)
+        setActiveCard('overdue')
+      }
+      return
+    }
+    setOverdueOnly(false)
+    const tabMap: Record<string, TabKey> = {
+      received: 'received',
+      sent: 'sent',
+      completed: 'completed',
+    }
+    const newTab = tabMap[card]
+    if (activeCard === card) {
+      setActiveCard(null)
+    } else {
+      setActiveCard(card)
+    }
+    setActiveTab(newTab)
+  }
 
   useEffect(() => {
     if (userCtx?.id) fetchDemands()
@@ -87,11 +115,24 @@ export default function MyDemandsPage() {
     const result = allDemands.filter((d) => {
       const isTo = d.to_user_id === uid
       const isFrom = d.from_user_id === uid
-      if (activeTab === 'received' && !(isTo && d.status !== 'done' && d.status !== 'cancelled'))
-        return false
-      if (activeTab === 'sent' && !(isFrom && d.status !== 'done' && d.status !== 'cancelled'))
-        return false
-      if (activeTab === 'completed' && !(d.status === 'done' && (isTo || isFrom))) return false
+      if (overdueOnly) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        if (
+          !d.due_date ||
+          new Date(d.due_date) >= today ||
+          d.status === 'done' ||
+          d.status === 'cancelled'
+        )
+          return false
+        if (!isTo && !isFrom) return false
+      } else {
+        if (activeTab === 'received' && !(isTo && d.status !== 'done' && d.status !== 'cancelled'))
+          return false
+        if (activeTab === 'sent' && !(isFrom && d.status !== 'done' && d.status !== 'cancelled'))
+          return false
+        if (activeTab === 'completed' && !(d.status === 'done' && (isTo || isFrom))) return false
+      }
       if (search) {
         const q = search.toLowerCase()
         if (
@@ -114,14 +155,27 @@ export default function MyDemandsPage() {
       return sortDir === 'asc' ? cmp : -cmp
     })
     return result
-  }, [allDemands, activeTab, search, statusFilter, priorityFilter, sortBy, sortDir, userCtx?.id])
+  }, [
+    allDemands,
+    activeTab,
+    search,
+    statusFilter,
+    priorityFilter,
+    sortBy,
+    sortDir,
+    userCtx?.id,
+    overdueOnly,
+  ])
 
-  const hasFilters = search !== '' || statusFilter !== 'all' || priorityFilter !== 'all'
+  const hasFilters =
+    search !== '' || statusFilter !== 'all' || priorityFilter !== 'all' || overdueOnly
 
   function clearFilters() {
     setSearch('')
     setStatusFilter('all')
     setPriorityFilter('all')
+    setOverdueOnly(false)
+    setActiveCard(null)
   }
 
   function toggleSort(col: SortKey) {
@@ -157,15 +211,37 @@ export default function MyDemandsPage() {
         </Button>
       </div>
 
-      <DemandKpiCards {...kpiData} />
+      <DemandKpiCards {...kpiData} activeCard={activeCard} onCardClick={handleCardClick} />
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v as TabKey)
+          setOverdueOnly(false)
+          setActiveCard(null)
+        }}
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="received">Recebidas ({kpiData.received})</TabsTrigger>
           <TabsTrigger value="sent">Enviadas ({kpiData.sent})</TabsTrigger>
           <TabsTrigger value="completed">Concluídas ({kpiData.completed})</TabsTrigger>
         </TabsList>
       </Tabs>
+      {overdueOnly && (
+        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <AlertTriangle className="h-4 w-4" />
+          <span>Mostrando apenas demandas atrasadas.</span>
+          <button
+            className="ml-auto text-xs font-medium text-red-700 hover:underline"
+            onClick={() => {
+              setOverdueOnly(false)
+              setActiveCard(null)
+            }}
+          >
+            Remover filtro
+          </button>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="pb-3">
