@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Inbox, FolderKanban, CheckCircle2, Clock } from 'lucide-react'
+import { Inbox, FolderKanban, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface HomeKpiCardsProps {
@@ -7,6 +7,7 @@ interface HomeKpiCardsProps {
   activeProjects: number
   completedDemands: number
   totalDemands: number
+  overdueDemands: number
 }
 
 export function HomeKpiCards({
@@ -14,16 +15,9 @@ export function HomeKpiCards({
   activeProjects,
   completedDemands,
   totalDemands,
+  overdueDemands,
 }: HomeKpiCardsProps) {
   const cards = [
-    {
-      label: 'Demandas Pendentes',
-      value: pendingDemands,
-      icon: Inbox,
-      color: 'text-orange-500',
-      border: 'border-l-orange-500',
-      bg: 'bg-orange-50',
-    },
     {
       label: 'Projetos Ativos',
       value: activeProjects,
@@ -33,12 +27,20 @@ export function HomeKpiCards({
       bg: 'bg-blue-50',
     },
     {
-      label: 'Demandas Concluídas',
-      value: completedDemands,
-      icon: CheckCircle2,
-      color: 'text-green-600',
-      border: 'border-l-green-500',
-      bg: 'bg-green-50',
+      label: 'Demandas Pendentes',
+      value: pendingDemands,
+      icon: Inbox,
+      color: 'text-orange-500',
+      border: 'border-l-orange-500',
+      bg: 'bg-orange-50',
+    },
+    {
+      label: 'Demandas Atrasadas',
+      value: overdueDemands,
+      icon: AlertTriangle,
+      color: 'text-red-600',
+      border: 'border-l-red-500',
+      bg: 'bg-red-50',
     },
     {
       label: 'Total de Demandas',

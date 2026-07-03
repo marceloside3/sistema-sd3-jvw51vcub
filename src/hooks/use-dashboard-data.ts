@@ -18,6 +18,7 @@ interface DashboardData {
   activeProjects: number
   completedDemands: number
   totalDemands: number
+  overdueDemands: number
   recentDemands: DashboardDemand[]
   loading: boolean
 }
@@ -29,6 +30,7 @@ export function useDashboardData(): DashboardData {
     activeProjects: 0,
     completedDemands: 0,
     totalDemands: 0,
+    overdueDemands: 0,
     recentDemands: [],
     loading: true,
   })
@@ -40,6 +42,7 @@ export function useDashboardData(): DashboardData {
         activeProjects: 0,
         completedDemands: 0,
         totalDemands: 0,
+        overdueDemands: 0,
         recentDemands: [],
         loading: false,
       })
@@ -81,11 +84,21 @@ export function useDashboardData(): DashboardData {
           from_user_name: d.from_user?.full_name ?? null,
         }))
 
+        const today = new Date().toISOString().split('T')[0]
+        const overdueDemands = demands.filter(
+          (d: any) =>
+            d.due_date &&
+            d.due_date < today &&
+            d.status !== 'completed' &&
+            d.status !== 'cancelled',
+        ).length
+
         setData({
           pendingDemands: demands.filter((d: any) => d.status === 'pending').length,
           activeProjects: projectsRes.count ?? 0,
           completedDemands: demands.filter((d: any) => d.status === 'completed').length,
           totalDemands: demands.length,
+          overdueDemands,
           recentDemands,
           loading: false,
         })
