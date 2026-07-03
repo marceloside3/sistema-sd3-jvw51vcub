@@ -105,6 +105,16 @@ export const getNotifications = async (userId: string, limit = 50) => {
   return data
 }
 
+export const getUnreadCount = async (userId: string) => {
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('is_read', false)
+  if (error) throw error
+  return count || 0
+}
+
 export const markAsRead = async (id: string) => {
   const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id)
   if (error) throw error

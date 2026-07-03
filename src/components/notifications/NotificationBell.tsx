@@ -1,70 +1,145 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Bell } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { supabase } from '@/lib/supabase/client'
-import { getNotifications, markAsRead } from '@/services/notifications'
+import { getNotifications, markAsRead, getUnreadCount } from '@/services/notifications'
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 
+type NotificationRow = {
+  id: string
+  title: string
+  message: string
+  is_read: boolean
+  link_to: string | null
+  created_at: string
+}
+
 export function NotificationBell() {
   const { data: userCtx } = useCurrentUser()
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<NotificationRow[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const navigate = useNavigate()
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const fetchUnreadCount = useCallback(async (userId: string) => {
+    try {
+      const count = await getUnreadCount(userId)
+      setUnreadCount(count)
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err)
+    }
+  }, [])
+
+  const fetchNotifications = useCallback(
+    async (userId: string) => {
+      try {
+        const data = await getNotifications(userId, 10)
+        setNotifications((data || []) as NotificationRow[])
+        await fetchUnreadCount(userId)
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err)
+      }
+    },
+    [fetchUnreadCount],
+  )
 
   useEffect(() => {
-    const userId = userCtx?.user?.id
-    if (!userId) return
+    const userId = userCtx?.id
+    if (!userId) {
+      setNotifications([])
+      setUnreadCount(0)
+      return
+    }
 
     let isMounted = true
 
-    const fetchNotifications = async () => {
-      const data = await getNotifications(userId, 10)
-      if (isMounted) {
-        setNotifications(data || [])
-        setUnreadCount((data || []).filter((n: any) => !n.is_read).length)
+    fetchNotifications(userId)
+
+    const setupChannel = () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+
+      const channel = supabase
+        .channel('notifications-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            if (isMounted) fetchNotifications(userId)
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            if (isMounted) fetchNotifications(userId)
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            if (isMounted) fetchNotifications(userId)
+          },
+        )
+        .subscribe((status) => {
+          if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && isMounted) {
+            if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
+            reconnectTimeoutRef.current = setTimeout(() => {
+              if (isMounted) setupChannel()
+            }, 5000)
+          }
+        })
+
+      channelRef.current = channel
+    }
+
+    setupChannel()
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        fetchNotifications(userId)
       }
     }
 
-    fetchNotifications()
-
-    const channel = supabase
-      .channel('notifications-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          if (isMounted) fetchNotifications()
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          if (isMounted) fetchNotifications()
-        },
-      )
-      .subscribe()
+    document.addEventListener('visibilitychange', handleVisibility)
 
     return () => {
       isMounted = false
-      supabase.removeChannel(channel)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
-  }, [userCtx?.user?.id])
+  }, [userCtx?.id, fetchNotifications])
 
-  const handleRead = async (n: any) => {
+  const handleRead = async (n: NotificationRow) => {
     if (!n.is_read) {
       await markAsRead(n.id)
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
