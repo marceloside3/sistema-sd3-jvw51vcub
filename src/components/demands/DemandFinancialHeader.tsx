@@ -6,9 +6,10 @@ import { calculateFinancials } from '@/lib/financial'
 
 interface DemandFinancialHeaderProps {
   demandId: string
+  refreshKey?: number
 }
 
-export function DemandFinancialHeader({ demandId }: DemandFinancialHeaderProps) {
+export function DemandFinancialHeader({ demandId, refreshKey }: DemandFinancialHeaderProps) {
   const [financials, setFinancials] = useState<{
     totalBruto: number
     totalCustos: number
@@ -48,7 +49,7 @@ export function DemandFinancialHeader({ demandId }: DemandFinancialHeaderProps) 
     return () => {
       cancelled = true
     }
-  }, [demandId])
+  }, [demandId, refreshKey])
 
   if (loading || !financials) {
     return (

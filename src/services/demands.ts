@@ -60,7 +60,7 @@ export async function getDemandById(id: string) {
     .from('demands')
     .select(`
       *,
-      project:projects(id, name, project_code),
+      project:projects(id, name, project_code, client_id),
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
       from_area:areas!demands_from_area_id_fkey(id, name),
@@ -123,6 +123,7 @@ export async function getDemandItems(demandId: string) {
 export async function updateDemandItemCosts(
   itemId: string,
   payload: {
+    quantity?: number
     unit_price?: number | null
     supplier_name: string | null
     unit_cost: number | null
@@ -141,6 +142,40 @@ export async function updateDemandItemCosts(
 
   if (error) throw error
   return data
+}
+
+export async function addDemandItem(
+  demandId: string,
+  item: {
+    item_name: string
+    description?: string | null
+    quantity: number
+    deadline?: string | null
+    delivery_location?: string | null
+    lpu_item_id?: string | null
+    unit_price?: number | null
+    is_custom?: boolean
+  },
+) {
+  const payload = {
+    demand_id: demandId,
+    item_name: item.item_name,
+    description: item.description || null,
+    quantity: item.quantity,
+    deadline: item.deadline || null,
+    delivery_location: item.delivery_location || null,
+    lpu_item_id: item.lpu_item_id || null,
+    unit_price: item.unit_price || null,
+    is_custom: item.is_custom ?? false,
+  }
+  const { data, error } = await supabase.from('demand_items').insert(payload).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteDemandItem(itemId: string) {
+  const { error } = await supabase.from('demand_items').delete().eq('id', itemId)
+  if (error) throw error
 }
 
 export async function updateDemand(id: string, payload: any) {

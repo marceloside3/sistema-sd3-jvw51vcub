@@ -14,9 +14,27 @@ export function formatPercent(value: number | null | undefined): string {
 }
 
 export function parseNumber(value: string): number {
-  const cleaned = value.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
+  if (!value || value.trim() === '') return 0
+  let cleaned = value.replace(/\s/g, '')
+  if (cleaned.includes(',')) {
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.')
+  }
   const parsed = parseFloat(cleaned)
   return isNaN(parsed) ? 0 : parsed
+}
+
+export function sanitizeDecimalInput(value: string): string {
+  let result = value.replace(/[^\d,]/g, '')
+  const firstComma = result.indexOf(',')
+  if (firstComma !== -1) {
+    const intPart = result.substring(0, firstComma)
+    const decPart = result
+      .substring(firstComma + 1)
+      .replace(/,/g, '')
+      .substring(0, 2)
+    result = intPart + ',' + decPart
+  }
+  return result
 }
 
 export function formatInputDecimal(value: string): string {

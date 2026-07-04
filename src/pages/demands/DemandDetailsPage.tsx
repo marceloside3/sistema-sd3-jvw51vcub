@@ -175,7 +175,7 @@ export default function DemandDetailsPage() {
         )}
       </div>
 
-      <DemandFinancialHeader demandId={demand.id} />
+      <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
 
       <div className="grid md:grid-cols-3 gap-6 items-start">
         <div className="md:col-span-1 space-y-6">
@@ -248,6 +248,7 @@ export default function DemandDetailsPage() {
 
           <DemandItemsSection
             demandId={demand.id}
+            clientId={demand.project?.client_id ?? null}
             onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
           />
 

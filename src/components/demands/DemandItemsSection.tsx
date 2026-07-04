@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Package, Pencil } from 'lucide-react'
+import { Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -13,9 +13,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getDemandItems } from '@/services/demands'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { getDemandItems, deleteDemandItem } from '@/services/demands'
 import { useToast } from '@/hooks/use-toast'
+import { useCurrentUser } from '@/hooks/use-current-user'
+import { logDemandAuditEntry } from '@/services/demand-audit'
 import { ItemCostEditorDialog } from '@/components/demands/ItemCostEditorDialog'
+import { AddItemDialog } from '@/components/demands/AddItemDialog'
 import { formatCurrency, formatPercent, calculateFinancials, getMarginColor } from '@/lib/financial'
 
 interface DemandItem {
@@ -37,6 +50,7 @@ interface DemandItem {
 
 interface DemandItemsSectionProps {
   demandId: string
+  clientId: string | null
   onItemsChanged?: () => void
 }
 
@@ -49,12 +63,19 @@ function MarginIndicator({ pct }: { pct: number }) {
   return <span className={`inline-block w-2 h-2 rounded-full ${dotColor} mr-1.5 shrink-0`} />
 }
 
-export function DemandItemsSection({ demandId, onItemsChanged }: DemandItemsSectionProps) {
+export function DemandItemsSection({
+  demandId,
+  clientId,
+  onItemsChanged,
+}: DemandItemsSectionProps) {
   const { toast } = useToast()
+  const { data: userCtx } = useCurrentUser()
   const [items, setItems] = useState<DemandItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<DemandItem | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<DemandItem | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +107,7 @@ export function DemandItemsSection({ demandId, onItemsChanged }: DemandItemsSect
     }),
   )
 
-  const grandTotal = itemFinancials.reduce((sum, f) => sum + f.grossTotal, 0)
+  const grandTotal = itemFinancials.reduce((sum, f) => sum + f.totalRevenue, 0)
   const totalCostSum = itemFinancials.reduce((sum, f) => sum + f.totalCost, 0)
   const totalRevenueSum = itemFinancials.reduce((sum, f) => sum + f.totalRevenue, 0)
   const totalMarginR$ = itemFinancials.reduce((sum, f) => sum + f.marginR$, 0)
@@ -97,27 +118,63 @@ export function DemandItemsSection({ demandId, onItemsChanged }: DemandItemsSect
     setDialogOpen(true)
   }
 
-  const handleSaved = () => {
-    async function reload() {
-      try {
-        const data = await getDemandItems(demandId)
-        setItems(data as DemandItem[])
-        toast({ title: 'Custos atualizados com sucesso!' })
-        onItemsChanged?.()
-      } catch {
-        toast({ title: 'Erro ao recarregar itens', variant: 'destructive' })
-      }
+  const reloadItems = async () => {
+    try {
+      const data = await getDemandItems(demandId)
+      setItems(data as DemandItem[])
+    } catch {
+      toast({ title: 'Erro ao recarregar itens', variant: 'destructive' })
     }
-    reload()
+  }
+
+  const handleSaved = () => {
+    reloadItems()
+    toast({ title: 'Custos atualizados com sucesso!' })
+    onItemsChanged?.()
+  }
+
+  const handleAddSaved = () => {
+    reloadItems()
+    toast({ title: 'Item adicionado com sucesso!' })
+    onItemsChanged?.()
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
+    try {
+      if (userCtx?.user?.id) {
+        await logDemandAuditEntry({
+          demand_id: demandId,
+          item_id: deleteTarget.id,
+          user_id: userCtx.user.id,
+          field_name: 'item_removed',
+          old_value: deleteTarget.item_name,
+        })
+      }
+      await deleteDemandItem(deleteTarget.id)
+      await reloadItems()
+      toast({ title: 'Item removido com sucesso!' })
+      onItemsChanged?.()
+    } catch {
+      toast({ title: 'Erro ao remover item', variant: 'destructive' })
+    } finally {
+      setDeleteTarget(null)
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Package className="w-5 h-5 text-muted-foreground" />
-          Itens da Demanda
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Package className="w-5 h-5 text-muted-foreground" />
+            Itens da Demanda
+          </CardTitle>
+          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" />
+            Adicionar Item
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -127,9 +184,15 @@ export function DemandItemsSection({ demandId, onItemsChanged }: DemandItemsSect
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            Nenhum item encontrado para esta demanda.
-          </p>
+          <div className="text-center py-6">
+            <p className="text-sm text-muted-foreground mb-3">
+              Nenhum item encontrado para esta demanda.
+            </p>
+            <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Adicionar Primeiro Item
+            </Button>
+          </div>
         ) : (
           <Tabs defaultValue="internal">
             <TabsList className="mb-3">
@@ -225,14 +288,24 @@ export function DemandItemsSection({ demandId, onItemsChanged }: DemandItemsSect
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditClick(item)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setDeleteTarget(item)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )
@@ -322,6 +395,35 @@ export function DemandItemsSection({ demandId, onItemsChanged }: DemandItemsSect
         onOpenChange={setDialogOpen}
         onSaved={handleSaved}
       />
+
+      <AddItemDialog
+        demandId={demandId}
+        clientId={clientId}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSaved={handleAddSaved}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover "{deleteTarget?.item_name}"? Esta ação não pode ser
+              desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }
