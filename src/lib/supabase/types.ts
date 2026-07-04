@@ -230,6 +230,47 @@ export type Database = {
           },
         ]
       }
+      demand_items: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          delivery_location: string | null
+          demand_id: string
+          description: string | null
+          id: string
+          item_name: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          delivery_location?: string | null
+          demand_id: string
+          description?: string | null
+          id?: string
+          item_name: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          delivery_location?: string | null
+          demand_id?: string
+          description?: string | null
+          id?: string
+          item_name?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'demand_items_demand_id_fkey'
+            columns: ['demand_id']
+            isOneToOne: false
+            referencedRelation: 'demands'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       demands: {
         Row: {
           cancellation_reason: string | null

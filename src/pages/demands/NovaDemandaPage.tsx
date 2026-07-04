@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Package } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Package, FileSpreadsheet, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,6 +28,8 @@ import { useAuth } from '@/hooks/use-auth'
 import { getProjects } from '@/services/projects'
 import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
+import { getLpuItems, LpuItem } from '@/services/lpu'
+import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
 
 interface DemandItem {
   item_name: string
@@ -35,6 +37,20 @@ interface DemandItem {
   quantity: number
   deadline: string
   delivery_location: string
+  lpu_item_id: string | null
+  unit_price: number | null
+  is_custom: boolean
+}
+
+const emptyItem: DemandItem = {
+  item_name: '',
+  description: '',
+  quantity: 1,
+  deadline: '',
+  delivery_location: '',
+  lpu_item_id: null,
+  unit_price: null,
+  is_custom: true,
 }
 
 export default function NovaDemandaPage() {
@@ -46,12 +62,12 @@ export default function NovaDemandaPage() {
   const { user: authUser } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
-
   const currentUserId = currentUser?.data?.id ?? authUser?.id ?? null
 
   const [projects, setProjects] = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [lpuItems, setLpuItems] = useState<LpuItem[]>([])
 
   const [formData, setFormData] = useState({
     project_id: initialProjectId,
@@ -69,16 +85,16 @@ export default function NovaDemandaPage() {
   )
 
   const [demandItems, setDemandItems] = useState<DemandItem[]>([])
-  const [itemForm, setItemForm] = useState<DemandItem>({
-    item_name: '',
-    description: '',
-    quantity: 1,
-    deadline: '',
-    delivery_location: '',
-  })
+  const [itemForm, setItemForm] = useState<DemandItem>(emptyItem)
+  const [itemMode, setItemMode] = useState<'lpu' | 'manual'>('manual')
 
   const selectedArea = areas.find((a) => a.id === formData.to_area_id)
   const isProducaoArea = selectedArea?.code === 'producao'
+
+  const selectedProject = useMemo(
+    () => projects.find((p) => p.id === formData.project_id),
+    [projects, formData.project_id],
+  )
 
   useEffect(() => {
     getProjects().then((res) => {
@@ -105,22 +121,49 @@ export default function NovaDemandaPage() {
         .select('user_id, users!inner(id, full_name)')
         .eq('area_id', formData.to_area_id)
         .then(({ data }) => {
-          if (data) {
-            setUsers(data.map((d) => d.users))
-          }
+          if (data) setUsers(data.map((d) => d.users))
         })
     } else {
       setUsers([])
     }
   }, [formData.to_area_id])
 
+  useEffect(() => {
+    if (isProducaoArea && selectedProject?.client?.id) {
+      getLpuItems(selectedProject.client.id)
+        .then((items) => {
+          setLpuItems(items)
+          setItemMode(items.length > 0 ? 'lpu' : 'manual')
+          setItemForm({ ...emptyItem, is_custom: items.length === 0 })
+        })
+        .catch(() => {
+          setLpuItems([])
+          setItemMode('manual')
+        })
+    } else {
+      setLpuItems([])
+    }
+  }, [isProducaoArea, selectedProject?.client?.id])
+
+  const handleLpuSelect = (item: LpuItem) => {
+    setItemForm({
+      ...emptyItem,
+      item_name: item.item_name,
+      description: item.description || '',
+      lpu_item_id: item.id,
+      unit_price: Number(item.unit_value),
+      is_custom: false,
+    })
+  }
+
+  const switchMode = (mode: 'lpu' | 'manual') => {
+    setItemMode(mode)
+    setItemForm({ ...emptyItem, is_custom: mode === 'manual' })
+  }
+
   const handleAddItem = () => {
     if (!itemForm.item_name.trim()) {
-      toast({
-        title: 'Atenção',
-        description: 'Informe o nome do item',
-        variant: 'destructive',
-      })
+      toast({ title: 'Atenção', description: 'Informe o nome do item', variant: 'destructive' })
       return
     }
     if (itemForm.quantity < 1) {
@@ -132,13 +175,7 @@ export default function NovaDemandaPage() {
       return
     }
     setDemandItems([...demandItems, { ...itemForm }])
-    setItemForm({
-      item_name: '',
-      description: '',
-      quantity: 1,
-      deadline: '',
-      delivery_location: '',
-    })
+    setItemForm({ ...emptyItem, is_custom: itemMode === 'manual' })
   }
 
   const handleRemoveItem = (index: number) => {
@@ -155,7 +192,6 @@ export default function NovaDemandaPage() {
       })
       return
     }
-
     if (isProducaoArea && demandItems.length === 0) {
       toast({
         title: 'Atenção',
@@ -164,7 +200,6 @@ export default function NovaDemandaPage() {
       })
       return
     }
-
     if (!currentUserId) {
       toast({
         title: 'Erro de sessão',
@@ -199,6 +234,9 @@ export default function NovaDemandaPage() {
           quantity: item.quantity,
           deadline: item.deadline || null,
           delivery_location: item.delivery_location || undefined,
+          lpu_item_id: item.lpu_item_id,
+          unit_price: item.unit_price,
+          is_custom: item.is_custom,
         }))
         await createDemandItems(newDemand.id, items)
       }
@@ -207,7 +245,6 @@ export default function NovaDemandaPage() {
         setUploadProgress({ current: 0, total: pendingFiles.length })
         let successes = 0
         let failures = 0
-
         for (let i = 0; i < pendingFiles.length; i++) {
           try {
             await uploadAttachment('demand', newDemand.id, pendingFiles[i], currentUserId)
@@ -218,7 +255,6 @@ export default function NovaDemandaPage() {
           }
           setUploadProgress({ current: i + 1, total: pendingFiles.length })
         }
-
         if (failures > 0) {
           toast({
             title: 'Demanda criada com ressalvas',
@@ -240,6 +276,8 @@ export default function NovaDemandaPage() {
       setLoading(false)
     }
   }
+
+  const hasLpu = lpuItems.length > 0
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -370,58 +408,170 @@ export default function NovaDemandaPage() {
               <h3 className="font-semibold text-lg">Itens de Demanda</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="space-y-2 col-span-2">
-                <Label>Item *</Label>
-                <Input
-                  value={itemForm.item_name}
-                  onChange={(e) => setItemForm({ ...itemForm, item_name: e.target.value })}
-                  placeholder="Ex: Banner impresso A2"
-                />
-              </div>
-              <div className="space-y-2 col-span-2">
-                <Label>Descrição do Item</Label>
-                <Textarea
-                  rows={2}
-                  value={itemForm.description}
-                  onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-                  placeholder="Detalhes do item (material, acabamento, etc.)"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={itemForm.quantity}
-                  onChange={(e) =>
-                    setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Prazo do Item</Label>
-                <Input
-                  type="date"
-                  value={itemForm.deadline}
-                  onChange={(e) => setItemForm({ ...itemForm, deadline: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2 col-span-2">
-                <Label>Local de Entrega</Label>
-                <Input
-                  value={itemForm.delivery_location}
-                  onChange={(e) => setItemForm({ ...itemForm, delivery_location: e.target.value })}
-                  placeholder="Ex: Agência - Sala de Reuniões"
-                />
-              </div>
-              <div className="col-span-2">
-                <Button type="button" variant="outline" onClick={handleAddItem} className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Item
+            {hasLpu && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={itemMode === 'lpu' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => switchMode('lpu')}
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Selecionar da LPU
+                </Button>
+                <Button
+                  type="button"
+                  variant={itemMode === 'manual' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => switchMode('manual')}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Adicionar Manual
                 </Button>
               </div>
-            </div>
+            )}
+
+            {hasLpu && itemMode === 'lpu' && (
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-2 col-span-2">
+                  <Label>Selecionar Item da LPU *</Label>
+                  <LpuItemPicker
+                    items={lpuItems}
+                    onSelect={handleLpuSelect}
+                    value={itemForm.lpu_item_id}
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Descrição</Label>
+                  <Input value={itemForm.description} readOnly className="bg-muted/50" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Valor Unitário</Label>
+                  <Input
+                    value={itemForm.unit_price ? `R$ ${itemForm.unit_price.toFixed(2)}` : ''}
+                    readOnly
+                    className="bg-muted/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantidade</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={itemForm.quantity}
+                    onChange={(e) =>
+                      setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Prazo do Item</Label>
+                  <Input
+                    type="date"
+                    value={itemForm.deadline}
+                    onChange={(e) => setItemForm({ ...itemForm, deadline: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Local de Entrega</Label>
+                  <Input
+                    value={itemForm.delivery_location}
+                    onChange={(e) =>
+                      setItemForm({ ...itemForm, delivery_location: e.target.value })
+                    }
+                    placeholder="Ex: Agência - Sala de Reuniões"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddItem}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Item
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {(!hasLpu || itemMode === 'manual') && (
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-2 col-span-2">
+                  <Label>Item *</Label>
+                  <Input
+                    value={itemForm.item_name}
+                    onChange={(e) => setItemForm({ ...itemForm, item_name: e.target.value })}
+                    placeholder="Ex: Banner impresso A2"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Descrição do Item</Label>
+                  <Textarea
+                    rows={2}
+                    value={itemForm.description}
+                    onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+                    placeholder="Detalhes do item (material, acabamento, etc.)"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantidade</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={itemForm.quantity}
+                    onChange={(e) =>
+                      setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Valor Unitário (Opcional)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={itemForm.unit_price ?? ''}
+                    onChange={(e) =>
+                      setItemForm({
+                        ...itemForm,
+                        unit_price: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    placeholder="0,00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Prazo do Item</Label>
+                  <Input
+                    type="date"
+                    value={itemForm.deadline}
+                    onChange={(e) => setItemForm({ ...itemForm, deadline: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Local de Entrega</Label>
+                  <Input
+                    value={itemForm.delivery_location}
+                    onChange={(e) =>
+                      setItemForm({ ...itemForm, delivery_location: e.target.value })
+                    }
+                    placeholder="Ex: Agência - Sala de Reuniões"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddItem}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Item
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {demandItems.length > 0 && (
               <div className="rounded-lg border overflow-hidden">
@@ -430,6 +580,7 @@ export default function NovaDemandaPage() {
                     <TableRow>
                       <TableHead>Item</TableHead>
                       <TableHead className="w-16 text-center">Qtd</TableHead>
+                      <TableHead className="w-28 text-right">Vl. Unit.</TableHead>
                       <TableHead>Prazo</TableHead>
                       <TableHead>Local</TableHead>
                       <TableHead className="w-10" />
@@ -439,12 +590,20 @@ export default function NovaDemandaPage() {
                     {demandItems.map((item, index) => (
                       <TableRow key={index}>
                         <TableCell>
-                          <div className="font-medium">{item.item_name}</div>
+                          <div className="font-medium flex items-center gap-1">
+                            {item.item_name}
+                            {item.is_custom && (
+                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Manual</span>
+                            )}
+                          </div>
                           {item.description && (
                             <div className="text-xs text-muted-foreground">{item.description}</div>
                           )}
                         </TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {item.unit_price ? `R$ ${Number(item.unit_price).toFixed(2)}` : '-'}
+                        </TableCell>
                         <TableCell>{item.deadline || '-'}</TableCell>
                         <TableCell>{item.delivery_location || '-'}</TableCell>
                         <TableCell>

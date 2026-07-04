@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from 'lucide-react'
 
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { getClientById, createClient, updateClient } from '@/services/clients'
+import { LpuUploadSection } from '@/components/admin/LpuUploadSection'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -378,6 +379,8 @@ export default function ClientFormPage() {
                         )}
                       />
                     )}
+
+                    {id && <LpuUploadSection clientId={id} hasLpu={hasLpu} />}
                   </div>
                 </div>
               </div>

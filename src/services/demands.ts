@@ -86,6 +86,9 @@ export interface DemandItemInput {
   quantity: number
   deadline?: string | null
   delivery_location?: string
+  lpu_item_id?: string | null
+  unit_price?: number | null
+  is_custom?: boolean
 }
 
 export async function createDemandItems(demandId: string, items: DemandItemInput[]) {
@@ -96,6 +99,9 @@ export async function createDemandItems(demandId: string, items: DemandItemInput
     quantity: item.quantity,
     deadline: item.deadline || null,
     delivery_location: item.delivery_location || null,
+    lpu_item_id: item.lpu_item_id || null,
+    unit_price: item.unit_price || null,
+    is_custom: item.is_custom ?? false,
   }))
 
   const { data, error } = await supabase.from('demand_items').insert(payload).select()
