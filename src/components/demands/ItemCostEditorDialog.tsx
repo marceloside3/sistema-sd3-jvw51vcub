@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
+import { useCurrentUser } from '@/hooks/use-current-user'
+import { logDemandAuditEntry } from '@/services/demand-audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,6 +35,7 @@ interface DemandItemCostData {
 
 interface ItemCostEditorDialogProps {
   item: DemandItemCostData | null
+  demandId: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
@@ -40,18 +43,26 @@ interface ItemCostEditorDialogProps {
 
 export function ItemCostEditorDialog({
   item,
+  demandId,
   open,
   onOpenChange,
   onSaved,
 }: ItemCostEditorDialogProps) {
+  const [unitPrice, setUnitPrice] = useState('')
   const [supplierName, setSupplierName] = useState('')
   const [unitCost, setUnitCost] = useState('')
   const [extraCost, setExtraCost] = useState('')
   const [honorariosPct, setHonorariosPct] = useState('')
   const [saving, setSaving] = useState(false)
+  const { data: userCtx } = useCurrentUser()
 
   useEffect(() => {
     if (item) {
+      setUnitPrice(
+        item.unit_price !== null && item.unit_price !== 0
+          ? formatInputDecimal(String(item.unit_price))
+          : '',
+      )
       setSupplierName(item.supplier_name || '')
       setUnitCost(
         item.unit_cost !== null && item.unit_cost !== 0
@@ -71,13 +82,14 @@ export function ItemCostEditorDialog({
     }
   }, [item])
 
+  const parsedUnitPrice = parseNumber(unitPrice)
   const parsedUnitCost = parseNumber(unitCost)
   const parsedExtraCost = parseNumber(extraCost)
   const parsedHonorariosPct = parseNumber(honorariosPct)
 
   const calc = calculateFinancials({
     quantity: item?.quantity ?? 0,
-    unitPrice: item?.unit_price ?? null,
+    unitPrice: parsedUnitPrice > 0 ? parsedUnitPrice : null,
     unitCost: parsedUnitCost > 0 ? parsedUnitCost : null,
     extraCost: parsedExtraCost,
     honorariosPercentage: parsedHonorariosPct,
@@ -89,6 +101,7 @@ export function ItemCostEditorDialog({
     try {
       const { updateDemandItemCosts } = await import('@/services/demands')
       await updateDemandItemCosts(item.id, {
+        unit_price: parsedUnitPrice > 0 ? parsedUnitPrice : null,
         supplier_name: supplierName.trim() || null,
         unit_cost: parsedUnitCost > 0 ? parsedUnitCost : null,
         extra_cost: parsedExtraCost,
@@ -96,6 +109,52 @@ export function ItemCostEditorDialog({
         total_cost: calc.totalCost,
         cost_status: supplierName.trim() && parsedUnitCost > 0 ? 'completed' : 'pending',
       })
+
+      if (userCtx?.user?.id) {
+        const changes: { field: string; old: string; new: string }[] = []
+        if (String(item.unit_price ?? 0) !== String(parsedUnitPrice > 0 ? parsedUnitPrice : 0))
+          changes.push({
+            field: 'unit_price',
+            old: String(item.unit_price ?? 0),
+            new: String(parsedUnitPrice > 0 ? parsedUnitPrice : 0),
+          })
+        if ((item.supplier_name || '') !== supplierName.trim())
+          changes.push({
+            field: 'supplier_name',
+            old: item.supplier_name || '',
+            new: supplierName.trim(),
+          })
+        if (String(item.unit_cost ?? 0) !== String(parsedUnitCost > 0 ? parsedUnitCost : 0))
+          changes.push({
+            field: 'unit_cost',
+            old: String(item.unit_cost ?? 0),
+            new: String(parsedUnitCost > 0 ? parsedUnitCost : 0),
+          })
+        if (String(item.extra_cost ?? 0) !== String(parsedExtraCost))
+          changes.push({
+            field: 'extra_cost',
+            old: String(item.extra_cost ?? 0),
+            new: String(parsedExtraCost),
+          })
+        if (String(item.honorarios_percentage ?? 0) !== String(parsedHonorariosPct))
+          changes.push({
+            field: 'honorarios_percentage',
+            old: String(item.honorarios_percentage ?? 0),
+            new: String(parsedHonorariosPct),
+          })
+
+        for (const c of changes) {
+          await logDemandAuditEntry({
+            demand_id: demandId,
+            item_id: item.id,
+            user_id: userCtx.user.id,
+            field_name: c.field,
+            old_value: c.old,
+            new_value: c.new,
+          })
+        }
+      }
+
       onSaved()
       onOpenChange(false)
     } catch (err) {
@@ -113,7 +172,8 @@ export function ItemCostEditorDialog({
         <DialogHeader>
           <DialogTitle>Editar Custos do Item</DialogTitle>
           <DialogDescription>
-            Informe os dados do fornecedor, custos e percentual de honorários para este item.
+            Informe o valor de venda, dados do fornecedor, custos e percentual de honorários para
+            este item.
           </DialogDescription>
         </DialogHeader>
 
@@ -129,11 +189,16 @@ export function ItemCostEditorDialog({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Valor Unit. de Venda</Label>
-            <p className="text-sm font-mono font-medium">
-              {formatCurrency(item?.unit_price ?? null)}
-            </p>
+          <div className="space-y-2">
+            <Label htmlFor="unit-price">Valor Unit. de Venda</Label>
+            <Input
+              id="unit-price"
+              value={unitPrice}
+              onChange={(e) => setUnitPrice(e.target.value)}
+              onBlur={() => unitPrice && setUnitPrice(formatInputDecimal(unitPrice))}
+              placeholder="0,00"
+              inputMode="decimal"
+            />
           </div>
 
           <div className="space-y-2">
@@ -192,7 +257,7 @@ export function ItemCostEditorDialog({
               <span className="font-mono font-medium">{formatCurrency(calc.feeAmount)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Receita Total</span>
+              <span className="text-muted-foreground">Total Geral (Bruto + Honorários)</span>
               <span className="font-mono font-medium">{formatCurrency(calc.totalRevenue)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
@@ -200,13 +265,13 @@ export function ItemCostEditorDialog({
               <span className="font-mono font-medium">{formatCurrency(calc.totalCost)}</span>
             </div>
             <div className="flex items-center justify-between border-t pt-2 mt-2">
-              <span className="text-sm font-semibold">Margem (R$)</span>
+              <span className="text-sm font-semibold">Margem (R$) (Total Geral - Custos)</span>
               <span className={`font-mono font-bold ${marginColor}`}>
                 {formatCurrency(calc.marginR$)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Margem (%)</span>
+              <span className="text-sm font-semibold">Margem (%) (sobre Total Geral)</span>
               <span className={`font-mono font-bold text-lg ${marginColor}`}>
                 {formatPercent(calc.marginPct)}
               </span>

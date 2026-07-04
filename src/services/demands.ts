@@ -123,6 +123,7 @@ export async function getDemandItems(demandId: string) {
 export async function updateDemandItemCosts(
   itemId: string,
   payload: {
+    unit_price?: number | null
     supplier_name: string | null
     unit_cost: number | null
     extra_cost: number | null

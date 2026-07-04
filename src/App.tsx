@@ -17,6 +17,7 @@ import ProjectFormPage from './pages/projects/ProjectFormPage'
 import NovaDemandaPage from './pages/demands/NovaDemandaPage'
 import PaperEditPage from './pages/papers/PaperEditPage'
 import DemandDetailsPage from './pages/demands/DemandDetailsPage'
+import ClientBudgetPage from './pages/demands/ClientBudgetPage'
 import MyDemandsPage from './pages/demands/MyDemandsPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
 import AreaPage from './pages/AreaPage'
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/projetos/:id/demandas/nova" element={<NovaDemandaPage />} />
 
               <Route path="/demandas/:id" element={<DemandDetailsPage />} />
+              <Route path="/demandas/:id/orcamento" element={<ClientBudgetPage />} />
               <Route path="/minhas-demandas" element={<MyDemandsPage />} />
               <Route path="/notificacoes" element={<NotificationsPage />} />
 

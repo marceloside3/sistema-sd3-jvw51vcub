@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Send, ArrowLeft } from 'lucide-react'
+import { Send, ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDateBR } from '@/lib/utils'
@@ -32,6 +32,9 @@ import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { DemandItemsSection } from '@/components/demands/DemandItemsSection'
+import { DemandFinancialHeader } from '@/components/demands/DemandFinancialHeader'
+import { DemandAuditHistory } from '@/components/demands/DemandAuditHistory'
+import { logDemandAuditEntry } from '@/services/demand-audit'
 
 export default function DemandDetailsPage() {
   const { id } = useParams()
@@ -46,6 +49,7 @@ export default function DemandDetailsPage() {
   const [cancelReasonOpen, setCancelReasonOpen] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
   const [reason, setReason] = useState('')
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0)
 
   useEffect(() => {
     if (id) {
@@ -76,7 +80,17 @@ export default function DemandDetailsPage() {
     setStatusUpdating(true)
     try {
       await updateDemandStatus(demand.id, newStatus)
+      if (userCtx?.user?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.user.id,
+          field_name: 'status',
+          old_value: demand.status,
+          new_value: newStatus,
+        })
+      }
       setDemand({ ...demand, status: newStatus })
+      setAuditRefreshKey((k) => k + 1)
       toast({ title: 'Status atualizado' })
     } catch (err) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' })
@@ -92,8 +106,18 @@ export default function DemandDetailsPage() {
     setStatusUpdating(true)
     try {
       await updateDemandStatus(demand.id, pendingStatus, reason)
+      if (userCtx?.user?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.user.id,
+          field_name: 'status',
+          old_value: demand.status,
+          new_value: pendingStatus,
+        })
+      }
       setDemand({ ...demand, status: pendingStatus, cancellation_reason: reason })
       setCancelReasonOpen(false)
+      setAuditRefreshKey((k) => k + 1)
       toast({ title: 'Status atualizado' })
     } catch (err) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' })
@@ -119,22 +143,39 @@ export default function DemandDetailsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button asChild variant="ghost" size="icon">
-          <Link to={`/projetos/${demand.project_id}`}>
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{demand.title}</h1>
-          <Link
-            to={`/projetos/${demand.project_id}`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Projeto: {demand.project?.name} ({demand.project?.project_code})
-          </Link>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="ghost" size="icon">
+            <Link to={`/projetos/${demand.project_id}`}>
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">{demand.title}</h1>
+            <Link
+              to={`/projetos/${demand.project_id}`}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Projeto: {demand.project?.name} ({demand.project?.project_code})
+            </Link>
+          </div>
         </div>
+        {demand.status === 'done' ? (
+          <Button asChild>
+            <Link to={`/demandas/${demand.id}/orcamento`}>
+              <FileText className="w-4 h-4 mr-2" />
+              Gerar Orçamento
+            </Link>
+          </Button>
+        ) : (
+          <Button disabled title="Disponível quando a demanda estiver concluída">
+            <FileText className="w-4 h-4 mr-2" />
+            Gerar Orçamento
+          </Button>
+        )}
       </div>
+
+      <DemandFinancialHeader demandId={demand.id} />
 
       <div className="grid md:grid-cols-3 gap-6 items-start">
         <div className="md:col-span-1 space-y-6">
@@ -192,6 +233,7 @@ export default function DemandDetailsPage() {
               </div>
             </CardContent>
           </Card>
+          <DemandAuditHistory demandId={demand.id} refreshKey={auditRefreshKey} />
         </div>
 
         <div className="md:col-span-2 space-y-6">
@@ -204,7 +246,10 @@ export default function DemandDetailsPage() {
             </CardContent>
           </Card>
 
-          <DemandItemsSection demandId={demand.id} />
+          <DemandItemsSection
+            demandId={demand.id}
+            onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
+          />
 
           <Card>
             <CardHeader>

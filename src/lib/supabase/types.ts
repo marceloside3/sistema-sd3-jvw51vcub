@@ -229,6 +229,61 @@ export type Database = {
           },
         ]
       }
+      demand_audit_log: {
+        Row: {
+          created_at: string
+          demand_id: string
+          field_name: string
+          id: string
+          item_id: string | null
+          new_value: string | null
+          old_value: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          demand_id: string
+          field_name: string
+          id?: string
+          item_id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          demand_id?: string
+          field_name?: string
+          id?: string
+          item_id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'demand_audit_log_demand_id_fkey'
+            columns: ['demand_id']
+            isOneToOne: false
+            referencedRelation: 'demands'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demand_audit_log_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'demand_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demand_audit_log_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       demand_comments: {
         Row: {
           content: string
