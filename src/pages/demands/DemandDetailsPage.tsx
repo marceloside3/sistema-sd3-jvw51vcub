@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Send, ArrowLeft, FileText } from 'lucide-react'
+import { Send, ArrowLeft, FileText, Lock, Unlock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDateBR } from '@/lib/utils'
@@ -50,6 +50,7 @@ export default function DemandDetailsPage() {
   const [pendingStatus, setPendingStatus] = useState('')
   const [reason, setReason] = useState('')
   const [auditRefreshKey, setAuditRefreshKey] = useState(0)
+  const [lockUpdating, setLockUpdating] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -126,6 +127,30 @@ export default function DemandDetailsPage() {
     }
   }
 
+  const handleToggleLock = async () => {
+    setLockUpdating(true)
+    try {
+      const { updateDemandLock } = await import('@/services/demands')
+      await updateDemandLock(demand.id, !demand.is_locked)
+      if (userCtx?.user?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.user.id,
+          field_name: 'is_locked',
+          old_value: String(demand.is_locked),
+          new_value: String(!demand.is_locked),
+        })
+      }
+      setDemand({ ...demand, is_locked: !demand.is_locked })
+      setAuditRefreshKey((k) => k + 1)
+      toast({ title: demand.is_locked ? 'Demanda desbloqueada' : 'Demanda bloqueada' })
+    } catch {
+      toast({ title: 'Erro ao alterar bloqueio', variant: 'destructive' })
+    } finally {
+      setLockUpdating(false)
+    }
+  }
+
   const handleComment = async () => {
     if (!newComment.trim() || !userCtx?.user) return
     try {
@@ -160,19 +185,44 @@ export default function DemandDetailsPage() {
             </Link>
           </div>
         </div>
-        {demand.status === 'done' ? (
-          <Button asChild>
-            <Link to={`/demandas/${demand.id}/orcamento`}>
+        <div className="flex items-center gap-2">
+          {demand.is_locked && (
+            <Badge className="bg-red-100 text-red-700 border-red-200">
+              <Lock className="w-3 h-3 mr-1" />
+              Bloqueada
+            </Badge>
+          )}
+          <Button
+            variant={demand.is_locked ? 'destructive' : 'outline'}
+            onClick={handleToggleLock}
+            disabled={lockUpdating}
+          >
+            {demand.is_locked ? (
+              <>
+                <Unlock className="w-4 h-4 mr-2" />
+                Desbloquear
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 mr-2" />
+                Bloquear para Edição
+              </>
+            )}
+          </Button>
+          {demand.status === 'done' ? (
+            <Button asChild>
+              <Link to={`/demandas/${demand.id}/orcamento`}>
+                <FileText className="w-4 h-4 mr-2" />
+                Gerar Orçamento
+              </Link>
+            </Button>
+          ) : (
+            <Button disabled title="Disponível quando a demanda estiver concluída">
               <FileText className="w-4 h-4 mr-2" />
               Gerar Orçamento
-            </Link>
-          </Button>
-        ) : (
-          <Button disabled title="Disponível quando a demanda estiver concluída">
-            <FileText className="w-4 h-4 mr-2" />
-            Gerar Orçamento
-          </Button>
-        )}
+            </Button>
+          )}
+        </div>
       </div>
 
       <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
@@ -249,6 +299,8 @@ export default function DemandDetailsPage() {
           <DemandItemsSection
             demandId={demand.id}
             clientId={demand.project?.client_id ?? null}
+            isLocked={!!demand.is_locked}
+            isAdmin={!!userCtx?.profile?.is_admin}
             onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
           />
 

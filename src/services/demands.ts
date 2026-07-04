@@ -241,6 +241,10 @@ export async function updateDemandStatus(id: string, status: string, cancellatio
   return updateDemand(id, payload)
 }
 
+export async function updateDemandLock(id: string, isLocked: boolean) {
+  return updateDemand(id, { is_locked: isLocked })
+}
+
 export async function getMyDemands(
   userId: string,
   type: 'sent' | 'received' | 'completed',

@@ -23,6 +23,8 @@ import { formatInputDecimal, sanitizeDecimalInput, parseNumber } from '@/lib/fin
 interface AddItemDialogProps {
   demandId: string
   clientId: string | null
+  isLocked?: boolean
+  isAdmin?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
@@ -31,10 +33,13 @@ interface AddItemDialogProps {
 export function AddItemDialog({
   demandId,
   clientId,
+  isLocked = false,
+  isAdmin = false,
   open,
   onOpenChange,
   onSaved,
 }: AddItemDialogProps) {
+  const canEdit = !isLocked || isAdmin
   const { toast } = useToast()
   const { data: userCtx } = useCurrentUser()
   const [lpuItems, setLpuItems] = useState<LpuItem[]>([])
@@ -174,7 +179,7 @@ export function AddItemDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || !canEdit}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Adicionar
           </Button>

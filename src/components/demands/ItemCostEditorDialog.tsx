@@ -38,6 +38,8 @@ interface DemandItemCostData {
 interface ItemCostEditorDialogProps {
   item: DemandItemCostData | null
   demandId: string
+  isLocked?: boolean
+  isAdmin?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
@@ -46,10 +48,13 @@ interface ItemCostEditorDialogProps {
 export function ItemCostEditorDialog({
   item,
   demandId,
+  isLocked = false,
+  isAdmin = false,
   open,
   onOpenChange,
   onSaved,
 }: ItemCostEditorDialogProps) {
+  const canEdit = !isLocked || isAdmin
   const [unitPrice, setUnitPrice] = useState('')
   const [supplierName, setSupplierName] = useState('')
   const [unitCost, setUnitCost] = useState('')
@@ -313,7 +318,7 @@ export function ItemCostEditorDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || !canEdit}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Salvar
           </Button>

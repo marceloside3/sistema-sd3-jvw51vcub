@@ -15,6 +15,9 @@ const FIELD_LABELS: Record<string, string> = {
   total_cost: 'Custo Total',
   cost_status: 'Status de Custo',
   status: 'Status da Demanda',
+  is_locked: 'Bloqueio de Edição',
+  item_added: 'Item Adicionado',
+  item_removed: 'Item Removido',
 }
 
 interface DemandAuditHistoryProps {

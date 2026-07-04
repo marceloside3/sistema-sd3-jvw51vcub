@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Package, Pencil, Plus, Trash2, Lock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -51,6 +51,8 @@ interface DemandItem {
 interface DemandItemsSectionProps {
   demandId: string
   clientId: string | null
+  isLocked?: boolean
+  isAdmin?: boolean
   onItemsChanged?: () => void
 }
 
@@ -170,7 +172,7 @@ export function DemandItemsSection({
             <Package className="w-5 h-5 text-muted-foreground" />
             Itens da Demanda
           </CardTitle>
-          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+          <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canEdit}>
             <Plus className="w-4 h-4 mr-1" />
             Adicionar Item
           </Button>
@@ -188,7 +190,7 @@ export function DemandItemsSection({
             <p className="text-sm text-muted-foreground mb-3">
               Nenhum item encontrado para esta demanda.
             </p>
-            <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+            <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canEdit}>
               <Plus className="w-4 h-4 mr-1" />
               Adicionar Primeiro Item
             </Button>
@@ -289,22 +291,28 @@ export function DemandItemsSection({
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleEditClick(item)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => setDeleteTarget(item)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {canEdit ? (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleEditClick(item)}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => setDeleteTarget(item)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -391,6 +399,8 @@ export function DemandItemsSection({
       <ItemCostEditorDialog
         item={editingItem}
         demandId={demandId}
+        isLocked={isLocked}
+        isAdmin={isAdmin}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSaved={handleSaved}
@@ -399,6 +409,8 @@ export function DemandItemsSection({
       <AddItemDialog
         demandId={demandId}
         clientId={clientId}
+        isLocked={isLocked}
+        isAdmin={isAdmin}
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onSaved={handleAddSaved}
