@@ -55,38 +55,23 @@ export const validateCNPJ = (cnpj: string) => {
   return true
 }
 
-const formSchema = z
-  .object({
-    code: z
-      .string()
-      .min(3)
-      .max(6)
-      .regex(/^[A-Z]{3,6}$/, 'Apenas letras maiúsculas (3 a 6 caracteres)'),
-    name: z.string().min(2, 'Nome muito curto'),
-    cnpj: z
-      .string()
-      .optional()
-      .refine((val) => !val || validateCNPJ(val), { message: 'CNPJ inválido' }),
-    contact_name: z.string().optional(),
-    contact_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
-    contact_phone: z.string().optional(),
-    segment: z.string().optional(),
-    has_lpu: z.boolean().default(false),
-    honorario_percentage: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.has_lpu) {
-        const val = parseFloat(data.honorario_percentage || '')
-        return !isNaN(val) && val >= 0 && val <= 99.99
-      }
-      return true
-    },
-    {
-      message: 'Obrigatório (0 a 99.99)',
-      path: ['honorario_percentage'],
-    },
-  )
+const formSchema = z.object({
+  code: z
+    .string()
+    .min(3)
+    .max(6)
+    .regex(/^[A-Z]{3,6}$/, 'Apenas letras maiúsculas (3 a 6 caracteres)'),
+  name: z.string().min(2, 'Nome muito curto'),
+  cnpj: z
+    .string()
+    .optional()
+    .refine((val) => !val || validateCNPJ(val), { message: 'CNPJ inválido' }),
+  contact_name: z.string().optional(),
+  contact_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  contact_phone: z.string().optional(),
+  segment: z.string().optional(),
+  has_lpu: z.boolean().default(false),
+})
 
 const maskCNPJ = (value: string) => {
   let v = value.replace(/\D/g, '')
@@ -125,7 +110,6 @@ export default function ClientFormPage() {
       contact_phone: '',
       segment: '',
       has_lpu: false,
-      honorario_percentage: '',
     },
   })
 
@@ -151,8 +135,6 @@ export default function ClientFormPage() {
             contact_phone: data.contact_phone || '',
             segment: data.segment || '',
             has_lpu: data.has_lpu || false,
-            honorario_percentage:
-              data.honorario_percentage !== null ? String(data.honorario_percentage) : '',
           })
         })
         .catch(() => {
@@ -167,9 +149,6 @@ export default function ClientFormPage() {
     setLoading(true)
     try {
       const payload: any = { ...values }
-      if (!payload.has_lpu) payload.honorario_percentage = null
-      if (payload.honorario_percentage)
-        payload.honorario_percentage = parseFloat(payload.honorario_percentage)
       if (!payload.cnpj) payload.cnpj = null
 
       if (id) {
@@ -364,23 +343,14 @@ export default function ClientFormPage() {
                       )}
                     />
 
-                    {hasLpu && (
-                      <FormField
-                        control={form.control}
-                        name="honorario_percentage"
-                        render={({ field }) => (
-                          <FormItem className="w-1/3">
-                            <FormLabel>Percentual de Honorários (%) *</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" placeholder="Ex: 15.00" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                    {id && (
+                      <LpuUploadSection
+                        clientId={id}
+                        hasLpu={hasLpu}
+                        onLpuDeleted={() => form.setValue('has_lpu', false)}
+                        onLpuUploaded={() => form.setValue('has_lpu', true)}
                       />
                     )}
-
-                    {id && <LpuUploadSection clientId={id} hasLpu={hasLpu} />}
                   </div>
                 </div>
               </div>

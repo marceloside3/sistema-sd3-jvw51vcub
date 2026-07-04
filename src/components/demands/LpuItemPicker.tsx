@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Check, ChevronsUpDown, Plus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -9,34 +10,27 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import type { LpuItem } from '@/services/lpu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { getUniqueItemNames, LpuItem } from '@/services/lpu'
 
 interface LpuItemPickerProps {
   items: LpuItem[]
-  onSelect: (item: LpuItem) => void
-  value?: string | null
-  placeholder?: string
+  value: string | null
+  onSelect: (itemName: string) => void
 }
 
-export function LpuItemPicker({
-  items,
-  onSelect,
-  value,
-  placeholder = 'Selecionar item da LPU...',
-}: LpuItemPickerProps) {
+export function LpuItemPicker({ items, value, onSelect }: LpuItemPickerProps) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
 
-  const selectedItem = value ? items.find((i) => i.id === value) : null
+  const uniqueNames = getUniqueItemNames(items)
+  const filteredNames = uniqueNames.filter((name) =>
+    name.toLowerCase().includes(search.toLowerCase()),
+  )
 
-  const handleSelect = (currentValue: string) => {
-    const item = items.find((i) => i.item_name === currentValue || i.id === currentValue)
-    if (item) {
-      onSelect(item)
-      setOpen(false)
-    }
-  }
+  const canCreateCustom =
+    search.trim().length > 0 &&
+    !uniqueNames.some((name) => name.toLowerCase() === search.trim().toLowerCase())
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -45,39 +39,60 @@ export function LpuItemPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className="w-full justify-between font-normal"
         >
-          <span className="truncate">{selectedItem ? selectedItem.item_name : placeholder}</span>
+          <span className={cn(value ? 'text-foreground' : 'text-muted-foreground')}>
+            {value || search || 'Selecione ou digite um item...'}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Buscar item..." />
+          <CommandInput
+            placeholder="Buscar ou digitar item..."
+            value={search}
+            onValueChange={setSearch}
+          />
           <CommandList>
-            <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
-            <CommandGroup>
-              {items.map((item) => (
-                <CommandItem key={item.id} value={item.item_name} onSelect={handleSelect}>
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      selectedItem?.id === item.id ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  <div className="flex flex-col">
-                    <span className="font-medium">{item.item_name}</span>
-                    {item.description && (
-                      <span className="text-xs text-muted-foreground">{item.description}</span>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      R$ {Number(item.unit_value).toFixed(2)}
-                      {item.range ? ` · ${item.range}` : ''}
-                    </span>
-                  </div>
+            <CommandEmpty>{canCreateCustom ? null : 'Nenhum item encontrado.'}</CommandEmpty>
+            {filteredNames.length > 0 && (
+              <CommandGroup heading="Itens da LPU">
+                {filteredNames.map((name) => (
+                  <CommandItem
+                    key={name}
+                    value={name}
+                    onSelect={() => {
+                      onSelect(name)
+                      setSearch('')
+                      setOpen(false)
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value?.toLowerCase() === name.toLowerCase() ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    {name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {canCreateCustom && (
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    onSelect(search.trim())
+                    setSearch('')
+                    setOpen(false)
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar item: "{search.trim()}"
                 </CommandItem>
-              ))}
-            </CommandGroup>
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

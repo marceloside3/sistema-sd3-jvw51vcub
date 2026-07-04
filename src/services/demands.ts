@@ -120,6 +120,28 @@ export async function getDemandItems(demandId: string) {
   return data
 }
 
+export async function updateDemandItemCosts(
+  itemId: string,
+  payload: {
+    supplier_name: string | null
+    unit_cost: number | null
+    extra_cost: number | null
+    honorarios_percentage: number | null
+    total_cost: number | null
+    cost_status: string
+  },
+) {
+  const { data, error } = await supabase
+    .from('demand_items')
+    .update(payload)
+    .eq('id', itemId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function updateDemand(id: string, payload: any) {
   const { data, error } = await supabase
     .from('demands')

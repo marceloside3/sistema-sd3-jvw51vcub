@@ -3,6 +3,6 @@
     "validate-password": 6,
     "invite-user": 6,
     "generate-meeting-ics": 6,
-    "parse-lpu": 1
+    "parse-lpu": 2
   }
 }

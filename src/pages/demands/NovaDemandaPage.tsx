@@ -28,7 +28,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { getProjects } from '@/services/projects'
 import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
-import { getLpuItems, LpuItem } from '@/services/lpu'
+import { getLpuItems, LpuItem, findMatchingLpuItem } from '@/services/lpu'
 import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
 
 interface DemandItem {
@@ -145,14 +145,35 @@ export default function NovaDemandaPage() {
     }
   }, [isProducaoArea, selectedProject?.client?.id])
 
-  const handleLpuSelect = (item: LpuItem) => {
+  const handleLpuSelect = (itemName: string) => {
+    const isFromLpu = lpuItems.some(
+      (item) => item.item_name.toLowerCase() === itemName.toLowerCase(),
+    )
+    const matched = findMatchingLpuItem(lpuItems, itemName, itemForm.quantity || 1)
     setItemForm({
       ...emptyItem,
-      item_name: item.item_name,
-      description: item.description || '',
-      lpu_item_id: item.id,
-      unit_price: Number(item.unit_value),
-      is_custom: false,
+      item_name: itemName,
+      description: matched?.description || '',
+      lpu_item_id: matched?.id || null,
+      unit_price: matched ? matched.unit_value : null,
+      is_custom: !isFromLpu,
+      quantity: itemForm.quantity || 1,
+      deadline: itemForm.deadline,
+      delivery_location: itemForm.delivery_location,
+    })
+  }
+
+  const handleQuantityChange = (newQuantity: number) => {
+    setItemForm((prev) => {
+      const updated = { ...prev, quantity: newQuantity }
+      if (!prev.is_custom && prev.item_name) {
+        const matched = findMatchingLpuItem(lpuItems, prev.item_name, newQuantity)
+        if (matched) {
+          updated.unit_price = matched.unit_value
+          updated.lpu_item_id = matched.id
+        }
+      }
+      return updated
     })
   }
 
@@ -438,19 +459,30 @@ export default function NovaDemandaPage() {
                   <LpuItemPicker
                     items={lpuItems}
                     onSelect={handleLpuSelect}
-                    value={itemForm.lpu_item_id}
+                    value={itemForm.item_name}
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
                   <Label>Descrição</Label>
-                  <Input value={itemForm.description} readOnly className="bg-muted/50" />
+                  <Input
+                    value={itemForm.description}
+                    onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+                    placeholder="Descrição do item"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Valor Unitário</Label>
                   <Input
-                    value={itemForm.unit_price ? `R$ ${itemForm.unit_price.toFixed(2)}` : ''}
-                    readOnly
-                    className="bg-muted/50"
+                    type="number"
+                    step="0.01"
+                    value={itemForm.unit_price ?? ''}
+                    onChange={(e) =>
+                      setItemForm({
+                        ...itemForm,
+                        unit_price: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    placeholder="0,00"
                   />
                 </div>
                 <div className="space-y-2">
@@ -459,9 +491,7 @@ export default function NovaDemandaPage() {
                     type="number"
                     min={1}
                     value={itemForm.quantity}
-                    onChange={(e) =>
-                      setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })
-                    }
+                    onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
                   />
                 </div>
                 <div className="space-y-2">

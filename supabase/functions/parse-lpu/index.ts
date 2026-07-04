@@ -1,12 +1,39 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import * as XLSX from 'xlsx'
+import * as XLSX from 'npm:xlsx'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers':
     'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+}
+
+function parseNumericValue(raw: unknown): number {
+  if (typeof raw === 'number' && isFinite(raw)) {
+    return raw
+  }
+
+  let str = String(raw ?? '0').trim()
+  if (!str) return 0
+
+  str = str.replace(/[^\d.,-]/g, '')
+
+  const hasComma = str.includes(',')
+  const hasDot = str.includes('.')
+
+  if (hasComma && hasDot) {
+    if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+      str = str.replace(/\./g, '').replace(',', '.')
+    } else {
+      str = str.replace(/,/g, '')
+    }
+  } else if (hasComma) {
+    str = str.replace(',', '.')
+  }
+
+  const parsed = parseFloat(str)
+  return isFinite(parsed) ? parsed : 0
 }
 
 Deno.serve(async (req: Request) => {
@@ -46,14 +73,8 @@ Deno.serve(async (req: Request) => {
         const description = String(
           row['DESCRITIVO DO ITEM'] ?? row['Descritivo do Item'] ?? row['DESCRITIVO'] ?? '',
         ).trim()
-        const rawValue = row['VALOR'] ?? row['Valor'] ?? '0'
-        const unitValue =
-          parseFloat(
-            String(rawValue)
-              .replace(/[^\d.,-]/g, '')
-              .replace(/\./g, '')
-              .replace(',', '.'),
-          ) || 0
+        const rawValue = row['VALOR'] ?? row['Valor'] ?? 0
+        const unitValue = parseNumericValue(rawValue)
 
         return {
           client_id: clientId,

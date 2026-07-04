@@ -31,6 +31,7 @@ import {
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
+import { DemandItemsSection } from '@/components/demands/DemandItemsSection'
 
 export default function DemandDetailsPage() {
   const { id } = useParams()
@@ -202,6 +203,8 @@ export default function DemandDetailsPage() {
               <p className="whitespace-pre-wrap text-gray-700 text-sm">{demand.description}</p>
             </CardContent>
           </Card>
+
+          <DemandItemsSection demandId={demand.id} />
 
           <Card>
             <CardHeader>

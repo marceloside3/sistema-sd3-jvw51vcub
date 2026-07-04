@@ -84,6 +84,47 @@ export type Database = {
         }
         Relationships: []
       }
+      client_lpu_items: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          item_name: string
+          range: string | null
+          unit_value: number
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_name: string
+          range?: string | null
+          unit_value?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_name?: string
+          range?: string | null
+          unit_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'client_lpu_items_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       clients: {
         Row: {
           cnpj: string | null
@@ -94,7 +135,6 @@ export type Database = {
           created_at: string
           created_by: string
           has_lpu: boolean
-          honorario_percentage: number | null
           id: string
           name: string
           segment: string | null
@@ -110,7 +150,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           has_lpu?: boolean
-          honorario_percentage?: number | null
           id?: string
           name: string
           segment?: string | null
@@ -126,7 +165,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           has_lpu?: boolean
-          honorario_percentage?: number | null
           id?: string
           name?: string
           segment?: string | null
@@ -232,34 +270,61 @@ export type Database = {
       }
       demand_items: {
         Row: {
+          cost_status: string
           created_at: string
           deadline: string | null
           delivery_location: string | null
           demand_id: string
           description: string | null
+          extra_cost: number
+          honorarios_percentage: number
           id: string
+          is_custom: boolean
           item_name: string
+          lpu_item_id: string | null
           quantity: number
+          supplier_name: string | null
+          total_cost: number | null
+          unit_cost: number | null
+          unit_price: number | null
         }
         Insert: {
+          cost_status?: string
           created_at?: string
           deadline?: string | null
           delivery_location?: string | null
           demand_id: string
           description?: string | null
+          extra_cost?: number
+          honorarios_percentage?: number
           id?: string
+          is_custom?: boolean
           item_name: string
+          lpu_item_id?: string | null
           quantity?: number
+          supplier_name?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          unit_price?: number | null
         }
         Update: {
+          cost_status?: string
           created_at?: string
           deadline?: string | null
           delivery_location?: string | null
           demand_id?: string
           description?: string | null
+          extra_cost?: number
+          honorarios_percentage?: number
           id?: string
+          is_custom?: boolean
           item_name?: string
+          lpu_item_id?: string | null
           quantity?: number
+          supplier_name?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          unit_price?: number | null
         }
         Relationships: [
           {
@@ -267,6 +332,13 @@ export type Database = {
             columns: ['demand_id']
             isOneToOne: false
             referencedRelation: 'demands'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'demand_items_lpu_item_id_fkey'
+            columns: ['lpu_item_id']
+            isOneToOne: false
+            referencedRelation: 'client_lpu_items'
             referencedColumns: ['id']
           },
         ]
