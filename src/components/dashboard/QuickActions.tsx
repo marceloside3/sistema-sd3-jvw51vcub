@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, FileText, Bell, LayoutDashboard, Zap } from 'lucide-react'
+import { Plus, FileText, Bell, LayoutDashboard } from 'lucide-react'
 
 export function QuickActions() {
   const actions = [
@@ -13,14 +13,7 @@ export function QuickActions() {
       color: 'text-orange-500',
       bg: 'bg-orange-50',
     },
-    {
-      label: 'Nova Demanda',
-      description: 'Registrar uma demanda',
-      icon: Zap,
-      href: '/demandas/nova',
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
+
     {
       label: 'Meus Projetos',
       description: 'Ver projetos ativos',
