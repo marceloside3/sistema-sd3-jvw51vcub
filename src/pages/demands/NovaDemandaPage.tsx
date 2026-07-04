@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
+import { ArrowLeft, Plus, Trash2, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,18 +12,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
-import { createDemand } from '@/services/demands'
+import { createDemand, createDemandItems, DemandItemInput } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useAuth } from '@/hooks/use-auth'
 import { getProjects } from '@/services/projects'
 import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
 
+interface DemandItem {
+  item_name: string
+  description: string
+  quantity: number
+  deadline: string
+  delivery_location: string
+}
+
 export default function NovaDemandaPage() {
+  const params = useParams()
   const [searchParams] = useSearchParams()
-  const initialProjectId = searchParams.get('projectId') || ''
+  const initialProjectId = params.id || searchParams.get('projectId') || ''
 
   const { data: currentUser } = useCurrentUser()
   const { user: authUser } = useAuth()
@@ -51,6 +68,18 @@ export default function NovaDemandaPage() {
     null,
   )
 
+  const [demandItems, setDemandItems] = useState<DemandItem[]>([])
+  const [itemForm, setItemForm] = useState<DemandItem>({
+    item_name: '',
+    description: '',
+    quantity: 1,
+    deadline: '',
+    delivery_location: '',
+  })
+
+  const selectedArea = areas.find((a) => a.id === formData.to_area_id)
+  const isProducaoArea = selectedArea?.code === 'producao'
+
   useEffect(() => {
     getProjects().then((res) => {
       const filtered = res.filter((p) => ['active', 'in_progress'].includes(p.status))
@@ -63,7 +92,7 @@ export default function NovaDemandaPage() {
       .from('areas')
       .select('*')
       .eq('is_active', true)
-      .order('name')
+      .order('display_order')
       .then(({ data }) => {
         if (data) setAreas(data)
       })
@@ -85,12 +114,52 @@ export default function NovaDemandaPage() {
     }
   }, [formData.to_area_id])
 
+  const handleAddItem = () => {
+    if (!itemForm.item_name.trim()) {
+      toast({
+        title: 'Atenção',
+        description: 'Informe o nome do item',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (itemForm.quantity < 1) {
+      toast({
+        title: 'Atenção',
+        description: 'A quantidade deve ser pelo menos 1',
+        variant: 'destructive',
+      })
+      return
+    }
+    setDemandItems([...demandItems, { ...itemForm }])
+    setItemForm({
+      item_name: '',
+      description: '',
+      quantity: 1,
+      deadline: '',
+      delivery_location: '',
+    })
+  }
+
+  const handleRemoveItem = (index: number) => {
+    setDemandItems(demandItems.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.project_id || !formData.title || !formData.to_area_id) {
       toast({
         title: 'Atenção',
         description: 'Preencha os campos obrigatórios',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (isProducaoArea && demandItems.length === 0) {
+      toast({
+        title: 'Atenção',
+        description: 'Adicione pelo menos um item de demanda para a área de Produção',
         variant: 'destructive',
       })
       return
@@ -122,6 +191,17 @@ export default function NovaDemandaPage() {
       }
 
       const newDemand = await createDemand(payload)
+
+      if (isProducaoArea && demandItems.length > 0) {
+        const items: DemandItemInput[] = demandItems.map((item) => ({
+          item_name: item.item_name,
+          description: item.description || undefined,
+          quantity: item.quantity,
+          deadline: item.deadline || null,
+          delivery_location: item.delivery_location || undefined,
+        }))
+        await createDemandItems(newDemand.id, items)
+      }
 
       if (pendingFiles.length > 0 && currentUserId) {
         setUploadProgress({ current: 0, total: pendingFiles.length })
@@ -193,6 +273,49 @@ export default function NovaDemandaPage() {
             </div>
           )}
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Área Destino *</Label>
+              <Select
+                value={formData.to_area_id}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, to_area_id: v, to_user_id: 'any' })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {areas.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Responsável Específico (Opcional)</Label>
+              <Select
+                disabled={!formData.to_area_id || users.length === 0}
+                value={formData.to_user_id}
+                onValueChange={(v) => setFormData({ ...formData, to_user_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Qualquer pessoa da área" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Qualquer pessoa da área</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Título *</Label>
             <Input
@@ -238,50 +361,110 @@ export default function NovaDemandaPage() {
               />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-            <div className="space-y-2">
-              <Label>Área Destino *</Label>
-              <Select
-                value={formData.to_area_id}
-                onValueChange={(v) =>
-                  setFormData({ ...formData, to_area_id: v, to_user_id: 'any' })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {areas.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Responsável Específico (Opcional)</Label>
-              <Select
-                disabled={!formData.to_area_id || users.length === 0}
-                value={formData.to_user_id}
-                onValueChange={(v) => setFormData({ ...formData, to_user_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Qualquer pessoa da área" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Qualquer pessoa da área</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
         </div>
+
+        {isProducaoArea && (
+          <div className="pt-4 border-t space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-lg">Itens de Demanda</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="space-y-2 col-span-2">
+                <Label>Item *</Label>
+                <Input
+                  value={itemForm.item_name}
+                  onChange={(e) => setItemForm({ ...itemForm, item_name: e.target.value })}
+                  placeholder="Ex: Banner impresso A2"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Descrição do Item</Label>
+                <Textarea
+                  rows={2}
+                  value={itemForm.description}
+                  onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+                  placeholder="Detalhes do item (material, acabamento, etc.)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Quantidade</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={itemForm.quantity}
+                  onChange={(e) =>
+                    setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Prazo do Item</Label>
+                <Input
+                  type="date"
+                  value={itemForm.deadline}
+                  onChange={(e) => setItemForm({ ...itemForm, deadline: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Local de Entrega</Label>
+                <Input
+                  value={itemForm.delivery_location}
+                  onChange={(e) => setItemForm({ ...itemForm, delivery_location: e.target.value })}
+                  placeholder="Ex: Agência - Sala de Reuniões"
+                />
+              </div>
+              <div className="col-span-2">
+                <Button type="button" variant="outline" onClick={handleAddItem} className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Item
+                </Button>
+              </div>
+            </div>
+
+            {demandItems.length > 0 && (
+              <div className="rounded-lg border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead className="w-16 text-center">Qtd</TableHead>
+                      <TableHead>Prazo</TableHead>
+                      <TableHead>Local</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {demandItems.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <div className="font-medium">{item.item_name}</div>
+                          {item.description && (
+                            <div className="text-xs text-muted-foreground">{item.description}</div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell>{item.deadline || '-'}</TableCell>
+                        <TableCell>{item.delivery_location || '-'}</TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveItem(index)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="pt-4 border-t">
           <PendingFilesPicker files={pendingFiles} onChange={setPendingFiles} />

@@ -80,6 +80,40 @@ export async function createDemand(payload: any) {
   return data
 }
 
+export interface DemandItemInput {
+  item_name: string
+  description?: string
+  quantity: number
+  deadline?: string | null
+  delivery_location?: string
+}
+
+export async function createDemandItems(demandId: string, items: DemandItemInput[]) {
+  const payload = items.map((item) => ({
+    demand_id: demandId,
+    item_name: item.item_name,
+    description: item.description || null,
+    quantity: item.quantity,
+    deadline: item.deadline || null,
+    delivery_location: item.delivery_location || null,
+  }))
+
+  const { data, error } = await supabase.from('demand_items').insert(payload).select()
+  if (error) throw error
+  return data
+}
+
+export async function getDemandItems(demandId: string) {
+  const { data, error } = await supabase
+    .from('demand_items')
+    .select('*')
+    .eq('demand_id', demandId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
 export async function updateDemand(id: string, payload: any) {
   const { data, error } = await supabase
     .from('demands')
