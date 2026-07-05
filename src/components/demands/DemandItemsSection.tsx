@@ -68,10 +68,13 @@ function MarginIndicator({ pct }: { pct: number }) {
 export function DemandItemsSection({
   demandId,
   clientId,
+  isLocked = false,
+  isAdmin = false,
   onItemsChanged,
 }: DemandItemsSectionProps) {
   const { toast } = useToast()
   const { data: userCtx } = useCurrentUser()
+  const canEdit = !isLocked || isAdmin || !!userCtx?.profile?.is_director
   const [items, setItems] = useState<DemandItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<DemandItem | null>(null)

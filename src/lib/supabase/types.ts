@@ -408,6 +408,7 @@ export type Database = {
           from_area_id: string | null
           from_user_id: string
           id: string
+          is_locked: boolean
           priority: string
           project_id: string
           status: string
@@ -425,6 +426,7 @@ export type Database = {
           from_area_id?: string | null
           from_user_id: string
           id?: string
+          is_locked?: boolean
           priority?: string
           project_id: string
           status?: string
@@ -442,6 +444,7 @@ export type Database = {
           from_area_id?: string | null
           from_user_id?: string
           id?: string
+          is_locked?: boolean
           priority?: string
           project_id?: string
           status?: string
