@@ -50,7 +50,6 @@ import { DemandAuditHistoryDialog } from '@/components/demands/DemandAuditHistor
 import { logDemandAuditEntry } from '@/services/demand-audit'
 import { useDemandAuditFilters } from '@/hooks/use-demand-audit-filters'
 import { BUDGET_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/lib/constants/demand-status'
-import { useAuditFilters } from '@/hooks/use-audit-filters'
 
 export default function DemandDetailsPage() {
   const { id } = useParams()
@@ -66,7 +65,6 @@ export default function DemandDetailsPage() {
   const [pendingStatus, setPendingStatus] = useState('')
   const [reason, setReason] = useState('')
   const [auditRefreshKey, setAuditRefreshKey] = useState(0)
-  const auditFilters = useAuditFilters()
   const [isItemsExpanded, setIsItemsExpanded] = useState(false)
   const [lockUpdating, setLockUpdating] = useState(false)
   const [budgetUpdating, setBudgetUpdating] = useState(false)
