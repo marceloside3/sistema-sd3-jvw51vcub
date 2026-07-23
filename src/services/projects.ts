@@ -6,7 +6,7 @@ export async function getProjects() {
     .from('projects')
     .select(`
       *,
-      client:clients(id, name, code)
+      client:clients(id, name, code, has_lpu)
     `)
     .order('created_at', { ascending: false })
 

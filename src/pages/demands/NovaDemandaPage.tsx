@@ -40,6 +40,7 @@ interface DemandItem {
   lpu_item_id: string | null
   unit_price: number | null
   is_custom: boolean
+  lpu_range: string | null
 }
 
 const emptyItem: DemandItem = {
@@ -51,6 +52,7 @@ const emptyItem: DemandItem = {
   lpu_item_id: null,
   unit_price: null,
   is_custom: true,
+  lpu_range: null,
 }
 
 export default function NovaDemandaPage() {
@@ -85,11 +87,12 @@ export default function NovaDemandaPage() {
   )
 
   const [demandItems, setDemandItems] = useState<DemandItem[]>([])
+  const [lpuLoaded, setLpuLoaded] = useState(false)
   const [itemForm, setItemForm] = useState<DemandItem>(emptyItem)
   const [itemMode, setItemMode] = useState<'lpu' | 'manual'>('manual')
 
   const selectedArea = areas.find((a) => a.id === formData.to_area_id)
-  const isProducaoArea = selectedArea?.code === 'producao'
+  const isProducaoArea = selectedArea?.code?.trim().toLowerCase() === 'producao'
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === formData.project_id),
@@ -129,21 +132,26 @@ export default function NovaDemandaPage() {
   }, [formData.to_area_id])
 
   useEffect(() => {
-    if (isProducaoArea && selectedProject?.client?.id) {
-      getLpuItems(selectedProject.client.id)
+    const clientId = selectedProject?.client?.id || selectedProject?.client_id
+    if (isProducaoArea && clientId) {
+      setLpuLoaded(false)
+      getLpuItems(clientId)
         .then((items) => {
           setLpuItems(items)
+          setLpuLoaded(true)
           setItemMode(items.length > 0 ? 'lpu' : 'manual')
           setItemForm({ ...emptyItem, is_custom: items.length === 0 })
         })
         .catch(() => {
           setLpuItems([])
+          setLpuLoaded(true)
           setItemMode('manual')
         })
     } else {
       setLpuItems([])
+      setLpuLoaded(false)
     }
-  }, [isProducaoArea, selectedProject?.client?.id])
+  }, [isProducaoArea, selectedProject?.client?.id, selectedProject?.client_id])
 
   const handleLpuSelect = (itemName: string) => {
     const isFromLpu = lpuItems.some(
@@ -157,6 +165,7 @@ export default function NovaDemandaPage() {
       lpu_item_id: matched?.id || null,
       unit_price: matched ? matched.unit_value : null,
       is_custom: !isFromLpu,
+      lpu_range: matched?.range || null,
       quantity: itemForm.quantity || 1,
       deadline: itemForm.deadline,
       delivery_location: itemForm.delivery_location,
@@ -171,6 +180,7 @@ export default function NovaDemandaPage() {
         if (matched) {
           updated.unit_price = matched.unit_value
           updated.lpu_item_id = matched.id
+          updated.lpu_range = matched.range
         }
       }
       return updated
@@ -452,6 +462,12 @@ export default function NovaDemandaPage() {
               </div>
             )}
 
+            {!hasLpu && lpuLoaded && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                Este cliente não possui itens de LPU cadastrados
+              </div>
+            )}
+
             {hasLpu && itemMode === 'lpu' && (
               <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
                 <div className="space-y-2 col-span-2">
@@ -486,6 +502,15 @@ export default function NovaDemandaPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>Faixa (Range)</Label>
+                  <Input
+                    value={itemForm.lpu_range ?? ''}
+                    readOnly
+                    placeholder="—"
+                    className="bg-muted/50"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>Quantidade</Label>
                   <Input
                     type="number"
@@ -502,7 +527,7 @@ export default function NovaDemandaPage() {
                     onChange={(e) => setItemForm({ ...itemForm, deadline: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 col-span-2">
                   <Label>Local de Entrega</Label>
                   <Input
                     value={itemForm.delivery_location}
@@ -628,6 +653,11 @@ export default function NovaDemandaPage() {
                           </div>
                           {item.description && (
                             <div className="text-xs text-muted-foreground">{item.description}</div>
+                          )}
+                          {item.lpu_range && (
+                            <div className="text-xs text-muted-foreground">
+                              Faixa: {item.lpu_range}
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
