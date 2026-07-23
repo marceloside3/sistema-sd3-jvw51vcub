@@ -63,9 +63,11 @@ export default function DemandDetailsPage() {
   const [pendingStatus, setPendingStatus] = useState('')
   const [reason, setReason] = useState('')
   const [auditRefreshKey, setAuditRefreshKey] = useState(0)
+  const [isItemsExpanded, setIsItemsExpanded] = useState(false)
   const [lockUpdating, setLockUpdating] = useState(false)
   const [budgetUpdating, setBudgetUpdating] = useState(false)
   const [paymentUpdating, setPaymentUpdating] = useState(false)
+  const [itemsExpanded, setItemsExpanded] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -258,7 +260,9 @@ export default function DemandDetailsPage() {
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div
+      className={isItemsExpanded ? 'w-full mx-auto px-4 space-y-6' : 'max-w-6xl mx-auto space-y-6'}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button asChild variant="ghost" size="icon">
@@ -316,240 +320,262 @@ export default function DemandDetailsPage() {
         </div>
       </div>
 
-      <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
+      {!itemsExpanded && (
+        <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
+      )}
 
-      <div className="grid md:grid-cols-3 gap-6 items-start">
-        <div className="md:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Detalhes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <span className="text-xs text-gray-500 uppercase">Status Atual</span>
-                <Select
-                  value={demand.status}
-                  onValueChange={handleStatusChange}
-                  disabled={statusUpdating}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="in_progress">Em Andamento</SelectItem>
-                    <SelectItem value="review">Em Revisão</SelectItem>
-                    <SelectItem value="done">Concluído</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                    <SelectItem value="rejected">Rejeitado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {demand.cancellation_reason && (
-                <div className="bg-red-50 p-3 rounded text-sm text-red-800">
-                  <strong className="block mb-1">Motivo ({demand.status}):</strong>
-                  {demand.cancellation_reason}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 text-sm border-t pt-4">
-                <span className="text-gray-500">Prioridade:</span>
-                <span className="font-medium capitalize">{demand.priority}</span>
-
-                <span className="text-gray-500">De (Área):</span>
-                <span className="font-medium">{demand.from_area?.name}</span>
-
-                <span className="text-gray-500">Solicitante:</span>
-                <span className="font-medium">{demand.from_user?.full_name}</span>
-
-                <span className="text-gray-500">Para (Área):</span>
-                <span className="font-medium">{demand.to_area?.name}</span>
-
-                <span className="text-gray-500">Responsável:</span>
-                <span className="font-medium">{demand.to_user?.full_name || 'Qualquer'}</span>
-
-                <span className="text-gray-500">Prazo:</span>
-                <span className="font-medium">{formatDateBR(demand.due_date)}</span>
-              </div>
-            </CardContent>
-          </Card>
-          {demand.status === 'done' && (
+      {itemsExpanded ? (
+        <DemandItemsSection
+          demandId={demand.id}
+          clientId={demand.project?.client_id ?? null}
+          isLocked={!!demand.is_locked}
+          isAdmin={!!userCtx?.profile?.is_admin}
+          onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
+          isExpanded={itemsExpanded}
+          onToggleExpand={() => setItemsExpanded((v) => !v)}
+        />
+      ) : (
+        <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="md:col-span-1 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Orçamento e Pagamento</CardTitle>
+                <CardTitle className="text-lg">Detalhes</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-gray-500">Orçamento:</span>
-                  <Badge
-                    className={
-                      BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.className || ''
-                    }
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-500 uppercase">Status Atual</span>
+                  <Select
+                    value={demand.status}
+                    onValueChange={handleStatusChange}
+                    disabled={statusUpdating}
                   >
-                    {BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.label || 'Pendente'}
-                  </Badge>
-                  <span className="text-gray-500">Pagamento:</span>
-                  <Badge
-                    className={
-                      PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.className || ''
-                    }
-                  >
-                    {PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.label ||
-                      'Não Iniciado'}
-                  </Badge>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="in_progress">Em Andamento</SelectItem>
+                      <SelectItem value="review">Em Revisão</SelectItem>
+                      <SelectItem value="done">Concluído</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                      <SelectItem value="rejected">Rejeitado</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {userCtx?.id === demand.from_user_id && demand.budget_status === 'sent' && (
-                  <div className="space-y-2">
-                    <span className="text-xs text-gray-500 uppercase">Decisão do Solicitante</span>
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleBudgetDecision('approved')}
-                        disabled={budgetUpdating}
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Aprovar Orçamento
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                        onClick={() => handleBudgetDecision('adjustments_requested')}
-                        disabled={budgetUpdating}
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Pedir Ajustes
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                        onClick={() => handleBudgetDecision('rejected')}
-                        disabled={budgetUpdating}
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Reprovar Orçamento
-                      </Button>
-                    </div>
+                {demand.cancellation_reason && (
+                  <div className="bg-red-50 p-3 rounded text-sm text-red-800">
+                    <strong className="block mb-1">Motivo ({demand.status}):</strong>
+                    {demand.cancellation_reason}
                   </div>
                 )}
 
-                {!!userCtx?.profile?.is_admin ||
-                  (!!userCtx?.areas?.some((a) => a.id === demand.to_area_id) && (
-                    <>
-                      {(!demand.budget_status ||
-                        demand.budget_status === 'pending' ||
-                        demand.budget_status === 'adjustments_requested') && (
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          onClick={handleSendBudget}
-                          disabled={budgetUpdating}
-                        >
-                          <Send className="w-4 h-4 mr-2" />
-                          Enviar Orçamento
-                        </Button>
-                      )}
-                      {demand.budget_status === 'approved' &&
-                        (!demand.payment_status || demand.payment_status === 'none') && (
-                          <Button
-                            size="sm"
-                            className="w-full bg-purple-600 hover:bg-purple-700"
-                            onClick={handleSendToFinance}
-                            disabled={paymentUpdating}
-                          >
-                            <Banknote className="w-4 h-4 mr-2" />
-                            Enviar para Financeiro
-                          </Button>
-                        )}
-                    </>
-                  ))}
+                <div className="grid grid-cols-2 gap-2 text-sm border-t pt-4">
+                  <span className="text-gray-500">Prioridade:</span>
+                  <span className="font-medium capitalize">{demand.priority}</span>
+
+                  <span className="text-gray-500">De (Área):</span>
+                  <span className="font-medium">{demand.from_area?.name}</span>
+
+                  <span className="text-gray-500">Solicitante:</span>
+                  <span className="font-medium">{demand.from_user?.full_name}</span>
+
+                  <span className="text-gray-500">Para (Área):</span>
+                  <span className="font-medium">{demand.to_area?.name}</span>
+
+                  <span className="text-gray-500">Responsável:</span>
+                  <span className="font-medium">{demand.to_user?.full_name || 'Qualquer'}</span>
+
+                  <span className="text-gray-500">Prazo:</span>
+                  <span className="font-medium">{formatDateBR(demand.due_date)}</span>
+                </div>
               </CardContent>
             </Card>
-          )}
-          <DemandAuditHistory demandId={demand.id} refreshKey={auditRefreshKey} />
-        </div>
-
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Descrição da Demanda</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap text-gray-700 text-sm">{demand.description}</p>
-            </CardContent>
-          </Card>
-
-          <DemandItemsSection
-            demandId={demand.id}
-            clientId={demand.project?.client_id ?? null}
-            isLocked={!!demand.is_locked}
-            isAdmin={!!userCtx?.profile?.is_admin}
-            onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
-          />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Comentários e Histórico</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2">
-                {comments.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">Nenhum comentário ainda.</p>
-                ) : (
-                  comments.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`flex flex-col ${c.user_id === userCtx?.user?.id ? 'items-end' : 'items-start'}`}
+            {demand.status === 'done' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Orçamento e Pagamento</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-gray-500">Orçamento:</span>
+                    <Badge
+                      className={
+                        BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.className || ''
+                      }
                     >
-                      <div
-                        className={`max-w-[80%] rounded-lg p-3 text-sm ${c.user_id === userCtx?.user?.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
-                      >
-                        <div className="font-semibold text-xs opacity-75 mb-1">
-                          {c.user?.full_name}
-                        </div>
-                        <div className="whitespace-pre-wrap">{c.content}</div>
-                      </div>
-                      <span className="text-[10px] text-gray-400 mt-1">
-                        {format(new Date(c.created_at), 'dd/MM HH:mm')}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="flex gap-2 pt-4 border-t">
-                <Textarea
-                  placeholder="Escreva um comentário..."
-                  className="min-h-[40px] resize-none"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleComment()
-                    }
-                  }}
-                />
-                <Button
-                  size="icon"
-                  className="shrink-0 h-auto"
-                  onClick={handleComment}
-                  disabled={!newComment.trim()}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                      {BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.label || 'Pendente'}
+                    </Badge>
+                    <span className="text-gray-500">Pagamento:</span>
+                    <Badge
+                      className={
+                        PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.className || ''
+                      }
+                    >
+                      {PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.label ||
+                        'Não Iniciado'}
+                    </Badge>
+                  </div>
 
-      <div className="mt-6">
-        <AttachmentsSection kind="demand" entityId={demand.id} />
-      </div>
+                  {userCtx?.id === demand.from_user_id && demand.budget_status === 'sent' && (
+                    <div className="space-y-2">
+                      <span className="text-xs text-gray-500 uppercase">
+                        Decisão do Solicitante
+                      </span>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleBudgetDecision('approved')}
+                          disabled={budgetUpdating}
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Aprovar Orçamento
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                          onClick={() => handleBudgetDecision('adjustments_requested')}
+                          disabled={budgetUpdating}
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Pedir Ajustes
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                          onClick={() => handleBudgetDecision('rejected')}
+                          disabled={budgetUpdating}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Reprovar Orçamento
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!!userCtx?.profile?.is_admin ||
+                    (!!userCtx?.areas?.some((a) => a.id === demand.to_area_id) && (
+                      <>
+                        {(!demand.budget_status ||
+                          demand.budget_status === 'pending' ||
+                          demand.budget_status === 'adjustments_requested') && (
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={handleSendBudget}
+                            disabled={budgetUpdating}
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            Enviar Orçamento
+                          </Button>
+                        )}
+                        {demand.budget_status === 'approved' &&
+                          (!demand.payment_status || demand.payment_status === 'none') && (
+                            <Button
+                              size="sm"
+                              className="w-full bg-purple-600 hover:bg-purple-700"
+                              onClick={handleSendToFinance}
+                              disabled={paymentUpdating}
+                            >
+                              <Banknote className="w-4 h-4 mr-2" />
+                              Enviar para Financeiro
+                            </Button>
+                          )}
+                      </>
+                    ))}
+                </CardContent>
+              </Card>
+            )}
+            <DemandAuditHistory demandId={demand.id} refreshKey={auditRefreshKey} />
+          </div>
+
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Descrição da Demanda</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap text-gray-700 text-sm">{demand.description}</p>
+              </CardContent>
+            </Card>
+
+            <DemandItemsSection
+              demandId={demand.id}
+              clientId={demand.project?.client_id ?? null}
+              isLocked={!!demand.is_locked}
+              isAdmin={!!userCtx?.profile?.is_admin}
+              onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
+              isExpanded={itemsExpanded}
+              onToggleExpand={() => setItemsExpanded((v) => !v)}
+            />
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Comentários e Histórico</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2">
+                  {comments.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      Nenhum comentário ainda.
+                    </p>
+                  ) : (
+                    comments.map((c) => (
+                      <div
+                        key={c.id}
+                        className={`flex flex-col ${c.user_id === userCtx?.user?.id ? 'items-end' : 'items-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 text-sm ${c.user_id === userCtx?.user?.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
+                        >
+                          <div className="font-semibold text-xs opacity-75 mb-1">
+                            {c.user?.full_name}
+                          </div>
+                          <div className="whitespace-pre-wrap">{c.content}</div>
+                        </div>
+                        <span className="text-[10px] text-gray-400 mt-1">
+                          {format(new Date(c.created_at), 'dd/MM HH:mm')}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="flex gap-2 pt-4 border-t">
+                  <Textarea
+                    placeholder="Escreva um comentário..."
+                    className="min-h-[40px] resize-none"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleComment()
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    className="shrink-0 h-auto"
+                    onClick={handleComment}
+                    disabled={!newComment.trim()}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {!itemsExpanded && (
+        <div className="mt-6">
+          <AttachmentsSection kind="demand" entityId={demand.id} />
+        </div>
+      )}
 
       <Dialog open={cancelReasonOpen} onOpenChange={setCancelReasonOpen}>
         <DialogContent>

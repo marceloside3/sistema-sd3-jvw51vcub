@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Package, Pencil, Plus, Trash2, Lock, ListChecks } from 'lucide-react'
+import { Package, Pencil, Plus, Trash2, Lock, ListChecks, Maximize2, Minimize2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +55,8 @@ interface DemandItemsSectionProps {
   isLocked?: boolean
   isAdmin?: boolean
   onItemsChanged?: () => void
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }
 
 function isCostCompleted(item: DemandItem): boolean {
@@ -72,6 +74,8 @@ export function DemandItemsSection({
   isLocked = false,
   isAdmin = false,
   onItemsChanged,
+  isExpanded = false,
+  onToggleExpand,
 }: DemandItemsSectionProps) {
   const { toast } = useToast()
   const { data: userCtx } = useCurrentUser()
@@ -178,6 +182,18 @@ export function DemandItemsSection({
             Itens da Demanda
           </CardTitle>
           <div className="flex items-center gap-2">
+            {onToggleExpand && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={onToggleExpand}
+                aria-label={isExpanded ? 'Recolher seção de itens' : 'Expandir seção de itens'}
+                title={isExpanded ? 'Recolher seção de itens' : 'Expandir seção de itens'}
+              >
+                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+            )}
             {clientId && (
               <Button
                 size="sm"
@@ -193,6 +209,18 @@ export function DemandItemsSection({
               <Plus className="w-4 h-4 mr-1" />
               Adicionar Item
             </Button>
+            {onToggleExpand && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={onToggleExpand}
+                title={isExpanded ? 'Retrair seção de itens' : 'Expandir seção de itens'}
+                aria-label={isExpanded ? 'Retrair seção de itens' : 'Expandir seção de itens'}
+              >
+                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
