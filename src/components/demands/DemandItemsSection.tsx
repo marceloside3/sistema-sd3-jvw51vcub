@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Package, Pencil, Plus, Trash2, Lock, ListChecks, Maximize2, Minimize2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -30,6 +30,7 @@ import { logDemandAuditEntry } from '@/services/demand-audit'
 import { ItemCostEditorDialog } from '@/components/demands/ItemCostEditorDialog'
 import { AddItemDialog } from '@/components/demands/AddItemDialog'
 import { AddFromLpuDialog } from '@/components/demands/AddFromLpuDialog'
+import { SavingIndicator, type SaveStatus } from '@/components/demands/SavingIndicator'
 import { formatCurrency, formatPercent, calculateFinancials, getMarginColor } from '@/lib/financial'
 
 interface DemandItem {
@@ -87,6 +88,8 @@ export function DemandItemsSection({
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [lpuDialogOpen, setLpuDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<DemandItem | null>(null)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -107,6 +110,12 @@ export function DemandItemsSection({
       cancelled = true
     }
   }, [demandId, toast])
+
+  useEffect(() => {
+    return () => {
+      if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current)
+    }
+  }, [])
 
   const itemFinancials = items.map((item) =>
     calculateFinancials({
@@ -129,11 +138,26 @@ export function DemandItemsSection({
     setDialogOpen(true)
   }
 
+  const transitionToSaved = () => {
+    setSaveStatus('saved')
+    if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current)
+    savedTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 2000)
+  }
+
+  const transitionToError = () => {
+    setSaveStatus('error')
+    if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current)
+    savedTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 3000)
+  }
+
   const reloadItems = async () => {
+    setSaveStatus('saving')
     try {
       const data = await getDemandItems(demandId)
       setItems(data as DemandItem[])
+      transitionToSaved()
     } catch {
+      transitionToError()
       toast({ title: 'Erro ao recarregar itens', variant: 'destructive' })
     }
   }
@@ -152,6 +176,7 @@ export function DemandItemsSection({
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
+    setSaveStatus('saving')
     try {
       if (userCtx?.user?.id) {
         await logDemandAuditEntry({
@@ -167,6 +192,7 @@ export function DemandItemsSection({
       toast({ title: 'Item removido com sucesso!' })
       onItemsChanged?.()
     } catch {
+      transitionToError()
       toast({ title: 'Erro ao remover item', variant: 'destructive' })
     } finally {
       setDeleteTarget(null)
@@ -209,6 +235,7 @@ export function DemandItemsSection({
               <Plus className="w-4 h-4 mr-1" />
               Adicionar Item
             </Button>
+            {isExpanded && <SavingIndicator status={saveStatus} />}
             {onToggleExpand && (
               <Button
                 size="icon"
