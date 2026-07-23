@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Send, ArrowLeft, FileText, Lock, Unlock } from 'lucide-react'
+import {
+  Send,
+  ArrowLeft,
+  FileText,
+  Lock,
+  Unlock,
+  Check,
+  X,
+  RefreshCw,
+  Banknote,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDateBR } from '@/lib/utils'
@@ -25,6 +35,8 @@ import { Label } from '@/components/ui/label'
 import {
   getDemandDetails,
   updateDemandStatus,
+  updateBudgetStatus,
+  updatePaymentStatus,
   getDemandComments,
   addDemandComment,
 } from '@/services/demands'
@@ -35,6 +47,7 @@ import { DemandItemsSection } from '@/components/demands/DemandItemsSection'
 import { DemandFinancialHeader } from '@/components/demands/DemandFinancialHeader'
 import { DemandAuditHistory } from '@/components/demands/DemandAuditHistory'
 import { logDemandAuditEntry } from '@/services/demand-audit'
+import { BUDGET_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/lib/constants/demand-status'
 
 export default function DemandDetailsPage() {
   const { id } = useParams()
@@ -51,6 +64,8 @@ export default function DemandDetailsPage() {
   const [reason, setReason] = useState('')
   const [auditRefreshKey, setAuditRefreshKey] = useState(0)
   const [lockUpdating, setLockUpdating] = useState(false)
+  const [budgetUpdating, setBudgetUpdating] = useState(false)
+  const [paymentUpdating, setPaymentUpdating] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -148,6 +163,82 @@ export default function DemandDetailsPage() {
       toast({ title: 'Erro ao alterar bloqueio', variant: 'destructive' })
     } finally {
       setLockUpdating(false)
+    }
+  }
+
+  const handleSendBudget = async () => {
+    setBudgetUpdating(true)
+    try {
+      await updateBudgetStatus(demand.id, 'sent')
+      if (userCtx?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.id,
+          field_name: 'budget_status',
+          old_value: demand.budget_status || 'pending',
+          new_value: 'sent',
+        })
+      }
+      setDemand({ ...demand, budget_status: 'sent' })
+      setAuditRefreshKey((k) => k + 1)
+      toast({ title: 'Orçamento enviado para aprovação' })
+    } catch {
+      toast({ title: 'Erro ao enviar orçamento', variant: 'destructive' })
+    } finally {
+      setBudgetUpdating(false)
+    }
+  }
+
+  const handleBudgetDecision = async (
+    decision: 'approved' | 'rejected' | 'adjustments_requested',
+  ) => {
+    setBudgetUpdating(true)
+    try {
+      await updateBudgetStatus(demand.id, decision)
+      if (userCtx?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.id,
+          field_name: 'budget_status',
+          old_value: demand.budget_status || 'sent',
+          new_value: decision,
+        })
+      }
+      setDemand({ ...demand, budget_status: decision })
+      setAuditRefreshKey((k) => k + 1)
+      const labels: Record<string, string> = {
+        approved: 'Orçamento aprovado',
+        rejected: 'Orçamento reprovado',
+        adjustments_requested: 'Ajustes solicitados',
+      }
+      toast({ title: labels[decision] })
+    } catch {
+      toast({ title: 'Erro ao processar decisão', variant: 'destructive' })
+    } finally {
+      setBudgetUpdating(false)
+    }
+  }
+
+  const handleSendToFinance = async () => {
+    setPaymentUpdating(true)
+    try {
+      await updatePaymentStatus(demand.id, 'requested')
+      if (userCtx?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.id,
+          field_name: 'payment_status',
+          old_value: demand.payment_status || 'none',
+          new_value: 'requested',
+        })
+      }
+      setDemand({ ...demand, payment_status: 'requested' })
+      setAuditRefreshKey((k) => k + 1)
+      toast({ title: 'Enviado para o Financeiro' })
+    } catch {
+      toast({ title: 'Erro ao enviar para Financeiro', variant: 'destructive' })
+    } finally {
+      setPaymentUpdating(false)
     }
   }
 
@@ -283,6 +374,102 @@ export default function DemandDetailsPage() {
               </div>
             </CardContent>
           </Card>
+          {demand.status === 'done' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Orçamento e Pagamento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-gray-500">Orçamento:</span>
+                  <Badge
+                    className={
+                      BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.className || ''
+                    }
+                  >
+                    {BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.label || 'Pendente'}
+                  </Badge>
+                  <span className="text-gray-500">Pagamento:</span>
+                  <Badge
+                    className={
+                      PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.className || ''
+                    }
+                  >
+                    {PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.label ||
+                      'Não Iniciado'}
+                  </Badge>
+                </div>
+
+                {userCtx?.id === demand.from_user_id && demand.budget_status === 'sent' && (
+                  <div className="space-y-2">
+                    <span className="text-xs text-gray-500 uppercase">Decisão do Solicitante</span>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => handleBudgetDecision('approved')}
+                        disabled={budgetUpdating}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Aprovar Orçamento
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                        onClick={() => handleBudgetDecision('adjustments_requested')}
+                        disabled={budgetUpdating}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Pedir Ajustes
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                        onClick={() => handleBudgetDecision('rejected')}
+                        disabled={budgetUpdating}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Reprovar Orçamento
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!!userCtx?.profile?.is_admin ||
+                  (!!userCtx?.areas?.some((a) => a.id === demand.to_area_id) && (
+                    <>
+                      {(!demand.budget_status ||
+                        demand.budget_status === 'pending' ||
+                        demand.budget_status === 'adjustments_requested') && (
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={handleSendBudget}
+                          disabled={budgetUpdating}
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Enviar Orçamento
+                        </Button>
+                      )}
+                      {demand.budget_status === 'approved' &&
+                        (!demand.payment_status || demand.payment_status === 'none') && (
+                          <Button
+                            size="sm"
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                            onClick={handleSendToFinance}
+                            disabled={paymentUpdating}
+                          >
+                            <Banknote className="w-4 h-4 mr-2" />
+                            Enviar para Financeiro
+                          </Button>
+                        )}
+                    </>
+                  ))}
+              </CardContent>
+            </Card>
+          )}
           <DemandAuditHistory demandId={demand.id} refreshKey={auditRefreshKey} />
         </div>
 

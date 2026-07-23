@@ -245,6 +245,14 @@ export async function updateDemandLock(id: string, isLocked: boolean) {
   return updateDemand(id, { is_locked: isLocked })
 }
 
+export async function updateBudgetStatus(id: string, budgetStatus: string) {
+  return updateDemand(id, { budget_status: budgetStatus })
+}
+
+export async function updatePaymentStatus(id: string, paymentStatus: string) {
+  return updateDemand(id, { payment_status: paymentStatus })
+}
+
 export async function getMyDemands(
   userId: string,
   type: 'sent' | 'received' | 'completed',
