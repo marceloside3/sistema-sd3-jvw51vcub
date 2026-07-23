@@ -400,6 +400,7 @@ export type Database = {
       }
       demands: {
         Row: {
+          budget_status: string
           cancellation_reason: string | null
           completed_at: string | null
           created_at: string
@@ -409,6 +410,7 @@ export type Database = {
           from_user_id: string
           id: string
           is_locked: boolean
+          payment_status: string
           priority: string
           project_id: string
           status: string
@@ -418,6 +420,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          budget_status?: string
           cancellation_reason?: string | null
           completed_at?: string | null
           created_at?: string
@@ -427,6 +430,7 @@ export type Database = {
           from_user_id: string
           id?: string
           is_locked?: boolean
+          payment_status?: string
           priority?: string
           project_id: string
           status?: string
@@ -436,6 +440,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          budget_status?: string
           cancellation_reason?: string | null
           completed_at?: string | null
           created_at?: string
@@ -445,6 +450,7 @@ export type Database = {
           from_user_id?: string
           id?: string
           is_locked?: boolean
+          payment_status?: string
           priority?: string
           project_id?: string
           status?: string

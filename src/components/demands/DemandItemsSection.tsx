@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Package, Pencil, Plus, Trash2, Lock } from 'lucide-react'
+import { Package, Pencil, Plus, Trash2, Lock, ListChecks } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +29,7 @@ import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditEntry } from '@/services/demand-audit'
 import { ItemCostEditorDialog } from '@/components/demands/ItemCostEditorDialog'
 import { AddItemDialog } from '@/components/demands/AddItemDialog'
+import { AddFromLpuDialog } from '@/components/demands/AddFromLpuDialog'
 import { formatCurrency, formatPercent, calculateFinancials, getMarginColor } from '@/lib/financial'
 
 interface DemandItem {
@@ -80,6 +81,7 @@ export function DemandItemsSection({
   const [editingItem, setEditingItem] = useState<DemandItem | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [lpuDialogOpen, setLpuDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<DemandItem | null>(null)
 
   useEffect(() => {
@@ -175,10 +177,23 @@ export function DemandItemsSection({
             <Package className="w-5 h-5 text-muted-foreground" />
             Itens da Demanda
           </CardTitle>
-          <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canEdit}>
-            <Plus className="w-4 h-4 mr-1" />
-            Adicionar Item
-          </Button>
+          <div className="flex items-center gap-2">
+            {clientId && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLpuDialogOpen(true)}
+                disabled={!canEdit}
+              >
+                <ListChecks className="w-4 h-4 mr-1" />
+                Adicionar da LPU
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canEdit}>
+              <Plus className="w-4 h-4 mr-1" />
+              Adicionar Item
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -193,10 +208,23 @@ export function DemandItemsSection({
             <p className="text-sm text-muted-foreground mb-3">
               Nenhum item encontrado para esta demanda.
             </p>
-            <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canEdit}>
-              <Plus className="w-4 h-4 mr-1" />
-              Adicionar Primeiro Item
-            </Button>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {clientId && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setLpuDialogOpen(true)}
+                  disabled={!canEdit}
+                >
+                  <ListChecks className="w-4 h-4 mr-1" />
+                  Adicionar da LPU
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canEdit}>
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar Primeiro Item
+              </Button>
+            </div>
           </div>
         ) : (
           <Tabs defaultValue="internal">
@@ -416,6 +444,14 @@ export function DemandItemsSection({
         isAdmin={isAdmin}
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
+        onSaved={handleAddSaved}
+      />
+
+      <AddFromLpuDialog
+        demandId={demandId}
+        clientId={clientId}
+        open={lpuDialogOpen}
+        onOpenChange={setLpuDialogOpen}
         onSaved={handleAddSaved}
       />
 
