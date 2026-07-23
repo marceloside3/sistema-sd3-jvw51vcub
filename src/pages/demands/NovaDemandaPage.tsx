@@ -43,6 +43,14 @@ interface DemandItem {
   lpu_range: string | null
 }
 
+function normalizeStr(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+}
+
 const emptyItem: DemandItem = {
   item_name: '',
   description: '',
@@ -88,11 +96,12 @@ export default function NovaDemandaPage() {
 
   const [demandItems, setDemandItems] = useState<DemandItem[]>([])
   const [lpuLoaded, setLpuLoaded] = useState(false)
+  const [fetchedClientId, setFetchedClientId] = useState<string | null>(null)
   const [itemForm, setItemForm] = useState<DemandItem>(emptyItem)
   const [itemMode, setItemMode] = useState<'lpu' | 'manual'>('manual')
 
   const selectedArea = areas.find((a) => a.id === formData.to_area_id)
-  const isProducaoArea = selectedArea?.code?.trim().toLowerCase() === 'producao'
+  const isProducaoArea = selectedArea ? normalizeStr(selectedArea.code || '') === 'producao' : false
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === formData.project_id),
@@ -133,6 +142,22 @@ export default function NovaDemandaPage() {
 
   useEffect(() => {
     const clientId = selectedProject?.client?.id || selectedProject?.client_id
+    if (!clientId && formData.project_id && isProducaoArea) {
+      supabase
+        .from('projects')
+        .select('client_id')
+        .eq('id', formData.project_id)
+        .single()
+        .then(({ data }) => {
+          setFetchedClientId(data?.client_id ?? null)
+        })
+    } else {
+      setFetchedClientId(null)
+    }
+  }, [formData.project_id, isProducaoArea, selectedProject?.client?.id, selectedProject?.client_id])
+
+  useEffect(() => {
+    const clientId = selectedProject?.client?.id || selectedProject?.client_id || fetchedClientId
     if (isProducaoArea && clientId) {
       setLpuLoaded(false)
       getLpuItems(clientId)
@@ -151,7 +176,7 @@ export default function NovaDemandaPage() {
       setLpuItems([])
       setLpuLoaded(false)
     }
-  }, [isProducaoArea, selectedProject?.client?.id, selectedProject?.client_id])
+  }, [isProducaoArea, selectedProject?.client?.id, selectedProject?.client_id, fetchedClientId])
 
   const handleLpuSelect = (itemName: string) => {
     const isFromLpu = lpuItems.some(
@@ -464,7 +489,7 @@ export default function NovaDemandaPage() {
 
             {!hasLpu && lpuLoaded && (
               <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
-                Este cliente não possui itens de LPU cadastrados
+                Este cliente ainda não possui itens cadastrados na LPU
               </div>
             )}
 
