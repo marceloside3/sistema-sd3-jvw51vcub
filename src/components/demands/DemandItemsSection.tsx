@@ -26,7 +26,7 @@ import {
 import { getDemandItems, deleteDemandItem } from '@/services/demands'
 import { useToast } from '@/hooks/use-toast'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { logDemandAuditEntry } from '@/services/demand-audit'
+import { logDemandAuditBatch } from '@/services/demand-audit'
 import { ItemCostEditorDialog } from '@/components/demands/ItemCostEditorDialog'
 import { AddItemDialog } from '@/components/demands/AddItemDialog'
 import { AddFromLpuDialog } from '@/components/demands/AddFromLpuDialog'
@@ -178,14 +178,103 @@ export function DemandItemsSection({
     if (!deleteTarget) return
     setSaveStatus('saving')
     try {
-      if (userCtx?.user?.id) {
-        await logDemandAuditEntry({
-          demand_id: demandId,
-          item_id: deleteTarget.id,
-          user_id: userCtx.user.id,
-          field_name: 'item_removed',
-          old_value: deleteTarget.item_name,
-        })
+      if (userCtx?.id) {
+        await logDemandAuditBatch([
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'item_removed',
+            old_value: deleteTarget.item_name,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'item_name',
+            old_value: deleteTarget.item_name,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'description',
+            old_value: deleteTarget.description || null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'quantity',
+            old_value: String(deleteTarget.quantity),
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'unit_price',
+            old_value: deleteTarget.unit_price !== null ? String(deleteTarget.unit_price) : null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'supplier_name',
+            old_value: deleteTarget.supplier_name || null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'unit_cost',
+            old_value: deleteTarget.unit_cost !== null ? String(deleteTarget.unit_cost) : null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'extra_cost',
+            old_value: deleteTarget.extra_cost !== null ? String(deleteTarget.extra_cost) : null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'honorarios_percentage',
+            old_value:
+              deleteTarget.honorarios_percentage !== null
+                ? String(deleteTarget.honorarios_percentage)
+                : null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'total_cost',
+            old_value: deleteTarget.total_cost !== null ? String(deleteTarget.total_cost) : null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'cost_status',
+            old_value: deleteTarget.cost_status,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'deadline',
+            old_value: deleteTarget.deadline || null,
+          },
+          {
+            demand_id: demandId,
+            item_id: deleteTarget.id,
+            user_id: userCtx.id,
+            field_name: 'delivery_location',
+            old_value: deleteTarget.delivery_location || null,
+          },
+        ])
       }
       await deleteDemandItem(deleteTarget.id)
       await reloadItems()

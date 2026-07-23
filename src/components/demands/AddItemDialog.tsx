@@ -16,7 +16,7 @@ import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
 import { getLpuItems, findMatchingLpuItem, LpuItem } from '@/services/lpu'
 import { addDemandItem } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { logDemandAuditEntry } from '@/services/demand-audit'
+import { logDemandAuditBatch } from '@/services/demand-audit'
 import { useToast } from '@/hooks/use-toast'
 import { formatInputDecimal, sanitizeDecimalInput, parseNumber } from '@/lib/financial'
 
@@ -90,14 +90,51 @@ export function AddItemDialog({
         is_custom: !isLpu,
       })
 
-      if (userCtx?.user?.id) {
-        await logDemandAuditEntry({
-          demand_id: demandId,
-          item_id: newItem.id,
-          user_id: userCtx.user.id,
-          field_name: 'item_added',
-          new_value: itemName.trim(),
-        })
+      if (userCtx?.id) {
+        await logDemandAuditBatch([
+          {
+            demand_id: demandId,
+            item_id: newItem.id,
+            user_id: userCtx.id,
+            field_name: 'item_added',
+            new_value: itemName.trim(),
+          },
+          {
+            demand_id: demandId,
+            item_id: newItem.id,
+            user_id: userCtx.id,
+            field_name: 'item_name',
+            new_value: itemName.trim(),
+          },
+          {
+            demand_id: demandId,
+            item_id: newItem.id,
+            user_id: userCtx.id,
+            field_name: 'description',
+            new_value: description.trim() || null,
+          },
+          {
+            demand_id: demandId,
+            item_id: newItem.id,
+            user_id: userCtx.id,
+            field_name: 'quantity',
+            new_value: String(parsedQty),
+          },
+          {
+            demand_id: demandId,
+            item_id: newItem.id,
+            user_id: userCtx.id,
+            field_name: 'unit_price',
+            new_value: effectiveUnitPrice > 0 ? String(effectiveUnitPrice) : null,
+          },
+          {
+            demand_id: demandId,
+            item_id: newItem.id,
+            user_id: userCtx.id,
+            field_name: 'is_custom',
+            new_value: String(!isLpu),
+          },
+        ])
       }
 
       onSaved()

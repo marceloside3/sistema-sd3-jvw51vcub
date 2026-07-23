@@ -48,3 +48,27 @@ export async function logDemandAuditEntry(params: {
   ])
   if (error) throw error
 }
+
+export async function logDemandAuditBatch(
+  entries: Array<{
+    demand_id: string
+    item_id?: string | null
+    user_id: string
+    field_name: string
+    old_value?: string | null
+    new_value?: string | null
+  }>,
+) {
+  if (entries.length === 0) return
+  const { error } = await supabase.from('demand_audit_log').insert(
+    entries.map((e) => ({
+      demand_id: e.demand_id,
+      item_id: e.item_id || null,
+      user_id: e.user_id,
+      field_name: e.field_name,
+      old_value: e.old_value ?? null,
+      new_value: e.new_value ?? null,
+    })),
+  )
+  if (error) throw error
+}

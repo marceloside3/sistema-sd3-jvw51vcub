@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Loader2, Lock } from 'lucide-react'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { logDemandAuditEntry } from '@/services/demand-audit'
+import { logDemandAuditBatch } from '@/services/demand-audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -123,7 +123,7 @@ export function ItemCostEditorDialog({
         cost_status: supplierName.trim() && parsedUnitCost > 0 ? 'completed' : 'pending',
       })
 
-      if (userCtx?.user?.id) {
+      if (userCtx?.id) {
         const changes: { field: string; old: string; new: string }[] = []
         if (String(item.unit_price ?? 0) !== String(parsedUnitPrice > 0 ? parsedUnitPrice : 0))
           changes.push({
@@ -162,16 +162,16 @@ export function ItemCostEditorDialog({
             new: String(parsedQuantity),
           })
 
-        for (const c of changes) {
-          await logDemandAuditEntry({
+        await logDemandAuditBatch(
+          changes.map((c) => ({
             demand_id: demandId,
             item_id: item.id,
-            user_id: userCtx.user.id,
+            user_id: userCtx.id,
             field_name: c.field,
             old_value: c.old,
             new_value: c.new,
-          })
-        }
+          })),
+        )
       }
 
       onSaved()

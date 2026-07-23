@@ -98,10 +98,10 @@ export default function DemandDetailsPage() {
     setStatusUpdating(true)
     try {
       await updateDemandStatus(demand.id, newStatus)
-      if (userCtx?.user?.id) {
+      if (userCtx?.id) {
         await logDemandAuditEntry({
           demand_id: demand.id,
-          user_id: userCtx.user.id,
+          user_id: userCtx.id,
           field_name: 'status',
           old_value: demand.status,
           new_value: newStatus,
@@ -124,10 +124,10 @@ export default function DemandDetailsPage() {
     setStatusUpdating(true)
     try {
       await updateDemandStatus(demand.id, pendingStatus, reason)
-      if (userCtx?.user?.id) {
+      if (userCtx?.id) {
         await logDemandAuditEntry({
           demand_id: demand.id,
-          user_id: userCtx.user.id,
+          user_id: userCtx.id,
           field_name: 'status',
           old_value: demand.status,
           new_value: pendingStatus,
@@ -149,10 +149,10 @@ export default function DemandDetailsPage() {
     try {
       const { updateDemandLock } = await import('@/services/demands')
       await updateDemandLock(demand.id, !demand.is_locked)
-      if (userCtx?.user?.id) {
+      if (userCtx?.id) {
         await logDemandAuditEntry({
           demand_id: demand.id,
-          user_id: userCtx.user.id,
+          user_id: userCtx.id,
           field_name: 'is_locked',
           old_value: String(demand.is_locked),
           new_value: String(!demand.is_locked),
@@ -245,9 +245,9 @@ export default function DemandDetailsPage() {
   }
 
   const handleComment = async () => {
-    if (!newComment.trim() || !userCtx?.user) return
+    if (!newComment.trim() || !userCtx) return
     try {
-      await addDemandComment(demand.id, userCtx.user.id, newComment)
+      await addDemandComment(demand.id, userCtx.id, newComment)
       setNewComment('')
       const c = await getDemandComments(id!)
       setComments(c)
@@ -304,6 +304,7 @@ export default function DemandDetailsPage() {
               </>
             )}
           </Button>
+          <DemandAuditHistoryDialog demandId={demand.id} refreshKey={auditRefreshKey} />
           {demand.status === 'done' ? (
             <Button asChild>
               <Link to={`/demandas/${demand.id}/orcamento`}>
@@ -526,10 +527,10 @@ export default function DemandDetailsPage() {
                     comments.map((c) => (
                       <div
                         key={c.id}
-                        className={`flex flex-col ${c.user_id === userCtx?.user?.id ? 'items-end' : 'items-start'}`}
+                        className={`flex flex-col ${c.user_id === userCtx?.id ? 'items-end' : 'items-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 text-sm ${c.user_id === userCtx?.user?.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
+                          className={`max-w-[80%] rounded-lg p-3 text-sm ${c.user_id === userCtx?.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
                         >
                           <div className="font-semibold text-xs opacity-75 mb-1">
                             {c.user?.full_name}
