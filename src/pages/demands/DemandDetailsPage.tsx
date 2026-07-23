@@ -46,8 +46,11 @@ import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { DemandItemsSection } from '@/components/demands/DemandItemsSection'
 import { DemandFinancialHeader } from '@/components/demands/DemandFinancialHeader'
 import { DemandAuditHistory } from '@/components/demands/DemandAuditHistory'
+import { DemandAuditHistoryDialog } from '@/components/demands/DemandAuditHistoryDialog'
 import { logDemandAuditEntry } from '@/services/demand-audit'
+import { useDemandAuditFilters } from '@/hooks/use-demand-audit-filters'
 import { BUDGET_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/lib/constants/demand-status'
+import { useAuditFilters } from '@/hooks/use-audit-filters'
 
 export default function DemandDetailsPage() {
   const { id } = useParams()
@@ -63,11 +66,13 @@ export default function DemandDetailsPage() {
   const [pendingStatus, setPendingStatus] = useState('')
   const [reason, setReason] = useState('')
   const [auditRefreshKey, setAuditRefreshKey] = useState(0)
+  const auditFilters = useAuditFilters()
   const [isItemsExpanded, setIsItemsExpanded] = useState(false)
   const [lockUpdating, setLockUpdating] = useState(false)
   const [budgetUpdating, setBudgetUpdating] = useState(false)
   const [paymentUpdating, setPaymentUpdating] = useState(false)
   const [itemsExpanded, setItemsExpanded] = useState(false)
+  const auditFilters = useDemandAuditFilters()
 
   useEffect(() => {
     if (id) {
@@ -304,7 +309,11 @@ export default function DemandDetailsPage() {
               </>
             )}
           </Button>
-          <DemandAuditHistoryDialog demandId={demand.id} refreshKey={auditRefreshKey} />
+          <DemandAuditHistoryDialog
+            demandId={demand.id}
+            refreshKey={auditRefreshKey}
+            filters={auditFilters}
+          />
           {demand.status === 'done' ? (
             <Button asChild>
               <Link to={`/demandas/${demand.id}/orcamento`}>
@@ -490,7 +499,11 @@ export default function DemandDetailsPage() {
                 </CardContent>
               </Card>
             )}
-            <DemandAuditHistory demandId={demand.id} refreshKey={auditRefreshKey} />
+            <DemandAuditHistory
+              demandId={demand.id}
+              refreshKey={auditRefreshKey}
+              filters={auditFilters}
+            />
           </div>
 
           <div className="md:col-span-2 space-y-6">

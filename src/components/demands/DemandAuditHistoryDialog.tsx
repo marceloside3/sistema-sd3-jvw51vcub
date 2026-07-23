@@ -9,13 +9,19 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { DemandAuditHistory } from '@/components/demands/DemandAuditHistory'
+import type { AuditFilters } from '@/hooks/use-demand-audit-filters'
 
 interface DemandAuditHistoryDialogProps {
   demandId: string
   refreshKey?: number
+  filters: AuditFilters
 }
 
-export function DemandAuditHistoryDialog({ demandId, refreshKey }: DemandAuditHistoryDialogProps) {
+export function DemandAuditHistoryDialog({
+  demandId,
+  refreshKey,
+  filters,
+}: DemandAuditHistoryDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -40,6 +46,7 @@ export function DemandAuditHistoryDialog({ demandId, refreshKey }: DemandAuditHi
               key={open ? 'open' : 'closed'}
               demandId={demandId}
               refreshKey={refreshKey}
+              filters={filters}
               embedded
             />
           </div>

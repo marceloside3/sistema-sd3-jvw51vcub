@@ -1,43 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { History } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getDemandAuditLog, DemandAuditEntry } from '@/services/demand-audit'
-import { formatAuditValue } from '@/lib/demand-audit-format'
-
-const FIELD_LABELS: Record<string, string> = {
-  item_name: 'Nome do Item',
-  description: 'Descrição',
-  quantity: 'Quantidade',
-  unit_price: 'Preço Unitário',
-  unit_cost: 'Custo Unitário',
-  extra_cost: 'Custo Extra',
-  honorarios_percentage: 'Honorários (%)',
-  supplier_name: 'Fornecedor',
-  total_cost: 'Custo Total',
-  cost_status: 'Status de Custo',
-  delivery_location: 'Local de Entrega',
-  deadline: 'Prazo',
-  is_custom: 'Item Personalizado',
-  status: 'Status da Demanda',
-  budget_status: 'Status do Orçamento',
-  payment_status: 'Status do Pagamento',
-  is_locked: 'Bloqueio de Edição',
-  item_added: 'Item Adicionado',
-  item_removed: 'Item Removido',
-}
+import { formatAuditValue, DEMAND_AUDIT_FIELD_LABELS } from '@/lib/demand-audit-format'
+import { DemandAuditFilters } from '@/components/demands/DemandAuditFilters'
+import type { AuditFilters } from '@/hooks/use-demand-audit-filters'
 
 interface DemandAuditHistoryProps {
   demandId: string
   refreshKey?: number
   embedded?: boolean
+  filters: AuditFilters
 }
 
 export function DemandAuditHistory({
   demandId,
   refreshKey,
   embedded = false,
+  filters,
 }: DemandAuditHistoryProps) {
   const [entries, setEntries] = useState<DemandAuditEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,8 +43,44 @@ export function DemandAuditHistory({
     }
   }, [demandId, refreshKey])
 
+  const distinctUsers = useMemo(() => {
+    const map = new Map<string, string>()
+    entries.forEach((e) => {
+      const name = e.user?.full_name || 'Usuário'
+      map.set(e.user_id, name)
+    })
+    return Array.from(map, ([id, name]) => ({ id, name }))
+  }, [entries])
+
+  const distinctFields = useMemo(() => {
+    const set = new Set<string>()
+    entries.forEach((e) => set.add(e.field_name))
+    return Array.from(set)
+  }, [entries])
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      if (filters.selectedUserId && entry.user_id !== filters.selectedUserId) return false
+      if (filters.selectedField && entry.field_name !== filters.selectedField) return false
+      if (filters.dateFrom) {
+        const entryDate = new Date(entry.created_at)
+        const fromDate = new Date(filters.dateFrom + 'T00:00:00')
+        if (entryDate < fromDate) return false
+      }
+      if (filters.dateTo) {
+        const entryDate = new Date(entry.created_at)
+        const toDate = new Date(filters.dateTo + 'T23:59:59')
+        if (entryDate > toDate) return false
+      }
+      return true
+    })
+  }, [entries, filters.selectedUserId, filters.selectedField, filters.dateFrom, filters.dateTo])
+
   const content = (
     <>
+      {!loading && entries.length > 0 && (
+        <DemandAuditFilters filters={filters} users={distinctUsers} fields={distinctFields} />
+      )}
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -73,14 +91,23 @@ export function DemandAuditHistory({
         <p className="text-sm text-muted-foreground text-center py-6">
           Nenhuma alteração registrada.
         </p>
+      ) : filteredEntries.length === 0 ? (
+        <div className="text-center py-6 space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Nenhum resultado para os filtros selecionados.
+          </p>
+          <button onClick={filters.reset} className="text-sm text-blue-600 hover:underline">
+            Limpar Filtros
+          </button>
+        </div>
       ) : (
         <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-          {entries.map((entry) => (
+          {filteredEntries.map((entry) => (
             <div key={entry.id} className="flex flex-col gap-1 border-b pb-2 last:border-0">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">
                   {entry.item?.item_name ? `${entry.item.item_name} — ` : ''}
-                  {FIELD_LABELS[entry.field_name] || entry.field_name}
+                  {DEMAND_AUDIT_FIELD_LABELS[entry.field_name] || entry.field_name}
                 </span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                   {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
