@@ -115,7 +115,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-zinc-400 text-xs mt-6">
-          © 2026 SD3 — Agência de Marketing. Todos os direitos reservados.
+          © 2026 Side3 Comunicação Ltda. Todos os direitos reservados.
         </p>
       </div>
     </div>
