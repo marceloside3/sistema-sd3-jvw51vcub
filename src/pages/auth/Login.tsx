@@ -47,7 +47,7 @@ export default function Login() {
         <div className="glass-card rounded-2xl p-8 premium-shadow-lg">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="text-center mb-2">
-              <h2 className="text-xl font-bold text-zinc-900">Bem vindo ao Sistema SD3</h2>
+              <h2 className="text-xl font-bold text-zinc-900">Bem vindo ao Sistema Side3</h2>
             </div>
 
             {error && (
