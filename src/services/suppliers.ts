@@ -111,7 +111,7 @@ export async function getSuppliers(
 
 export async function batchInsertSuppliers(
   inputs: Record<string, any>[],
-): Promise<{ success: number; errors: string[] }> {
+): Promise<{ success: number; failed: number; errors: string[] }> {
   const mapped = inputs.map((item) => ({
     document: item.document ?? null,
     supplier_type: item.type ?? item.supplier_type ?? null,
@@ -136,9 +136,25 @@ export async function batchInsertSuppliers(
 
   const { data, error } = await supabase.from('suppliers').insert(mapped).select('*')
 
-  if (error) {
-    return { success: 0, errors: [error.message] }
+  if (!error) {
+    return { success: data?.length ?? 0, failed: 0, errors: [] }
   }
 
-  return { success: data?.length ?? 0, errors: [] }
+  let success = 0
+  let failed = 0
+  const errors: string[] = []
+
+  for (let i = 0; i < mapped.length; i++) {
+    const csvRow = inputs[i]?._csvRow ?? i + 2
+    const { error: singleError } = await supabase.from('suppliers').insert(mapped[i]).select('*')
+
+    if (singleError) {
+      failed++
+      errors.push(`Linha ${csvRow}: ${singleError.message}`)
+    } else {
+      success++
+    }
+  }
+
+  return { success, failed, errors }
 }

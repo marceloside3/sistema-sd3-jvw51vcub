@@ -13,9 +13,11 @@ import { batchInsertSuppliers } from '@/services/suppliers'
 
 const HEADER_MAP: Record<string, string> = {
   tipo: 'type',
+  tipoempresa: 'type',
   cpf: 'document',
   cnpj: 'document',
   documento: 'document',
+  cpfcnpj: 'document',
   nome: 'name',
   telefone: 'phone',
   email: 'email',
@@ -24,6 +26,7 @@ const HEADER_MAP: Record<string, string> = {
   logradouro: 'logradouro',
   endereco: 'logradouro',
   numero: 'number',
+  nro: 'number',
   complemento: 'complement',
   bairro: 'neighborhood',
   cidade: 'city',
@@ -32,7 +35,9 @@ const HEADER_MAP: Record<string, string> = {
   tipo_conta: 'account_type',
   'tipo de conta': 'account_type',
   banco: 'bank',
+  nomebanco: 'bank',
   agencia: 'agency',
+  agenciabancaria: 'agency',
   conta: 'account',
   operacao: 'operation',
   chave_pix: 'pix_key',
@@ -78,6 +83,27 @@ function parseCSV(text: string): string[][] {
   return rows
 }
 
+function normalizeSupplierType(value: string, document: string): string {
+  const v = value.trim().toUpperCase()
+  if (
+    v === 'PF' ||
+    v === 'PESSOA FÍSICA' ||
+    v === 'PESSOA FISICA' ||
+    v === 'FÍSICA' ||
+    v === 'FISICA'
+  )
+    return 'PF'
+  if (
+    v === 'PJ' ||
+    v === 'PESSOA JURÍDICA' ||
+    v === 'PESSOA JURIDICA' ||
+    v === 'JURÍDICA' ||
+    v === 'JURIDICA'
+  )
+    return 'PJ'
+  return document && document.length <= 11 ? 'PF' : 'PJ'
+}
+
 interface CsvImportDialogProps {
   open: boolean
   onOpenChange: (v: boolean) => void
@@ -88,11 +114,17 @@ export function CsvImportDialog({ open, onOpenChange, onImported }: CsvImportDia
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [parsed, setParsed] = useState<any[]>([])
-  const [results, setResults] = useState<{ success: number; errors: string[] } | null>(null)
+  const [invalidRows, setInvalidRows] = useState<{ row: number; reason: string }[]>([])
+  const [results, setResults] = useState<{
+    success: number
+    failed: number
+    errors: string[]
+  } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const reset = () => {
     setParsed([])
+    setInvalidRows([])
     setResults(null)
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -102,6 +134,7 @@ export function CsvImportDialog({ open, onOpenChange, onImported }: CsvImportDia
     if (!file) return
     setParsing(true)
     setResults(null)
+    setInvalidRows([])
     try {
       const text = await file.text()
       const rows = parseCSV(text)
@@ -110,21 +143,50 @@ export function CsvImportDialog({ open, onOpenChange, onImported }: CsvImportDia
         return
       }
       const headers = rows[0].map((h) => h.trim().toLowerCase())
-      const mapped = rows
-        .slice(1)
-        .filter((r) => r.some((c) => c.trim()))
-        .map((r) => {
-          const obj: Record<string, any> = {}
-          headers.forEach((h, i) => {
-            const key = HEADER_MAP[h]
-            if (key) obj[key] = (r[i] || '').trim()
-          })
-          if (!obj.type) obj.type = obj.document && obj.document.length <= 11 ? 'PF' : 'PJ'
-          if (obj.document) obj.document = obj.document.replace(/[^\d]/g, '')
-          return obj
+      const valid: any[] = []
+      const invalid: { row: number; reason: string }[] = []
+
+      rows.slice(1).forEach((r, idx) => {
+        if (!r.some((c) => c.trim())) return
+
+        const csvRow = idx + 2
+        const obj: Record<string, any> = {}
+        headers.forEach((h, i) => {
+          const key = HEADER_MAP[h]
+          if (key) obj[key] = (r[i] || '').trim()
         })
-        .filter((s) => s.name && s.document)
-      setParsed(mapped)
+
+        if (obj.document) obj.document = obj.document.replace(/[^\d]/g, '')
+
+        if (obj.type) {
+          obj.type = normalizeSupplierType(obj.type, obj.document)
+        } else {
+          obj.type = obj.document && obj.document.length <= 11 ? 'PF' : 'PJ'
+        }
+
+        const missing: string[] = []
+        if (!obj.name) missing.push('Nome não informado')
+        if (!obj.document) missing.push('Documento não informado')
+
+        if (missing.length > 0) {
+          invalid.push({ row: csvRow, reason: missing.join(' e ') })
+          return
+        }
+
+        obj._csvRow = csvRow
+        valid.push(obj)
+      })
+
+      setParsed(valid)
+      setInvalidRows(invalid)
+
+      if (valid.length === 0 && invalid.length > 0) {
+        setResults({
+          success: 0,
+          failed: invalid.length,
+          errors: invalid.map((r) => `Linha ${r.row}: ${r.reason}`),
+        })
+      }
     } finally {
       setParsing(false)
     }
@@ -134,7 +196,12 @@ export function CsvImportDialog({ open, onOpenChange, onImported }: CsvImportDia
     setImporting(true)
     try {
       const res = await batchInsertSuppliers(parsed)
-      setResults(res)
+      const allErrors = [...invalidRows.map((r) => `Linha ${r.row}: ${r.reason}`), ...res.errors]
+      setResults({
+        success: res.success,
+        failed: invalidRows.length + res.failed,
+        errors: allErrors,
+      })
       if (res.success > 0) onImported()
     } finally {
       setImporting(false)
@@ -153,9 +220,10 @@ export function CsvImportDialog({ open, onOpenChange, onImported }: CsvImportDia
         <DialogHeader>
           <DialogTitle>Importar Fornecedores via CSV</DialogTitle>
           <DialogDescription>
-            Colunas esperadas: tipo, documento, nome, telefone, email, cep, logradouro, numero,
-            complemento, bairro, cidade, uf, tipo_conta, banco, agencia, conta, operacao, chave_pix,
-            observacoes.
+            Colunas reconhecidas: Nome, CPFCNPJ, TipoEmpresa, Logradouro, Nro, Complemento, Bairro,
+            CEP, Cidade, UF, Email, NomeBanco, AgenciaBancaria, Telefone, TipoConta, Conta,
+            Operacao, ChavePix, Observacoes. Colunas não mapeadas (IE, InscricaoMunicipal,
+            NomeFantasia, CidadeUF) serão ignoradas.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -180,18 +248,38 @@ export function CsvImportDialog({ open, onOpenChange, onImported }: CsvImportDia
             {parsing ? 'Processando...' : 'Selecionar arquivo CSV'}
           </Button>
           {parsed.length > 0 && !results && (
-            <div className="flex items-center gap-2 text-sm">
-              <FileText className="w-4 h-4 text-primary" />
-              {parsed.length} fornecedor(es) prontos para importar.
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <FileText className="w-4 h-4 text-primary" />
+                {parsed.length} fornecedor(es) prontos para importar.
+              </div>
+              {invalidRows.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-600">
+                  <AlertCircle className="w-4 h-4" />
+                  {invalidRows.length} linha(s) com dados obrigatórios faltando serão reportadas
+                  como falha.
+                </div>
+              )}
+            </div>
+          )}
+          {parsed.length === 0 && invalidRows.length === 0 && !results && !parsing && (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              Selecione um arquivo CSV para visualizar os fornecedores.
             </div>
           )}
           {results && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle className="w-4 h-4" /> {results.success} fornecedor(es) importado(s).
+                <CheckCircle className="w-4 h-4" /> {results.success} fornecedor(es) importado(s)
+                com sucesso.
               </div>
+              {results.failed > 0 && (
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <AlertCircle className="w-4 h-4" /> {results.failed} linha(s) com falha.
+                </div>
+              )}
               {results.errors.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1 max-h-40 overflow-y-auto">
                   {results.errors.map((err, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm text-red-600">
                       <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> {err}
