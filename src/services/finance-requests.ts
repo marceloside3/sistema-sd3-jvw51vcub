@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { formatCurrency } from '@/lib/financial'
 
 export interface FinanceRequest {
   id: string
@@ -13,6 +14,9 @@ export interface FinanceRequest {
   created_by: string
   created_at: string
   updated_at: string
+  due_date: string
+  justification: string | null
+  is_urgent: boolean
 }
 
 export async function getFinanceRequestsByDemand(demandId: string): Promise<FinanceRequest[]> {
@@ -34,6 +38,9 @@ export async function createFinanceRequest(params: {
   quantity: number
   total_cost?: number | null
   created_by: string
+  due_date: string
+  is_urgent: boolean
+  justification?: string | null
 }): Promise<FinanceRequest> {
   const { data, error } = await supabase
     .from('finance_requests')
@@ -48,6 +55,9 @@ export async function createFinanceRequest(params: {
         total_cost: params.total_cost ?? null,
         status: 'pending',
         created_by: params.created_by,
+        due_date: params.due_date,
+        is_urgent: params.is_urgent,
+        justification: params.justification || null,
       },
     ])
     .select()
@@ -55,4 +65,37 @@ export async function createFinanceRequest(params: {
 
   if (error) throw error
   return data as FinanceRequest
+}
+
+export async function notifyFinanceUsersOfUrgentRequest(params: {
+  demandId: string
+  itemName: string
+  supplierName: string | null
+  totalCost: number | null
+  dueDate: string
+}): Promise<void> {
+  try {
+    const { data: financeUsers } = await supabase
+      .from('users')
+      .select('id, profiles!inner(is_finance)')
+      .eq('profiles.is_finance', true)
+      .eq('is_active', true)
+
+    if (!financeUsers || financeUsers.length === 0) return
+
+    const message = `Item "${params.itemName}" — Fornecedor: ${params.supplierName || 'N/A'} — Valor: ${formatCurrency(params.totalCost)} — Vencimento: ${params.dueDate.split('-').reverse().join('/')}`
+
+    const notifications = financeUsers.map((u: any) => ({
+      user_id: u.id,
+      type: 'finance_request_urgent',
+      title: 'Solicitação financeira urgente',
+      message,
+      link_to: `/demandas/${params.demandId}`,
+      should_send_email: false,
+    }))
+
+    await supabase.from('notifications').insert(notifications)
+  } catch (error) {
+    console.error('Error notifying finance users', error)
+  }
 }

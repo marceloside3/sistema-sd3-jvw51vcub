@@ -1,8 +1,8 @@
 {
   "_versions": {
-    "validate-password": 18,
-    "invite-user": 18,
-    "generate-meeting-ics": 18,
+    "validate-password": 19,
+    "invite-user": 19,
+    "generate-meeting-ics": 19,
     "parse-lpu": 2
   }
 }
