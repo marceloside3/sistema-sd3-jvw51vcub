@@ -33,8 +33,6 @@ import ClientsPage from './pages/admin/ClientsPage'
 import ClientFormPage from './pages/admin/ClientFormPage'
 import SuppliersListPage from './pages/suppliers/SuppliersListPage'
 import SupplierFormPage from './pages/suppliers/SupplierFormPage'
-import SuppliersListPage from './pages/suppliers/SuppliersListPage'
-import SupplierFormPage from './pages/suppliers/SupplierFormPage'
 
 const App = () => (
   <AuthProvider>
@@ -70,9 +68,6 @@ const App = () => (
               <Route path="/minhas-demandas" element={<MyDemandsPage />} />
               <Route path="/notificacoes" element={<NotificationsPage />} />
 
-              <Route path="/fornecedores" element={<SuppliersListPage />} />
-              <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
-              <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
               <Route path="/fornecedores" element={<SuppliersListPage />} />
               <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
               <Route path="/fornecedores/:id" element={<SupplierFormPage />} />

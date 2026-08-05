@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Loader2, Lock } from 'lucide-react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditBatch } from '@/services/demand-audit'
-import { SupplierSelect } from '@/components/demands/SupplierSelect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -63,7 +62,6 @@ export function ItemCostEditorDialog({
   const [unitPrice, setUnitPrice] = useState('')
   const [supplierId, setSupplierId] = useState<string | null>(null)
   const [supplierName, setSupplierName] = useState('')
-  const [supplierId, setSupplierId] = useState('')
   const [unitCost, setUnitCost] = useState('')
 
   const [extraCost, setExtraCost] = useState('')
@@ -83,7 +81,6 @@ export function ItemCostEditorDialog({
       )
       setSupplierId(item.supplier_id || null)
       setSupplierName(item.supplier_name || '')
-      setSupplierId(item.supplier_id || '')
       setUnitCost(
         item.unit_cost !== null && item.unit_cost !== 0
           ? formatInputDecimal(String(item.unit_cost))
@@ -127,7 +124,6 @@ export function ItemCostEditorDialog({
         unit_price: parsedUnitPrice > 0 ? parsedUnitPrice : null,
         supplier_id: supplierId,
         supplier_name: supplierName.trim() || null,
-        supplier_id: supplierId || null,
         unit_cost: parsedUnitCost > 0 ? parsedUnitCost : null,
         extra_cost: parsedExtraCost,
         honorarios_percentage: parsedHonorariosPct,
