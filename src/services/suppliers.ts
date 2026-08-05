@@ -83,3 +83,62 @@ export async function deleteSupplier(id: string): Promise<void> {
   const { error } = await supabase.from('suppliers').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function getSuppliers(
+  page: number,
+  perPage: number,
+  search: string,
+  typeFilter: string,
+): Promise<{ data: Supplier[]; totalPages: number }> {
+  let query = supabase.from('suppliers').select('*', { count: 'exact' })
+
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,document.ilike.%${search}%`)
+  }
+
+  if (typeFilter && typeFilter !== 'all') {
+    query = query.eq('supplier_type', typeFilter)
+  }
+
+  query = query.order('name', { ascending: true }).range((page - 1) * perPage, page * perPage - 1)
+
+  const { data, error, count } = await query
+  if (error) throw error
+
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / perPage))
+  return { data: (data as Supplier[]) ?? [], totalPages }
+}
+
+export async function batchInsertSuppliers(
+  inputs: Record<string, any>[],
+): Promise<{ success: number; errors: string[] }> {
+  const mapped = inputs.map((item) => ({
+    document: item.document ?? null,
+    supplier_type: item.type ?? item.supplier_type ?? null,
+    name: item.name ?? null,
+    phone: item.phone ?? null,
+    email: item.email ?? null,
+    cep: item.cep ?? null,
+    street: item.logradouro ?? item.street ?? null,
+    number: item.number ?? null,
+    complement: item.complement ?? null,
+    neighborhood: item.neighborhood ?? null,
+    city: item.city ?? null,
+    uf: item.uf ?? null,
+    account_type: item.account_type ?? null,
+    bank: item.bank ?? null,
+    agency: item.agency ?? null,
+    account: item.account ?? null,
+    operation: item.operation ?? null,
+    pix_key: item.pix_key ?? null,
+    observations: item.observations ?? null,
+  }))
+
+  const { data, error } = await supabase.from('suppliers').insert(mapped).select('*')
+
+  if (error) {
+    return { success: 0, errors: [error.message] }
+  }
+
+  return { success: data?.length ?? 0, errors: [] }
+}
