@@ -14,7 +14,9 @@ import {
   Bell,
   Inbox,
   ShieldCheck,
+  Truck,
 } from 'lucide-react'
+
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
@@ -107,12 +109,29 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               Minhas Demandas
             </Link>
             <Link
+              to="/fornecedores"
+              onClick={() => setIsOpen(false)}
+              className={navLinkClass(location.pathname.startsWith('/fornecedores'))}
+            >
+              <Truck fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
+              Fornecedores
+            </Link>
+
+            <Link
               to="/notificacoes"
               onClick={() => setIsOpen(false)}
               className={navLinkClass(location.pathname.startsWith('/notificacoes'))}
             >
               <Bell fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Notificações
+            </Link>
+            <Link
+              to="/fornecedores"
+              onClick={() => setIsOpen(false)}
+              className={navLinkClass(location.pathname.startsWith('/fornecedores'))}
+            >
+              <Store fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
+              Fornecedores
             </Link>
             {canSeeHub && (
               <Link

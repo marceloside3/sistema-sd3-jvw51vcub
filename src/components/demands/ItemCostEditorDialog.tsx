@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react'
 import { Loader2, Lock } from 'lucide-react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditBatch } from '@/services/demand-audit'
+import { SupplierSelect } from '@/components/demands/SupplierSelect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SupplierSelect } from '@/components/suppliers/SupplierSelect'
+import type { Supplier } from '@/services/suppliers'
+
 import {
   Dialog,
   DialogContent,
@@ -29,6 +33,7 @@ interface DemandItemCostData {
   quantity: number
   unit_price: number | null
   supplier_name: string | null
+  supplier_id: string | null
   unit_cost: number | null
   extra_cost: number | null
   honorarios_percentage: number | null
@@ -56,8 +61,11 @@ export function ItemCostEditorDialog({
 }: ItemCostEditorDialogProps) {
   const canEdit = !isLocked || isAdmin
   const [unitPrice, setUnitPrice] = useState('')
+  const [supplierId, setSupplierId] = useState<string | null>(null)
   const [supplierName, setSupplierName] = useState('')
+  const [supplierId, setSupplierId] = useState('')
   const [unitCost, setUnitCost] = useState('')
+
   const [extraCost, setExtraCost] = useState('')
   const [honorariosPct, setHonorariosPct] = useState('')
   const [saving, setSaving] = useState(false)
@@ -73,7 +81,9 @@ export function ItemCostEditorDialog({
           ? formatInputDecimal(String(item.unit_price))
           : '',
       )
+      setSupplierId(item.supplier_id || null)
       setSupplierName(item.supplier_name || '')
+      setSupplierId(item.supplier_id || '')
       setUnitCost(
         item.unit_cost !== null && item.unit_cost !== 0
           ? formatInputDecimal(String(item.unit_cost))
@@ -115,7 +125,9 @@ export function ItemCostEditorDialog({
       await updateDemandItemCosts(item.id, {
         quantity: parsedQuantity,
         unit_price: parsedUnitPrice > 0 ? parsedUnitPrice : null,
+        supplier_id: supplierId,
         supplier_name: supplierName.trim() || null,
+        supplier_id: supplierId || null,
         unit_cost: parsedUnitCost > 0 ? parsedUnitCost : null,
         extra_cost: parsedExtraCost,
         honorarios_percentage: parsedHonorariosPct,
@@ -130,6 +142,12 @@ export function ItemCostEditorDialog({
             field: 'unit_price',
             old: String(item.unit_price ?? 0),
             new: String(parsedUnitPrice > 0 ? parsedUnitPrice : 0),
+          })
+        if ((item.supplier_id || '') !== supplierId)
+          changes.push({
+            field: 'supplier_id',
+            old: item.supplier_id || '',
+            new: supplierId,
           })
         if ((item.supplier_name || '') !== supplierName.trim())
           changes.push({
@@ -237,12 +255,20 @@ export function ItemCostEditorDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="supplier-name">Nome do Fornecedor</Label>
-            <Input
-              id="supplier-name"
-              value={supplierName}
-              onChange={(e) => setSupplierName(e.target.value)}
-              placeholder="Digite o nome do fornecedor"
+            <Label>Fornecedor</Label>
+            <SupplierSelect
+              value={supplierId}
+              supplierName={supplierName}
+              onChange={(supplier: Supplier | null) => {
+                if (supplier) {
+                  setSupplierId(supplier.id)
+                  setSupplierName(supplier.name)
+                } else {
+                  setSupplierId(null)
+                  setSupplierName('')
+                }
+              }}
+              disabled={!canEdit}
             />
           </div>
 

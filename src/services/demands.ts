@@ -126,6 +126,7 @@ export async function updateDemandItemCosts(
     quantity?: number
     unit_price?: number | null
     supplier_name: string | null
+    supplier_id?: string | null
     unit_cost: number | null
     extra_cost: number | null
     honorarios_percentage: number | null

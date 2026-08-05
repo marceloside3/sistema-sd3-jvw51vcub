@@ -31,6 +31,10 @@ import ProfilesPage from './pages/admin/ProfilesPage'
 import SetPassword from './pages/auth/SetPassword'
 import ClientsPage from './pages/admin/ClientsPage'
 import ClientFormPage from './pages/admin/ClientFormPage'
+import SuppliersListPage from './pages/suppliers/SuppliersListPage'
+import SupplierFormPage from './pages/suppliers/SupplierFormPage'
+import SuppliersListPage from './pages/suppliers/SuppliersListPage'
+import SupplierFormPage from './pages/suppliers/SupplierFormPage'
 
 const App = () => (
   <AuthProvider>
@@ -65,6 +69,13 @@ const App = () => (
               <Route path="/demandas/:id/orcamento" element={<ClientBudgetPage />} />
               <Route path="/minhas-demandas" element={<MyDemandsPage />} />
               <Route path="/notificacoes" element={<NotificationsPage />} />
+
+              <Route path="/fornecedores" element={<SuppliersListPage />} />
+              <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
+              <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
+              <Route path="/fornecedores" element={<SuppliersListPage />} />
+              <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
+              <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
 
               <Route path="/area/:area_slug" element={<AreaPage />} />
               <Route path="/auditoria" element={<AuditReport />} />
