@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { Package, Pencil, Plus, Trash2, Lock, ListChecks, Maximize2, Minimize2 } from 'lucide-react'
+import {
+  Package,
+  Pencil,
+  Plus,
+  Trash2,
+  Lock,
+  ListChecks,
+  Maximize2,
+  Minimize2,
+  Send,
+  CheckCircle2,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +35,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { getDemandItems, deleteDemandItem } from '@/services/demands'
+import { getFinanceRequestsByDemand } from '@/services/finance-requests'
+import { SendToFinanceDialog } from '@/components/demands/SendToFinanceDialog'
 import { useToast } from '@/hooks/use-toast'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditBatch } from '@/services/demand-audit'
@@ -42,6 +55,7 @@ interface DemandItem {
   is_custom: boolean
   deadline: string | null
   delivery_location: string | null
+  supplier_id: string | null
   supplier_name: string | null
   unit_cost: number | null
   extra_cost: number | null
@@ -90,14 +104,23 @@ export function DemandItemsSection({
   const [deleteTarget, setDeleteTarget] = useState<DemandItem | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [financeRequestIds, setFinanceRequestIds] = useState<Set<string>>(new Set())
+  const [financeDialogOpen, setFinanceDialogOpen] = useState(false)
+  const [financeTarget, setFinanceTarget] = useState<DemandItem | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function loadItems() {
       setLoading(true)
       try {
-        const data = await getDemandItems(demandId)
-        if (!cancelled) setItems(data as DemandItem[])
+        const [data, frData] = await Promise.all([
+          getDemandItems(demandId),
+          getFinanceRequestsByDemand(demandId),
+        ])
+        if (!cancelled) {
+          setItems(data as DemandItem[])
+          setFinanceRequestIds(new Set(frData.map((fr) => fr.demand_item_id)))
+        }
       } catch {
         if (!cancelled)
           toast({ title: 'Erro ao carregar itens da demanda', variant: 'destructive' })
@@ -466,7 +489,12 @@ export function DemandItemsSection({
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-1">
-                              {canEdit ? (
+                              {financeRequestIds.has(item.id) ? (
+                                <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 whitespace-nowrap">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Enviado
+                                </Badge>
+                              ) : canEdit ? (
                                 <>
                                   <Button
                                     variant="ghost"
@@ -484,6 +512,21 @@ export function DemandItemsSection({
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
+                                  {(item.supplier_id || item.supplier_name) &&
+                                  (item.unit_cost !== null || item.total_cost !== null) ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                      onClick={() => {
+                                        setFinanceTarget(item)
+                                        setFinanceDialogOpen(true)
+                                      }}
+                                    >
+                                      <Send className="w-3.5 h-3.5 mr-1" />
+                                      Financeiro
+                                    </Button>
+                                  ) : null}
                                 </>
                               ) : (
                                 <Lock className="w-3.5 h-3.5 text-muted-foreground" />
@@ -619,6 +662,18 @@ export function DemandItemsSection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SendToFinanceDialog
+        open={financeDialogOpen}
+        onOpenChange={setFinanceDialogOpen}
+        item={financeTarget}
+        demandId={demandId}
+        userId={userCtx?.id || ''}
+        onSent={(itemId) => {
+          setFinanceRequestIds((prev) => new Set(prev).add(itemId))
+          onItemsChanged?.()
+        }}
+      />
     </Card>
   )
 }

@@ -21,6 +21,7 @@ export const DEMAND_AUDIT_FIELD_LABELS: Record<string, string> = {
   is_locked: 'Bloqueio de Edição',
   item_added: 'Item Adicionado',
   item_removed: 'Item Removido',
+  finance_request: 'Envio para Financeiro',
 }
 
 const CURRENCY_FIELDS = ['unit_price', 'unit_cost', 'extra_cost', 'total_cost']
@@ -48,6 +49,7 @@ export const FIELD_LABELS: Record<string, string> = {
   is_locked: 'Bloqueio de Edição',
   item_added: 'Item Adicionado',
   item_removed: 'Item Removido',
+  finance_request: 'Envio para Financeiro',
 }
 
 const COST_STATUS_LABELS: Record<string, string> = {
