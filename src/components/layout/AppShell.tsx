@@ -125,14 +125,6 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <Bell fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Notificações
             </Link>
-            <Link
-              to="/fornecedores"
-              onClick={() => setIsOpen(false)}
-              className={navLinkClass(location.pathname.startsWith('/fornecedores'))}
-            >
-              <Store fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
-              Fornecedores
-            </Link>
             {canSeeHub && (
               <Link
                 to="/hub"
