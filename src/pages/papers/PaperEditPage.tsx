@@ -29,7 +29,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const REQUIRED_FIELDS = [{ key: 'refined_objective', label: 'Informações Paper' }]
+interface RequiredField {
+  key: string
+  label: string
+  isArray?: boolean
+}
+const REQUIRED_FIELDS: RequiredField[] = [{ key: 'refined_objective', label: 'Informações Paper' }]
 
 export default function PaperEditPage() {
   const { projectId } = useParams()

@@ -51,7 +51,7 @@ export default function AuditReport() {
           projects(id, name, clients(name)),
           users:actor_user_id(full_name)
         `)
-        .in('event_type', g3EventTypes)
+        .in('event_type', g3EventTypes as any[])
         .order('created_at', { ascending: false })
 
       if (!g3Error && g3Data) {

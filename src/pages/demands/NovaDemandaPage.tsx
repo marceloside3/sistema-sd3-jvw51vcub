@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Package, FileSpreadsheet, Pencil } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Package, FileSpreadsheet, Pencil, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -72,11 +72,12 @@ export default function NovaDemandaPage() {
   const { user: authUser } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const currentUserId = currentUser?.data?.id ?? authUser?.id ?? null
+  const currentUserId = currentUser?.id ?? authUser?.id ?? null
 
   const [projects, setProjects] = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [clients, setClients] = useState<any[]>([])
   const [lpuItems, setLpuItems] = useState<LpuItem[]>([])
 
   const [formData, setFormData] = useState({
@@ -101,7 +102,41 @@ export default function NovaDemandaPage() {
   const [itemMode, setItemMode] = useState<'lpu' | 'manual'>('manual')
 
   const selectedArea = areas.find((a) => a.id === formData.to_area_id)
-  const isProducaoArea = selectedArea ? normalizeStr(selectedArea.code || '') === 'producao' : false
+  const areaCode = selectedArea ? normalizeStr(selectedArea.code || '') : ''
+  const isProducaoArea = areaCode === 'producao'
+  const isFinanceiroArea = areaCode === 'financeiro'
+
+  const [financeForm, setFinanceForm] = useState({
+    client_id: '',
+    cnpj: '',
+    issuance_type: '',
+    amount: '',
+    payment_due_date: '',
+    nf_description: '',
+    notes: '',
+  })
+  const selectedFinanceClient = clients.find((c) => c.id === financeForm.client_id)
+  // Auto-fill CNPJ whenever the selected client changes (if client has a CNPJ)
+  useEffect(() => {
+    setFinanceForm((prev) => ({
+      ...prev,
+      cnpj: selectedFinanceClient?.cnpj || '',
+    }))
+  }, [selectedFinanceClient?.id])
+  // Reset finance form fields when leaving the Financeiro area
+  useEffect(() => {
+    if (!isFinanceiroArea) {
+      setFinanceForm({
+        client_id: '',
+        cnpj: '',
+        issuance_type: '',
+        amount: '',
+        payment_due_date: '',
+        nf_description: '',
+        notes: '',
+      })
+    }
+  }, [isFinanceiroArea])
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === formData.project_id),
@@ -123,6 +158,15 @@ export default function NovaDemandaPage() {
       .order('display_order')
       .then(({ data }) => {
         if (data) setAreas(data)
+      })
+    // Load active clients for the Financeiro area dropdown
+    supabase
+      .from('clients')
+      .select('id, code, name, cnpj')
+      .eq('status', 'active')
+      .order('name', { ascending: true })
+      .then(({ data }) => {
+        if (data) setClients(data)
       })
   }, [])
 
@@ -240,7 +284,15 @@ export default function NovaDemandaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.project_id || !formData.title || !formData.to_area_id) {
+    if (!formData.project_id || !formData.to_area_id) {
+      toast({
+        title: 'Atenção',
+        description: 'Preencha os campos obrigatórios',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!isFinanceiroArea && !formData.title) {
       toast({
         title: 'Atenção',
         description: 'Preencha os campos obrigatórios',
@@ -256,6 +308,16 @@ export default function NovaDemandaPage() {
       })
       return
     }
+    if (isFinanceiroArea) {
+      if (!financeForm.client_id || !financeForm.issuance_type || !financeForm.amount) {
+        toast({
+          title: 'Atenção',
+          description: 'Preencha Cliente, Tipo de Emissão e Valor para a área Financeiro',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
     if (!currentUserId) {
       toast({
         title: 'Erro de sessão',
@@ -268,17 +330,48 @@ export default function NovaDemandaPage() {
 
     setLoading(true)
     try {
-      const payload = {
+      const issuanceTypeLabel =
+        financeForm.issuance_type === 'nota_fiscal'
+          ? 'Nota Fiscal'
+          : financeForm.issuance_type === 'nota_debito'
+            ? 'Nota de Débito'
+            : financeForm.issuance_type === 'recibo'
+              ? 'Recibo'
+              : ''
+      const financeTitle = `${issuanceTypeLabel}${
+        selectedFinanceClient ? ` — ${selectedFinanceClient.name}` : ''
+      }`
+      const financeDescription =
+        financeForm.nf_description ||
+        financeForm.notes ||
+        `Solicitação financeira${selectedFinanceClient ? ` — ${selectedFinanceClient.name}` : ''}`
+
+      const payload: Record<string, any> = {
         project_id: formData.project_id,
         from_user_id: currentUserId,
-        from_area_id: currentUser?.data?.areas?.[0]?.id || null,
+        from_area_id: currentUser?.areas?.[0]?.id || null,
         to_area_id: formData.to_area_id,
         to_user_id: formData.to_user_id === 'any' ? null : formData.to_user_id,
-        title: formData.title,
-        description: formData.description,
+        title: isFinanceiroArea ? financeTitle : formData.title,
+        description: isFinanceiroArea ? financeDescription : formData.description,
         priority: formData.priority,
-        due_date: formData.due_date || null,
+        due_date: isFinanceiroArea
+          ? financeForm.payment_due_date || null
+          : formData.due_date || null,
         status: 'pending',
+      }
+
+      if (isFinanceiroArea) {
+        payload.financial_data = {
+          client_id: financeForm.client_id,
+          client_name: selectedFinanceClient?.name || null,
+          cnpj: financeForm.cnpj || null,
+          issuance_type: financeForm.issuance_type,
+          amount: financeForm.amount !== '' ? Number(financeForm.amount.replace(',', '.')) : null,
+          payment_due_date: financeForm.payment_due_date || null,
+          nf_description: financeForm.nf_description || null,
+          notes: financeForm.notes || null,
+        }
       }
 
       const newDemand = await createDemand(payload)
@@ -410,52 +503,156 @@ export default function NovaDemandaPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Título *</Label>
-            <Input
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Ex: Criar KV da campanha"
-            />
-          </div>
+          {!isFinanceiroArea && (
+            <>
+              <div className="space-y-2">
+                <Label>Título *</Label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Ex: Criar KV da campanha"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label>Descrição detalhada *</Label>
-            <Textarea
-              rows={4}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label>Descrição detalhada *</Label>
+                <Textarea
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Prioridade</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(v) => setFormData({ ...formData, priority: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Prazo Ideal</Label>
-              <Input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Prioridade</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(v) => setFormData({ ...formData, priority: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Baixa</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                      <SelectItem value="urgent">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Prazo Ideal</Label>
+                  <Input
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
+
+        {isFinanceiroArea && (
+          <div className="pt-4 border-t space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-lg">Dados Financeiros</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="space-y-2 col-span-2">
+                <Label>Cliente *</Label>
+                <Select
+                  value={financeForm.client_id}
+                  onValueChange={(v) => setFinanceForm({ ...financeForm, client_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.code} - {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label>CNPJ</Label>
+                <Input
+                  value={financeForm.cnpj}
+                  onChange={(e) => setFinanceForm({ ...financeForm, cnpj: e.target.value })}
+                  placeholder="Preenchido automaticamente pelo cliente"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tipo de Emissão *</Label>
+                <Select
+                  value={financeForm.issuance_type}
+                  onValueChange={(v) => setFinanceForm({ ...financeForm, issuance_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
+                    <SelectItem value="nota_debito">Nota de Débito</SelectItem>
+                    <SelectItem value="recibo">Recibo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Valor *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={financeForm.amount}
+                  onChange={(e) => setFinanceForm({ ...financeForm, amount: e.target.value })}
+                  placeholder="0,00"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label>Prazo de Pagamento</Label>
+                <Input
+                  type="date"
+                  value={financeForm.payment_due_date}
+                  onChange={(e) =>
+                    setFinanceForm({ ...financeForm, payment_due_date: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label>Descrição da NF</Label>
+                <Input
+                  value={financeForm.nf_description}
+                  onChange={(e) =>
+                    setFinanceForm({ ...financeForm, nf_description: e.target.value })
+                  }
+                  placeholder="Descrição da nota fiscal"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label>Observações</Label>
+                <Textarea
+                  rows={3}
+                  value={financeForm.notes}
+                  onChange={(e) => setFinanceForm({ ...financeForm, notes: e.target.value })}
+                  placeholder="Observações adicionais"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {isProducaoArea && (
           <div className="pt-4 border-t space-y-4 animate-fade-in">

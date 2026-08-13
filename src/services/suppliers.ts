@@ -47,6 +47,16 @@ export interface SupplierInput {
   observations?: string | null
 }
 
+export async function searchSuppliers(search: string): Promise<Supplier[]> {
+  let query = supabase.from('suppliers').select('*')
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,document.ilike.%${search}%`)
+  }
+  const { data, error } = await query.order('name', { ascending: true }).limit(50)
+  if (error) throw error
+  return (data as Supplier[]) ?? []
+}
+
 export async function getAllSuppliers(): Promise<Supplier[]> {
   const { data, error } = await supabase
     .from('suppliers')
@@ -63,7 +73,11 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
 }
 
 export async function createSupplier(input: SupplierInput): Promise<Supplier> {
-  const { data, error } = await supabase.from('suppliers').insert(input).select('*').single()
+  const { data, error } = await supabase
+    .from('suppliers')
+    .insert(input as any)
+    .select('*')
+    .single()
   if (error) throw error
   return data as Supplier
 }
@@ -71,7 +85,7 @@ export async function createSupplier(input: SupplierInput): Promise<Supplier> {
 export async function updateSupplier(id: string, input: SupplierInput): Promise<Supplier> {
   const { data, error } = await supabase
     .from('suppliers')
-    .update(input)
+    .update(input as any)
     .eq('id', id)
     .select('*')
     .single()

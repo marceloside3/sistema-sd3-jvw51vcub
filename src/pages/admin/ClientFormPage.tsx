@@ -70,7 +70,7 @@ const formSchema = z.object({
   contact_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   contact_phone: z.string().optional(),
   segment: z.string().optional(),
-  has_lpu: z.boolean().default(false),
+  has_lpu: z.boolean(),
 })
 
 const maskCNPJ = (value: string) => {

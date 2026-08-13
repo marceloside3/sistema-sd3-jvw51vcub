@@ -80,8 +80,8 @@ export async function uploadAttachment(
   }
 
   const { data: dbData, error: dbError } = await supabase
-    .from(tableName)
-    .insert([dbPayload])
+    .from(tableName as any)
+    .insert([dbPayload as any])
     .select(
       `id, file_name, file_size, mime_type, storage_path, uploaded_by, created_at, uploader:users!${fkName}(full_name)`,
     )
@@ -118,8 +118,8 @@ export async function listAttachments(
       ? 'project_attachments_uploaded_by_fkey'
       : 'demand_attachments_uploaded_by_fkey'
 
-  const { data, error } = await supabase
-    .from(tableName)
+  const query: any = supabase.from(tableName as any)
+  const { data, error } = await query
     .select(
       `id, file_name, file_size, mime_type, storage_path, uploaded_by, created_at, uploader:users!${fkName}(full_name)`,
     )
@@ -151,7 +151,9 @@ export async function deleteAttachment(
   const bucketName = getBucketName(kind)
 
   // Remove DB record first
-  const { error: dbError } = await supabase.from(tableName).delete().eq('id', attachmentId)
+  const { error: dbError } = await (supabase.from(tableName as any) as any)
+    .delete()
+    .eq('id', attachmentId)
 
   if (dbError) {
     throw dbError

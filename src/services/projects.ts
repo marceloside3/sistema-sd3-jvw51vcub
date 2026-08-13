@@ -202,7 +202,7 @@ export async function getProjectAuditLog(
 ) {
   const { data, error } = await supabase.rpc('get_project_audit_log', {
     p_project_id: projectId,
-    p_event_types: eventTypes,
+    p_event_types: eventTypes as any,
     p_since: since,
     p_limit: limit,
   })

@@ -513,7 +513,10 @@ export type Database = {
           created_by: string
           demand_id: string
           demand_item_id: string
+          due_date: string
           id: string
+          is_urgent: boolean
+          justification: string | null
           quantity: number
           status: string
           supplier_id: string | null
@@ -527,7 +530,10 @@ export type Database = {
           created_by: string
           demand_id: string
           demand_item_id: string
+          due_date?: string
           id?: string
+          is_urgent?: boolean
+          justification?: string | null
           quantity?: number
           status?: string
           supplier_id?: string | null
@@ -541,7 +547,10 @@ export type Database = {
           created_by?: string
           demand_id?: string
           demand_item_id?: string
+          due_date?: string
           id?: string
+          is_urgent?: boolean
+          justification?: string | null
           quantity?: number
           status?: string
           supplier_id?: string | null
@@ -777,6 +786,7 @@ export type Database = {
           is_active: boolean
           is_admin: boolean
           is_director: boolean
+          is_finance: boolean
           is_system: boolean
           name: string
           updated_at: string
@@ -788,6 +798,7 @@ export type Database = {
           is_active?: boolean
           is_admin?: boolean
           is_director?: boolean
+          is_finance?: boolean
           is_system?: boolean
           name: string
           updated_at?: string
@@ -799,6 +810,7 @@ export type Database = {
           is_active?: boolean
           is_admin?: boolean
           is_director?: boolean
+          is_finance?: boolean
           is_system?: boolean
           name?: string
           updated_at?: string
