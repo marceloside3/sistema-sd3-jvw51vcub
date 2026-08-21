@@ -128,66 +128,21 @@ Deno.serve(async (req: Request) => {
       )
       let userId = existingAuthUser?.id
 
-      // If user does not exist, call edge function invite-user
+      // If user does not exist, create directly via auth.admin.createUser
       if (!existingAuthUser) {
-        userLog.calledInviteFunction = true
-        const inviteUrl = `${supabaseUrl}/functions/v1/invite-user`
-        const resp = await fetch(inviteUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${serviceRoleKey}`,
-          },
-          body: JSON.stringify({
+        const { data: createdAuth, error: createAuthErr } =
+          await supabaseAdmin.auth.admin.createUser({
             email: user.email,
             password: 'teste123',
-            full_name: user.fullName,
-          }),
-        })
+            email_confirm: true,
+            user_metadata: { full_name: user.fullName },
+          })
 
-        const respText = await resp.text()
-        let respJson: any
-        try {
-          respJson = JSON.parse(respText)
-        } catch {
-          respJson = { raw: respText }
+        if (createAuthErr) {
+          throw new Error(`admin.createUser failed: ${createAuthErr.message}`)
         }
-
-        userLog.inviteResponseStatus = resp.status
-        userLog.inviteResponseBody = respJson
-
-        // If invite-user failed or didn't create user directly, fallback to supabaseAdmin.auth.admin.createUser
-        if (!resp.ok) {
-          console.warn(
-            `invite-user responded ${resp.status}: ${respText}. Falling back to admin.createUser...`,
-          )
-          const { data: createdAuth, error: createAuthErr } =
-            await supabaseAdmin.auth.admin.createUser({
-              email: user.email,
-              password: 'teste123',
-              email_confirm: true,
-              user_metadata: { full_name: user.fullName },
-            })
-
-          if (createAuthErr) {
-            throw new Error(`admin.createUser failed: ${createAuthErr.message}`)
-          }
-          userId = createdAuth.user.id
-          userLog.fallbackCreated = true
-        } else {
-          // Retrieve user id
-          if (respJson?.user?.id) {
-            userId = respJson.user.id
-          } else if (respJson?.id) {
-            userId = respJson.id
-          } else {
-            const { data: updatedListData } = await supabaseAdmin.auth.admin.listUsers()
-            existingAuthUser = updatedListData?.users.find(
-              (u) => u.email?.toLowerCase() === user.email.toLowerCase(),
-            )
-            userId = existingAuthUser?.id
-          }
-        }
+        userId = createdAuth.user.id
+        userLog.authCreated = true
       } else {
         userLog.calledInviteFunction = false
         userLog.message = 'User already existed in auth.users'
@@ -222,7 +177,22 @@ Deno.serve(async (req: Request) => {
       }
       userLog.publicUserUpserted = true
 
-      // 4. Upsert area_responsibles (user_id, area_id, is_principal=true)
+      // 4. Before making this user principal for the area, demote any other user who is currently principal for this area
+      const { error: demoteErr } = await supabaseAdmin
+        .from('area_responsibles')
+        .update({ is_principal: false, updated_at: new Date().toISOString() })
+        .eq('area_id', user.areaId)
+        .neq('user_id', userId)
+        .eq('is_principal', true)
+
+      if (demoteErr) {
+        console.warn(
+          `Demote existing principal warning for area ${user.areaId}:`,
+          demoteErr.message,
+        )
+      }
+
+      // Upsert area_responsibles (user_id, area_id, is_principal=true)
       const { data: existingResp, error: checkRespErr } = await supabaseAdmin
         .from('area_responsibles')
         .select('id, is_principal')
