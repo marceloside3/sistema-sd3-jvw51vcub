@@ -15,6 +15,7 @@ import {
   Inbox,
   ShieldCheck,
   Truck,
+  Sparkles,
 } from 'lucide-react'
 
 import { NotificationBell } from '@/components/notifications/NotificationBell'
@@ -47,6 +48,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
     data?.profile?.is_admin ||
     data?.profile?.is_system ||
     (data?.profile?.is_director && data?.areas?.some((a) => a.is_hub))
+  const canSeeCriacao = data?.profile?.is_admin || data?.areas?.some((a) => a.code === 'criacao')
 
   return (
     <>
@@ -116,6 +118,17 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <Truck fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Fornecedores
             </Link>
+
+            {canSeeCriacao && (
+              <Link
+                to="/criacao"
+                onClick={() => setIsOpen(false)}
+                className={navLinkClass(location.pathname.startsWith('/criacao'))}
+              >
+                <Sparkles className="w-4 h-4 mr-3 shrink-0 text-orange-400" />
+                Kanban Criação
+              </Link>
+            )}
 
             <Link
               to="/notificacoes"
