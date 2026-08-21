@@ -155,12 +155,30 @@ Deno.serve(async (req: Request) => {
       userLog.userId = userId
 
       // 2. Ensure password is set to 'teste123' and email is confirmed
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
+      const { error: updateAuthErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         password: 'teste123',
         email_confirm: true,
       })
 
-      // 3. Upsert public.users with profile_id
+      if (updateAuthErr) {
+        throw new Error(`admin.updateUserById failed: ${updateAuthErr.message}`)
+      }
+
+      // 3. If finance profile, ensure is_finance = true on profiles table
+      if (user.email === 'financeiro@side3.com.br') {
+        const { error: profileErr } = await supabaseAdmin
+          .from('profiles')
+          .update({ is_finance: true, updated_at: new Date().toISOString() })
+          .eq('id', user.profileId)
+
+        if (profileErr) {
+          console.warn('Error setting is_finance on profile:', profileErr.message)
+        } else {
+          userLog.profileFinanceUpdated = true
+        }
+      }
+
+      // 4. Upsert public.users with profile_id
       const { error: upsertUserErr } = await supabaseAdmin.from('users').upsert(
         {
           id: userId,
