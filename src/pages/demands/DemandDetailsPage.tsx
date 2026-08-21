@@ -362,7 +362,7 @@ export default function DemandDetailsPage() {
               <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Prioridade
               </span>
-              <p className="font-medium text-xs sm:text-sm capitalize py-1">
+              <div className="font-medium text-xs sm:text-sm capitalize py-1">
                 <Badge
                   variant={
                     demand.priority === 'urgent' || demand.priority === 'high'
@@ -379,7 +379,7 @@ export default function DemandDetailsPage() {
                         ? 'Baixa'
                         : 'Média'}
                 </Badge>
-              </p>
+              </div>
             </div>
 
             <div className="space-y-1">
