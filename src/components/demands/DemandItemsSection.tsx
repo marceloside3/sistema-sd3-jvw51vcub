@@ -372,9 +372,19 @@ export function DemandItemsSection({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Card className="border-2 border-primary/20 shadow-md ring-1 ring-primary/10 overflow-hidden">
+      <Card
+        className={`border-2 transition-all duration-200 overflow-hidden ${
+          isExpanded
+            ? 'border-primary shadow-xl ring-2 ring-primary/20 bg-card'
+            : 'border-primary/20 shadow-md ring-1 ring-primary/10'
+        }`}
+      >
         {/* CABEÇALHO HERO DA SEÇÃO DE ITENS */}
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-muted/40 pb-4 border-b">
+        <CardHeader
+          className={`bg-gradient-to-r from-primary/5 via-background to-muted/40 border-b ${
+            isExpanded ? 'p-5 sm:p-6 pb-5' : 'pb-4'
+          }`}
+        >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
@@ -382,7 +392,11 @@ export function DemandItemsSection({
                   <Package className="w-5 h-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <CardTitle
+                    className={`${
+                      isExpanded ? 'text-2xl' : 'text-xl'
+                    } font-bold flex items-center gap-2`}
+                  >
                     <span>Itens da Demanda</span>
                     <Badge
                       variant="secondary"
@@ -390,6 +404,14 @@ export function DemandItemsSection({
                     >
                       {totalItemsCount} {totalItemsCount === 1 ? 'item' : 'itens'}
                     </Badge>
+                    {isExpanded && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-primary/10 text-primary border-primary/30 font-medium"
+                      >
+                        Modo Foco / Expandido
+                      </Badge>
+                    )}
                   </CardTitle>
                   <p className="text-xs text-muted-foreground">
                     Área principal de produção: gerencie especificações, fornecedores, custos e
@@ -504,7 +526,7 @@ export function DemandItemsSection({
           )}
         </CardHeader>
 
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className={isExpanded ? 'p-5 sm:p-8' : 'p-4 sm:p-6'}>
           {loading ? (
             <div className="space-y-3 py-2">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -570,7 +592,11 @@ export function DemandItemsSection({
 
               {/* ABA 1: VISÃO INTERNA COMPLETA COM CUSTOS, FORNECEDORES E MARGENS */}
               <TabsContent value="internal" className="m-0 focus-visible:outline-hidden">
-                <div className="rounded-lg border bg-card shadow-xs overflow-hidden">
+                <div
+                  className={`rounded-lg border bg-card shadow-xs overflow-hidden ${
+                    isExpanded ? 'min-h-[480px]' : ''
+                  }`}
+                >
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader className="bg-muted/50">
@@ -924,7 +950,11 @@ export function DemandItemsSection({
 
               {/* ABA 2: VISÃO CLIENTE / ORÇAMENTO EXTERNO */}
               <TabsContent value="external" className="m-0 focus-visible:outline-hidden">
-                <div className="rounded-lg border bg-card shadow-xs overflow-hidden">
+                <div
+                  className={`rounded-lg border bg-card shadow-xs overflow-hidden ${
+                    isExpanded ? 'min-h-[480px]' : ''
+                  }`}
+                >
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader className="bg-muted/50">

@@ -65,7 +65,6 @@ export default function DemandDetailsPage() {
   const [pendingStatus, setPendingStatus] = useState('')
   const [reason, setReason] = useState('')
   const [auditRefreshKey, setAuditRefreshKey] = useState(0)
-  const [isItemsExpanded, setIsItemsExpanded] = useState(false)
   const [lockUpdating, setLockUpdating] = useState(false)
   const [budgetUpdating, setBudgetUpdating] = useState(false)
   const [paymentUpdating, setPaymentUpdating] = useState(false)
@@ -264,7 +263,11 @@ export default function DemandDetailsPage() {
 
   return (
     <div
-      className={isItemsExpanded ? 'w-full mx-auto px-4 space-y-6' : 'max-w-6xl mx-auto space-y-6'}
+      className={
+        itemsExpanded
+          ? 'w-full max-w-[1800px] mx-auto px-4 sm:px-6 space-y-6'
+          : 'max-w-6xl mx-auto space-y-6'
+      }
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -553,84 +556,86 @@ export default function DemandDetailsPage() {
         />
       </section>
 
-      {/* 4. SEÇÕES SECUNDÁRIAS: Anexos, Comentários e Histórico */}
-      <div className="grid md:grid-cols-2 gap-6 items-start pt-2">
-        <Card className="border shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <span>Comentários e Mensagens</span>
-              {comments.length > 0 && (
-                <Badge variant="secondary" className="text-xs font-mono">
-                  {comments.length}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="max-h-[360px] overflow-y-auto space-y-3 pr-2">
-              {comments.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  Nenhum comentário registrado ainda.
-                </p>
-              ) : (
-                comments.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`flex flex-col ${c.user_id === userCtx?.id ? 'items-end' : 'items-start'}`}
-                  >
+      {/* 4. SEÇÕES SECUNDÁRIAS: Anexos, Comentários e Histórico (ocultadas quando em modo tela cheia/expandido) */}
+      {!itemsExpanded && (
+        <div className="grid md:grid-cols-2 gap-6 items-start pt-2">
+          <Card className="border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <span>Comentários e Mensagens</span>
+                {comments.length > 0 && (
+                  <Badge variant="secondary" className="text-xs font-mono">
+                    {comments.length}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="max-h-[360px] overflow-y-auto space-y-3 pr-2">
+                {comments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    Nenhum comentário registrado ainda.
+                  </p>
+                ) : (
+                  comments.map((c) => (
                     <div
-                      className={`max-w-[85%] rounded-lg p-3 text-sm ${
-                        c.user_id === userCtx?.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-foreground'
-                      }`}
+                      key={c.id}
+                      className={`flex flex-col ${c.user_id === userCtx?.id ? 'items-end' : 'items-start'}`}
                     >
-                      <div className="font-semibold text-xs opacity-80 mb-1">
-                        {c.user?.full_name}
+                      <div
+                        className={`max-w-[85%] rounded-lg p-3 text-sm ${
+                          c.user_id === userCtx?.id
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-foreground'
+                        }`}
+                      >
+                        <div className="font-semibold text-xs opacity-80 mb-1">
+                          {c.user?.full_name}
+                        </div>
+                        <div className="whitespace-pre-wrap">{c.content}</div>
                       </div>
-                      <div className="whitespace-pre-wrap">{c.content}</div>
+                      <span className="text-[10px] text-muted-foreground mt-1 px-1">
+                        {format(new Date(c.created_at), 'dd/MM HH:mm')}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground mt-1 px-1">
-                      {format(new Date(c.created_at), 'dd/MM HH:mm')}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="flex gap-2 pt-3 border-t">
-              <Textarea
-                placeholder="Escreva um comentário ou instrução..."
-                className="min-h-[44px] resize-none text-sm"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleComment()
-                  }
-                }}
-              />
-              <Button
-                size="icon"
-                className="shrink-0 h-auto self-end px-3 py-2.5"
-                onClick={handleComment}
-                disabled={!newComment.trim()}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  ))
+                )}
+              </div>
+              <div className="flex gap-2 pt-3 border-t">
+                <Textarea
+                  placeholder="Escreva um comentário ou instrução..."
+                  className="min-h-[44px] resize-none text-sm"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleComment()
+                    }
+                  }}
+                />
+                <Button
+                  size="icon"
+                  className="shrink-0 h-auto self-end px-3 py-2.5"
+                  onClick={handleComment}
+                  disabled={!newComment.trim()}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-        <div className="space-y-6">
-          <AttachmentsSection kind="demand" entityId={demand.id} />
-          <DemandAuditHistory
-            demandId={demand.id}
-            refreshKey={auditRefreshKey}
-            filters={auditFilters}
-          />
+          <div className="space-y-6">
+            <AttachmentsSection kind="demand" entityId={demand.id} />
+            <DemandAuditHistory
+              demandId={demand.id}
+              refreshKey={auditRefreshKey}
+              filters={auditFilters}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <Dialog open={cancelReasonOpen} onOpenChange={setCancelReasonOpen}>
         <DialogContent>
