@@ -63,8 +63,9 @@ export async function getDemandById(id: string) {
       project:projects(id, name, project_code, client_id),
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
-      from_area:areas!demands_from_area_id_fkey(id, name),
-      to_area:areas!demands_to_area_id_fkey(id, name)
+      from_area:areas!demands_from_area_id_fkey(id, name, code),
+      to_area:areas!demands_to_area_id_fkey(id, name, code),
+      kanban_stage:kanban_stages(id, name, position, color)
     `)
     .eq('id', id)
     .single()

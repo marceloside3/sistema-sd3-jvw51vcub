@@ -5,8 +5,8 @@ import {
   Clock,
   CheckCircle2,
   User,
+  Eye,
   ChevronRight,
-  MessageSquare,
   ArrowRight,
   CornerUpLeft,
 } from 'lucide-react'
@@ -141,26 +141,43 @@ export function KanbanCard({
           </Badge>
         </div>
 
-        {/* Action button menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-6 h-6 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 -mr-1"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-zinc-950 border-zinc-800 text-zinc-200 w-48 text-xs"
+        {/* Actions: View Demand Link & Menu */}
+        <div className="flex items-center gap-0.5 -mr-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="w-6 h-6 text-zinc-400 hover:text-orange-400 hover:bg-zinc-800/80 transition-colors"
+            title="Visualizar detalhes da demanda"
           >
-            <DropdownMenuItem asChild>
-              <Link to={`/demandas/${demand.id}`} className="cursor-pointer">
-                Ver detalhes da demanda
-              </Link>
-            </DropdownMenuItem>
+            <Link to={`/demandas/${demand.id}`}>
+              <Eye className="w-3.5 h-3.5" />
+              <span className="sr-only">Visualizar detalhes da demanda</span>
+            </Link>
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-6 h-6 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                title="Ações do card"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="sr-only">Opções</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-zinc-950 border-zinc-800 text-zinc-200 w-48 text-xs"
+            >
+              <DropdownMenuItem asChild>
+                <Link to={`/demandas/${demand.id}`} className="cursor-pointer">
+                  <Eye className="w-3.5 h-3.5 mr-2 text-zinc-400" />
+                  Ver detalhes da demanda
+                </Link>
+              </DropdownMenuItem>
 
             {/* Direct quick moves */}
             {isDirector && currentStage.position === 1 && nextStage && (

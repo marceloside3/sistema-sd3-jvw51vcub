@@ -258,6 +258,11 @@ export default function DemandDetailsPage() {
     }
   }
 
+  const isCriacaoArea =
+    demand?.to_area?.code === 'criacao' ||
+    demand?.to_area?.name?.toLowerCase().includes('criação') ||
+    demand?.to_area?.name?.toLowerCase().includes('criacao')
+
   if (loading) return <div className="p-8 text-center">Carregando...</div>
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
@@ -315,26 +320,27 @@ export default function DemandDetailsPage() {
             refreshKey={auditRefreshKey}
             filters={auditFilters}
           />
-          {demand.status === 'done' ? (
-            <Button asChild>
-              <Link to={`/demandas/${demand.id}/orcamento`}>
+          {!isCriacaoArea &&
+            (demand.status === 'done' ? (
+              <Button asChild>
+                <Link to={`/demandas/${demand.id}/orcamento`}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Gerar Orçamento
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled title="Disponível quando a demanda estiver concluída">
                 <FileText className="w-4 h-4 mr-2" />
                 Gerar Orçamento
-              </Link>
-            </Button>
-          ) : (
-            <Button disabled title="Disponível quando a demanda estiver concluída">
-              <FileText className="w-4 h-4 mr-2" />
-              Gerar Orçamento
-            </Button>
-          )}
+              </Button>
+            ))}
         </div>
       </div>
-
-      {/* 1. Resumo financeiro rápido */}
-      <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
-
-      {/* 2. Cabeçalho compacto de contexto e metadados da demanda */}
+      {/* 1. Resumo financeiro rápido (Oculto para a área de Criação) */}
+      {!isCriacaoArea && (
+        <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
+      )}
+      {/* 2. Cabeçalho compacto de contexto e metadados da demanda */}{' '}
       <Card className="border shadow-sm bg-gradient-to-r from-card via-card to-muted/20">
         <CardContent className="p-4 sm:p-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
@@ -446,8 +452,23 @@ export default function DemandDetailsPage() {
                 </p>
               </div>
             )}
-          </div>
 
+            {isCriacaoArea && demand.kanban_stage && (
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Estágio Kanban
+                </span>
+                <div className="py-1">
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-semibold bg-orange-500/10 text-orange-400 border-orange-500/20"
+                  >
+                    {demand.kanban_stage.name}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
           {demand.cancellation_reason && (
             <div className="mt-3 bg-red-50 dark:bg-red-950/40 p-2.5 rounded border border-red-200 dark:border-red-800/50 text-xs text-red-800 dark:text-red-300 flex items-center gap-2">
               <strong className="font-semibold">Motivo ({demand.status}):</strong>
@@ -462,8 +483,9 @@ export default function DemandDetailsPage() {
             </div>
           )}
 
-          {demand.status === 'done' && (
+          {!isCriacaoArea && demand.status === 'done' && (
             <div className="mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs">
+              {' '}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">Orçamento:</span>
@@ -487,7 +509,6 @@ export default function DemandDetailsPage() {
                   </Badge>
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 {userCtx?.id === demand.from_user_id && demand.budget_status === 'sent' && (
                   <>
@@ -558,20 +579,20 @@ export default function DemandDetailsPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* 3. SEÇÃO CENTRAL DE DESTAQUE: ITENS DA DEMANDA */}
-      <section id="demand-items-main-section" className="space-y-4">
-        <DemandItemsSection
-          demandId={demand.id}
-          clientId={demand.project?.client_id ?? null}
-          isLocked={!!demand.is_locked}
-          isAdmin={!!userCtx?.profile?.is_admin}
-          onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
-          isExpanded={itemsExpanded}
-          onToggleExpand={() => setItemsExpanded((v) => !v)}
-        />
-      </section>
-
+      {/* 3. SEÇÃO CENTRAL DE DESTAQUE: ITENS DA DEMANDA (Oculta para a área de Criação) */}
+      {!isCriacaoArea && (
+        <section id="demand-items-main-section" className="space-y-4">
+          <DemandItemsSection
+            demandId={demand.id}
+            clientId={demand.project?.client_id ?? null}
+            isLocked={!!demand.is_locked}
+            isAdmin={!!userCtx?.profile?.is_admin}
+            onItemsChanged={() => setAuditRefreshKey((k) => k + 1)}
+            isExpanded={itemsExpanded}
+            onToggleExpand={() => setItemsExpanded((v) => !v)}
+          />
+        </section>
+      )}
       {/* 4. SEÇÕES SECUNDÁRIAS: Anexos, Comentários e Histórico (ocultadas quando em modo tela cheia/expandido) */}
       {!itemsExpanded && (
         <div className="grid md:grid-cols-2 gap-6 items-start pt-2">
@@ -652,7 +673,6 @@ export default function DemandDetailsPage() {
           </div>
         </div>
       )}
-
       <Dialog open={cancelReasonOpen} onOpenChange={setCancelReasonOpen}>
         <DialogContent>
           <DialogHeader>
