@@ -127,6 +127,8 @@ export function DemandItemsSection({
   const [lpuDialogOpen, setLpuDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<DemandItem | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [retryAction, setRetryAction] = useState<(() => void) | null>(null)
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [financeRequestIds, setFinanceRequestIds] = useState<Set<string>>(new Set())
   const [financeDialogOpen, setFinanceDialogOpen] = useState(false)
@@ -276,14 +278,19 @@ export function DemandItemsSection({
 
   const transitionToSaved = () => {
     setSaveStatus('saved')
+    setLastSavedAt(new Date())
+    setRetryAction(null)
     if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current)
-    savedTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 2000)
+    savedTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 2500)
   }
 
-  const transitionToError = () => {
+  const transitionToError = (retryFn?: () => void) => {
     setSaveStatus('error')
+    if (retryFn) {
+      setRetryAction(() => retryFn)
+    }
+    // Erros persistem visíveis até nova ação ou nova tentativa
     if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current)
-    savedTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 3000)
   }
 
   const reloadItems = async () => {
@@ -293,7 +300,7 @@ export function DemandItemsSection({
       setItems(data as DemandItem[])
       transitionToSaved()
     } catch {
-      transitionToError()
+      transitionToError(() => reloadItems())
       toast({ title: 'Erro ao recarregar itens', variant: 'destructive' })
     }
   }
@@ -312,39 +319,40 @@ export function DemandItemsSection({
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
+    const target = deleteTarget
     setSaveStatus('saving')
     try {
       if (userCtx?.id) {
         await logDemandAuditBatch([
           {
             demand_id: demandId,
-            item_id: deleteTarget.id,
+            item_id: target.id,
             user_id: userCtx.id,
             field_name: 'item_removed',
-            old_value: deleteTarget.item_name,
+            old_value: target.item_name,
           },
           {
             demand_id: demandId,
-            item_id: deleteTarget.id,
+            item_id: target.id,
             user_id: userCtx.id,
             field_name: 'item_name',
-            old_value: deleteTarget.item_name,
+            old_value: target.item_name,
           },
           {
             demand_id: demandId,
-            item_id: deleteTarget.id,
+            item_id: target.id,
             user_id: userCtx.id,
             field_name: 'quantity',
-            old_value: String(deleteTarget.quantity),
+            old_value: String(target.quantity),
           },
         ])
       }
-      await deleteDemandItem(deleteTarget.id)
+      await deleteDemandItem(target.id)
       await reloadItems()
       toast({ title: 'Item removido com sucesso!' })
       onItemsChanged?.()
     } catch {
-      transitionToError()
+      transitionToError(() => handleDeleteConfirm())
       toast({ title: 'Erro ao remover item', variant: 'destructive' })
     } finally {
       setDeleteTarget(null)
@@ -393,7 +401,12 @@ export function DemandItemsSection({
 
             {/* BOTÕES DE AÇÃO PRINCIPAIS (DESTAQUE PARA PRODUÇÃO) */}
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <SavingIndicator status={saveStatus} />
+              <SavingIndicator
+                status={saveStatus}
+                lastSavedAt={lastSavedAt}
+                onRetry={retryAction ? () => retryAction() : undefined}
+                showSavedTime={isExpanded}
+              />
 
               {clientId && (
                 <Button

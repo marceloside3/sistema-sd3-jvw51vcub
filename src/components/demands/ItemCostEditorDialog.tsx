@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Loader2,
   Lock,
@@ -9,6 +9,7 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditBatch } from '@/services/demand-audit'
@@ -18,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { SupplierSelect } from '@/components/suppliers/SupplierSelect'
 import type { Supplier } from '@/services/suppliers'
+import { SavingIndicator, type SaveStatus } from '@/components/demands/SavingIndicator'
 
 import {
   Dialog,
@@ -77,38 +79,90 @@ export function ItemCostEditorDialog({
   const [extraCost, setExtraCost] = useState('')
   const [honorariosPct, setHonorariosPct] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [quantity, setQuantity] = useState('')
   const { data: userCtx } = useCurrentUser()
 
   const isLpuItem = item ? !item.is_custom : false
 
+  // Ref com os últimos dados salvos no backend para detecção exata de diff e prevenção de concorrência
+  const lastSavedSnapshotRef = useRef<{
+    quantity: number
+    unit_price: number | null
+    supplier_id: string | null
+    supplier_name: string | null
+    unit_cost: number | null
+    extra_cost: number | null
+    honorarios_percentage: number | null
+  } | null>(null)
+
+  const isInitialMountRef = useRef(true)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestSaveSeqRef = useRef<number>(0)
+
   useEffect(() => {
-    if (item) {
-      setUnitPrice(
+    if (open && item) {
+      isInitialMountRef.current = true
+      setSaveStatus('idle')
+
+      const initialUnitPrice =
         item.unit_price !== null && item.unit_price !== 0
           ? formatInputDecimal(String(item.unit_price))
-          : '',
-      )
-      setSupplierId(item.supplier_id || null)
-      setSupplierName(item.supplier_name || '')
-      setUnitCost(
+          : ''
+      const initialSupplierId = item.supplier_id || null
+      const initialSupplierName = item.supplier_name || ''
+      const initialUnitCost =
         item.unit_cost !== null && item.unit_cost !== 0
           ? formatInputDecimal(String(item.unit_cost))
-          : '',
-      )
-      setExtraCost(
+          : ''
+      const initialExtraCost =
         item.extra_cost !== null && item.extra_cost !== 0
           ? formatInputDecimal(String(item.extra_cost))
-          : '',
-      )
-      setHonorariosPct(
+          : ''
+      const initialHonorariosPct =
         item.honorarios_percentage !== null && item.honorarios_percentage !== 0
           ? formatInputDecimal(String(item.honorarios_percentage))
-          : '',
-      )
-      setQuantity(String(item.quantity))
+          : ''
+      const initialQuantity = String(item.quantity)
+
+      setUnitPrice(initialUnitPrice)
+      setSupplierId(initialSupplierId)
+      setSupplierName(initialSupplierName)
+      setUnitCost(initialUnitCost)
+      setExtraCost(initialExtraCost)
+      setHonorariosPct(initialHonorariosPct)
+      setQuantity(initialQuantity)
+
+      lastSavedSnapshotRef.current = {
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        supplier_id: initialSupplierId,
+        supplier_name: initialSupplierName || null,
+        unit_cost: item.unit_cost,
+        extra_cost: item.extra_cost ?? 0,
+        honorarios_percentage: item.honorarios_percentage ?? 0,
+      }
+
+      // Após popular o form inicial, liberar para debounce
+      const unlockTimer = setTimeout(() => {
+        isInitialMountRef.current = false
+      }, 150)
+      return () => clearTimeout(unlockTimer)
+    } else {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      setSaveStatus('idle')
     }
-  }, [item])
+  }, [open, item?.id])
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    }
+  }, [])
 
   const parsedUnitPrice = parseNumber(unitPrice)
   const parsedUnitCost = parseNumber(unitCost)
@@ -126,87 +180,226 @@ export function ItemCostEditorDialog({
 
   const isComplete = Boolean(supplierName.trim() && parsedUnitCost > 0)
 
-  const handleSave = async () => {
-    if (!item) return
-    setSaving(true)
-    try {
-      const { updateDemandItemCosts } = await import('@/services/demands')
-      await updateDemandItemCosts(item.id, {
+  // Função core de persistência que suporta tanto o auto-save com debounce quanto o botão manual
+  const persistChanges = useCallback(
+    async (isManualClose = false) => {
+      if (!item || !canEdit) return
+
+      const currentSnapshot = {
         quantity: parsedQuantity,
         unit_price: parsedUnitPrice > 0 ? parsedUnitPrice : null,
         supplier_id: supplierId,
         supplier_name: supplierName.trim() || null,
         unit_cost: parsedUnitCost > 0 ? parsedUnitCost : null,
-        extra_cost: parsedExtraCost,
-        honorarios_percentage: parsedHonorariosPct,
-        total_cost: calc.totalCost,
-        cost_status: isComplete ? 'completed' : 'pending',
-      })
-
-      if (userCtx?.id) {
-        const changes: { field: string; old: string; new: string }[] = []
-        if (String(item.unit_price ?? 0) !== String(parsedUnitPrice > 0 ? parsedUnitPrice : 0))
-          changes.push({
-            field: 'unit_price',
-            old: String(item.unit_price ?? 0),
-            new: String(parsedUnitPrice > 0 ? parsedUnitPrice : 0),
-          })
-        if ((item.supplier_id || '') !== supplierId)
-          changes.push({
-            field: 'supplier_id',
-            old: item.supplier_id || '',
-            new: supplierId,
-          })
-        if ((item.supplier_name || '') !== supplierName.trim())
-          changes.push({
-            field: 'supplier_name',
-            old: item.supplier_name || '',
-            new: supplierName.trim(),
-          })
-        if (String(item.unit_cost ?? 0) !== String(parsedUnitCost > 0 ? parsedUnitCost : 0))
-          changes.push({
-            field: 'unit_cost',
-            old: String(item.unit_cost ?? 0),
-            new: String(parsedUnitCost > 0 ? parsedUnitCost : 0),
-          })
-        if (String(item.extra_cost ?? 0) !== String(parsedExtraCost))
-          changes.push({
-            field: 'extra_cost',
-            old: String(item.extra_cost ?? 0),
-            new: String(parsedExtraCost),
-          })
-        if (String(item.honorarios_percentage ?? 0) !== String(parsedHonorariosPct))
-          changes.push({
-            field: 'honorarios_percentage',
-            old: String(item.honorarios_percentage ?? 0),
-            new: String(parsedHonorariosPct),
-          })
-        if (String(item.quantity) !== String(parsedQuantity))
-          changes.push({
-            field: 'quantity',
-            old: String(item.quantity),
-            new: String(parsedQuantity),
-          })
-
-        await logDemandAuditBatch(
-          changes.map((c) => ({
-            demand_id: demandId,
-            item_id: item.id,
-            user_id: userCtx.id,
-            field_name: c.field,
-            old_value: c.old,
-            new_value: c.new,
-          })),
-        )
+        extra_cost: parsedExtraCost > 0 ? parsedExtraCost : 0,
+        honorarios_percentage: parsedHonorariosPct > 0 ? parsedHonorariosPct : 0,
       }
 
-      onSaved()
-      onOpenChange(false)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setSaving(false)
+      const prev = lastSavedSnapshotRef.current
+
+      // Verifica se houve mudança real em relação ao último salvo
+      const hasChanged =
+        !prev ||
+        prev.quantity !== currentSnapshot.quantity ||
+        (prev.unit_price ?? 0) !== (currentSnapshot.unit_price ?? 0) ||
+        (prev.supplier_id ?? '') !== (currentSnapshot.supplier_id ?? '') ||
+        (prev.supplier_name ?? '') !== (currentSnapshot.supplier_name ?? '') ||
+        (prev.unit_cost ?? 0) !== (currentSnapshot.unit_cost ?? 0) ||
+        (prev.extra_cost ?? 0) !== (currentSnapshot.extra_cost ?? 0) ||
+        (prev.honorarios_percentage ?? 0) !== (currentSnapshot.honorarios_percentage ?? 0)
+
+      if (!hasChanged) {
+        if (isManualClose) {
+          onOpenChange(false)
+        }
+        return
+      }
+
+      const currentSeq = ++latestSaveSeqRef.current
+      setSaveStatus('saving')
+      if (isManualClose) setSaving(true)
+
+      try {
+        const { updateDemandItemCosts } = await import('@/services/demands')
+        await updateDemandItemCosts(item.id, {
+          quantity: currentSnapshot.quantity,
+          unit_price: currentSnapshot.unit_price,
+          supplier_id: currentSnapshot.supplier_id,
+          supplier_name: currentSnapshot.supplier_name,
+          unit_cost: currentSnapshot.unit_cost,
+          extra_cost: currentSnapshot.extra_cost,
+          honorarios_percentage: currentSnapshot.honorarios_percentage,
+          total_cost: calc.totalCost,
+          cost_status: isComplete ? 'completed' : 'pending',
+        })
+
+        // Concorrência: se disparou outro save mais recente no meio do caminho, descarta estado deste
+        if (currentSeq !== latestSaveSeqRef.current) {
+          return
+        }
+
+        // Registrar auditoria para cada campo alterado
+        if (userCtx?.id && prev) {
+          const changes: { field: string; old: string; new: string }[] = []
+          if ((prev.unit_price ?? 0) !== (currentSnapshot.unit_price ?? 0)) {
+            changes.push({
+              field: 'unit_price',
+              old: String(prev.unit_price ?? 0),
+              new: String(currentSnapshot.unit_price ?? 0),
+            })
+          }
+          if ((prev.supplier_id || '') !== (currentSnapshot.supplier_id || '')) {
+            changes.push({
+              field: 'supplier_id',
+              old: prev.supplier_id || '',
+              new: currentSnapshot.supplier_id || '',
+            })
+          }
+          if ((prev.supplier_name || '') !== (currentSnapshot.supplier_name || '')) {
+            changes.push({
+              field: 'supplier_name',
+              old: prev.supplier_name || '',
+              new: currentSnapshot.supplier_name || '',
+            })
+          }
+          if ((prev.unit_cost ?? 0) !== (currentSnapshot.unit_cost ?? 0)) {
+            changes.push({
+              field: 'unit_cost',
+              old: String(prev.unit_cost ?? 0),
+              new: String(currentSnapshot.unit_cost ?? 0),
+            })
+          }
+          if ((prev.extra_cost ?? 0) !== (currentSnapshot.extra_cost ?? 0)) {
+            changes.push({
+              field: 'extra_cost',
+              old: String(prev.extra_cost ?? 0),
+              new: String(currentSnapshot.extra_cost ?? 0),
+            })
+          }
+          if ((prev.honorarios_percentage ?? 0) !== (currentSnapshot.honorarios_percentage ?? 0)) {
+            changes.push({
+              field: 'honorarios_percentage',
+              old: String(prev.honorarios_percentage ?? 0),
+              new: String(currentSnapshot.honorarios_percentage ?? 0),
+            })
+          }
+          if (prev.quantity !== currentSnapshot.quantity) {
+            changes.push({
+              field: 'quantity',
+              old: String(prev.quantity),
+              new: String(currentSnapshot.quantity),
+            })
+          }
+
+          if (changes.length > 0) {
+            await logDemandAuditBatch(
+              changes.map((c) => ({
+                demand_id: demandId,
+                item_id: item.id,
+                user_id: userCtx.id,
+                field_name: c.field,
+                old_value: c.old,
+                new_value: c.new,
+              })),
+            )
+          }
+        }
+
+        lastSavedSnapshotRef.current = currentSnapshot
+        setLastSavedAt(new Date())
+        setSaveStatus('saved')
+        onSaved()
+
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+        savedTimerRef.current = setTimeout(() => {
+          setSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr))
+        }, 2500)
+
+        if (isManualClose) {
+          onOpenChange(false)
+        }
+      } catch (err) {
+        console.error('Erro no autosave do item:', err)
+        if (currentSeq === latestSaveSeqRef.current) {
+          setSaveStatus('error')
+        }
+      } finally {
+        if (isManualClose) setSaving(false)
+      }
+    },
+    [
+      item,
+      canEdit,
+      parsedQuantity,
+      parsedUnitPrice,
+      supplierId,
+      supplierName,
+      parsedUnitCost,
+      parsedExtraCost,
+      parsedHonorariosPct,
+      calc.totalCost,
+      isComplete,
+      userCtx?.id,
+      demandId,
+      onSaved,
+      onOpenChange,
+    ],
+  )
+
+  // Disparador do Debounce Autosave (700ms após última digitação/alteração)
+  useEffect(() => {
+    if (!open || isInitialMountRef.current || !canEdit || !item) {
+      return
     }
+
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+
+    // Checa se há algo diferente do snapshot
+    const prev = lastSavedSnapshotRef.current
+    const currentPrice = parsedUnitPrice > 0 ? parsedUnitPrice : null
+    const currentCost = parsedUnitCost > 0 ? parsedUnitCost : null
+    const currentExtra = parsedExtraCost > 0 ? parsedExtraCost : 0
+    const currentHon = parsedHonorariosPct > 0 ? parsedHonorariosPct : 0
+    const currentSuppName = supplierName.trim() || null
+
+    const hasChanged =
+      !prev ||
+      prev.quantity !== parsedQuantity ||
+      (prev.unit_price ?? 0) !== (currentPrice ?? 0) ||
+      (prev.supplier_id ?? '') !== (supplierId ?? '') ||
+      (prev.supplier_name ?? '') !== (currentSuppName ?? '') ||
+      (prev.unit_cost ?? 0) !== (currentCost ?? 0) ||
+      (prev.extra_cost ?? 0) !== currentExtra ||
+      (prev.honorarios_percentage ?? 0) !== currentHon
+
+    if (!hasChanged) {
+      return
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      persistChanges(false)
+    }, 700)
+
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    }
+  }, [
+    open,
+    canEdit,
+    item,
+    parsedQuantity,
+    parsedUnitPrice,
+    supplierId,
+    supplierName,
+    parsedUnitCost,
+    parsedExtraCost,
+    parsedHonorariosPct,
+    persistChanges,
+  ])
+
+  const handleManualSave = async () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    await persistChanges(true)
   }
 
   const marginColor = getMarginColor(calc.marginPct)
@@ -214,27 +407,39 @@ export function ItemCostEditorDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between pr-6">
+        <DialogHeader className="border-b pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pr-6">
             <DialogTitle className="text-lg flex items-center gap-2">
               <Calculator className="w-5 h-5 text-primary" />
-              Preenchimento de Custos e Fornecedor
+              <span>Modo Foco do Item</span>
             </DialogTitle>
-            {isComplete ? (
-              <Badge className="bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 border-green-200 text-xs">
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                Custos Completos
-              </Badge>
-            ) : (
-              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200 text-xs">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                Pendente Fornecedor/Custo
-              </Badge>
-            )}
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <SavingIndicator
+                status={saveStatus}
+                lastSavedAt={lastSavedAt}
+                onRetry={() => persistChanges(false)}
+              />
+
+              {isComplete ? (
+                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 text-xs font-semibold">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Custos Completos
+                </Badge>
+              ) : (
+                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200 text-xs">
+                  <AlertCircle className="w-3 h-3 mr-1" />
+                  Pendente Fornecedor/Custo
+                </Badge>
+              )}
+            </div>
           </div>
-          <DialogDescription className="text-xs">
-            Guia de produção: defina o fornecedor selecionado, custos reais de execução e percentual
-            de honorários da Side3.
+          <DialogDescription className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+            <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>
+              Edição com <strong>autosalvamento automático</strong>. As alterações são gravadas
+              imediatamente no banco ao parar de digitar.
+            </span>
           </DialogDescription>
         </DialogHeader>
 
@@ -489,14 +694,28 @@ export function ItemCostEditorDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={saving || !canEdit}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar Custos do Item
-          </Button>
+        <DialogFooter className="gap-2 sm:gap-0 border-t pt-3 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1.5">
+            <SavingIndicator
+              status={saveStatus}
+              lastSavedAt={lastSavedAt}
+              onRetry={() => persistChanges(false)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+              Fechar
+            </Button>
+            <Button onClick={handleManualSave} disabled={saving || !canEdit} className="gap-1.5">
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
+              Salvar e Concluir
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
