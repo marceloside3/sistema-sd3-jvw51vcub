@@ -82,6 +82,12 @@ const TEST_USERS: TestUser[] = [
     profileId: '15613582-ca76-47fc-aa3c-a7ff9a5e6704',
     areaId: '7b2116f7-0234-4572-927d-a617bebab07d',
   },
+  {
+    email: 'producao@side3.com.br',
+    fullName: 'Produção',
+    profileId: '8f87450b-1fdd-4d36-9485-1be131af31a9',
+    areaId: 'f9ba5e57-61b6-4c67-8415-3c7a178abe90',
+  },
 ]
 
 Deno.serve(async (req: Request) => {
