@@ -3,6 +3,11 @@ import { supabase } from '@/lib/supabase/client'
 // Cast supabase to any for dynamically created tables not in static types.ts
 const db = supabase as any
 
+// RPC helper for the notify_criacao_transition SECURITY DEFINER function.
+// (Keeps a typed wrapper so call sites stay clean; falls back to any for args.)
+const rpc = (fn: string, args: Record<string, unknown>) =>
+  (supabase as any).rpc(fn, args) as Promise<{ data: unknown; error: any | null }>
+
 export interface KanbanStage {
   id: string
   area_id: string
@@ -253,7 +258,26 @@ export async function getKanbanDemands(): Promise<{
 }
 
 /**
- * Move demand to a new kanban stage
+ * Resolve stage position by id from the kanban_stages table.
+ */
+async function getStagePosition(stageId: string): Promise<number | null> {
+  const { data, error } = await db
+    .from('kanban_stages')
+    .select('position')
+    .eq('id', stageId)
+    .single()
+  if (error || !data) return null
+  return data.position as number
+}
+
+/**
+ * Move demand to a new kanban stage.
+ *
+ * Notification rules (Diretor actions on Criação Kanban):
+ * - Assigning a creative (Fila do Diretor -> A Fazer, pos 1 -> 2): notify the creative
+ *   "Nova demanda atribuída a você: [título]"
+ * - Returning a piece for adjustment (Revisão Interna -> Em Criação, pos 4 -> 3): notify the
+ *   creative "Demanda devolvida para ajuste: [título]" including the director's feedback.
  */
 export async function moveDemandStage(params: {
   demandId: string
@@ -264,6 +288,19 @@ export async function moveDemandStage(params: {
   assignedByUserId?: string
 }) {
   const { demandId, newStageId, newStatus, feedback, assignedToUserId, assignedByUserId } = params
+
+  // Fetch current demand + stage positions to detect the relevant transition
+  const { data: currentDemand, error: fetchError } = await db
+    .from('demands')
+    .select('id, title, to_user_id, kanban_stage_id')
+    .eq('id', demandId)
+    .single()
+  if (fetchError) throw fetchError
+
+  const fromPos = currentDemand?.kanban_stage_id
+    ? await getStagePosition(currentDemand.kanban_stage_id)
+    : null
+  const toPos = await getStagePosition(newStageId)
 
   const updatePayload: Record<string, any> = {
     kanban_stage_id: newStageId,
@@ -300,6 +337,36 @@ export async function moveDemandStage(params: {
       content: `[Feedback de Revisão do Diretor]: ${feedback.trim()}`,
     })
     if (commentError) console.error('Error creating feedback comment:', commentError)
+  }
+
+  // ---- Notifications ----
+  // 1) Diretor atribui demanda a um criativo (Fila do Diretor -> A Fazer)
+  const isAssignTransition =
+    fromPos === 1 && toPos === 2 && !!assignedToUserId && !!assignedByUserId
+  if (isAssignTransition && assignedToUserId !== assignedByUserId) {
+    const { error: notifError } = await rpc('notify_criacao_transition', {
+      p_demand_id: demandId,
+      p_transition: 'assign',
+      p_feedback: null,
+      p_actor_id: assignedByUserId,
+    })
+    if (notifError) console.error('Error creating assignment notification:', notifError)
+  }
+
+  // 2) Diretor devolve peça para ajuste (Revisão Interna -> Em Criação)
+  const isReturnTransition = fromPos === 4 && toPos === 3
+  if (isReturnTransition) {
+    const notifyUserId = assignedToUserId || currentDemand?.to_user_id || null
+    if (notifyUserId && notifyUserId !== assignedByUserId) {
+      const { error: notifError } = await rpc('notify_criacao_transition', {
+        p_demand_id: demandId,
+        p_transition: 'return',
+        p_feedback: feedback || null,
+        p_actor_id: assignedByUserId,
+      })
+      if (notifError)
+        console.error('Error creating return-for-adjustment notification:', notifError)
+    }
   }
 
   return true

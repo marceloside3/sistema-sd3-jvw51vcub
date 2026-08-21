@@ -1,6 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Package, FileSpreadsheet, Pencil, Coins } from 'lucide-react'
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Package,
+  FileSpreadsheet,
+  Pencil,
+  Coins,
+  Sparkles,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -89,7 +98,15 @@ export default function NovaDemandaPage() {
     to_user_id: 'any',
     tipo_criacao: '' as '' | 'peca_digital' | 'peca_impressa' | '3d',
     due_date: '',
+    // Criação-specific fields
+    entrega_a_ser_feita: '',
+    finalidade_peca: '',
+    formato_peca: '',
+    quantidade_pecas: 1,
+    direcional_pecas: '',
   })
+  // Separate state for the link references input (one link per line)
+  const [refLinksInput, setRefLinksInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
@@ -146,6 +163,30 @@ export default function NovaDemandaPage() {
       setFormData((prev) => ({ ...prev, tipo_criacao: '' }))
     }
   }, [isCriacaoArea, formData.tipo_criacao])
+
+  // Reset Criação-specific fields when leaving Criação area (no reload)
+  useEffect(() => {
+    if (!isCriacaoArea) {
+      setFormData((prev) => {
+        const needsReset =
+          prev.entrega_a_ser_feita ||
+          prev.finalidade_peca ||
+          prev.formato_peca ||
+          prev.quantidade_pecas !== 1 ||
+          prev.direcional_pecas
+        if (!needsReset) return prev
+        return {
+          ...prev,
+          entrega_a_ser_feita: '',
+          finalidade_peca: '',
+          formato_peca: '',
+          quantidade_pecas: 1,
+          direcional_pecas: '',
+        }
+      })
+      setRefLinksInput((prev) => (prev ? '' : prev))
+    }
+  }, [isCriacaoArea])
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === formData.project_id),
@@ -402,6 +443,26 @@ export default function NovaDemandaPage() {
         status: 'pending',
       }
 
+      // Criação-specific fields — only set when destination is Criação
+      if (isCriacaoArea) {
+        payload.entrega_a_ser_feita = formData.entrega_a_ser_feita.trim() || null
+        payload.finalidade_peca = formData.finalidade_peca.trim() || null
+        payload.formato_peca = formData.formato_peca.trim() || null
+        payload.quantidade_pecas =
+          Number.isFinite(formData.quantidade_pecas) && formData.quantidade_pecas >= 1
+            ? Math.floor(formData.quantidade_pecas)
+            : 1
+        payload.direcional_pecas = formData.direcional_pecas.trim() || null
+
+        // References = uploaded files (paths registered after upload) + link lines
+        const linkLines = refLinksInput
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
+        const refLinks = linkLines.map((url) => ({ type: 'link', url }))
+        payload.referencias = refLinks.length > 0 ? refLinks : null
+      }
+
       if (isFinanceiroArea) {
         payload.financial_data = {
           client_id: financeForm.client_id,
@@ -629,6 +690,93 @@ export default function NovaDemandaPage() {
                 </div>
               </div>
             </>
+          )}
+
+          {isCriacaoArea && (
+            <div className="pt-4 border-t space-y-4 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-lg">Detalhes da Criação</h3>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-2">
+                  <Label>Entrega a ser feita</Label>
+                  <Textarea
+                    rows={3}
+                    value={formData.entrega_a_ser_feita}
+                    onChange={(e) =>
+                      setFormData({ ...formData, entrega_a_ser_feita: e.target.value })
+                    }
+                    placeholder="Descreva a entrega esperada (ex: 3 artes finais para redes sociais, vídeo de 15s, etc.)"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Finalidade da Peça</Label>
+                    <Input
+                      value={formData.finalidade_peca}
+                      onChange={(e) =>
+                        setFormData({ ...formData, finalidade_peca: e.target.value })
+                      }
+                      placeholder="Ex: Campanha de lançamento do produto X"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Formato da Peça</Label>
+                    <Input
+                      value={formData.formato_peca}
+                      onChange={(e) => setFormData({ ...formData, formato_peca: e.target.value })}
+                      placeholder="Ex: 1080x1080, Stories, A4"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Quantidade de Peças</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={formData.quantidade_pecas}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          quantidade_pecas: Math.max(1, parseInt(e.target.value) || 1),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Direcional de Cada Peça</Label>
+                    <Textarea
+                      rows={2}
+                      value={formData.direcional_pecas}
+                      onChange={(e) =>
+                        setFormData({ ...formData, direcional_pecas: e.target.value })
+                      }
+                      placeholder="Orientações criativas (referências, tom de voz, restrições, etc.)"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Referências</Label>
+                  <PendingFilesPicker files={pendingFiles} onChange={setPendingFiles} />
+                  <Textarea
+                    rows={2}
+                    value={refLinksInput}
+                    onChange={(e) => setRefLinksInput(e.target.value)}
+                    placeholder="Cole aqui links de referência (um por linha)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Anexe arquivos (imagens/PDFs) acima e/ou inclua links externos como referência
+                    criativa.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

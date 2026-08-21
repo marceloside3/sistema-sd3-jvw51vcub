@@ -11,6 +11,8 @@ import {
   X,
   RefreshCw,
   Banknote,
+  Sparkles,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -610,6 +612,89 @@ export default function DemandDetailsPage() {
             onToggleExpand={() => setItemsExpanded((v) => !v)}
           />
         </section>
+      )}
+      {/* 3b. SEÇÃO DETALHES DA CRIAÇÃO (visível apenas quando Área Destino = Criação) */}
+      {isCriacaoArea && (
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-orange-500" />
+              <span>Detalhes da Criação</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Entrega a ser feita
+                </span>
+                <p className="whitespace-pre-wrap text-foreground">
+                  {demand.entrega_a_ser_feita || '—'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Finalidade da Peça
+                </span>
+                <p className="text-foreground">{demand.finalidade_peca || '—'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Formato da Peça
+                </span>
+                <p className="text-foreground">{demand.formato_peca || '—'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Quantidade de Peças
+                </span>
+                <p className="text-foreground font-mono">{demand.quantidade_pecas ?? '—'}</p>
+              </div>
+            </div>
+
+            {demand.direcional_pecas && (
+              <div className="space-y-1 pt-2 border-t">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Direcional de Cada Peça
+                </span>
+                <p className="whitespace-pre-wrap text-foreground">{demand.direcional_pecas}</p>
+              </div>
+            )}
+
+            {/* Referências: links salvos no campo + anexos da demanda */}
+            {(() => {
+              const refs: Array<{ type: string; url?: string; file_name?: string }> = Array.isArray(
+                demand.referencias,
+              )
+                ? demand.referencias
+                : []
+              const linkRefs = refs.filter((r) => r.type === 'link' && r.url)
+              if (linkRefs.length === 0) return null
+              return (
+                <div className="space-y-1 pt-2 border-t">
+                  <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                    Links de Referência
+                  </span>
+                  <ul className="space-y-1">
+                    {linkRefs.map((r, idx) => (
+                      <li key={idx}>
+                        <a
+                          href={r.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-blue-600 hover:underline break-all"
+                        >
+                          <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="text-xs">{r.url}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })()}
+          </CardContent>
+        </Card>
       )}
       {/* 4. SEÇÕES SECUNDÁRIAS: Anexos, Comentários e Histórico (ocultadas quando em modo tela cheia/expandido) */}
       {!itemsExpanded && (

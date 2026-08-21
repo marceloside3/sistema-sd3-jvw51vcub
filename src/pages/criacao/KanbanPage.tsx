@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -133,9 +134,10 @@ export default function KanbanPage() {
             </div>
           </div>
         </div>
-
         {/* Header Actions & Profile Badge */}
         <div className="flex items-center gap-2 self-start sm:self-center">
+          <NotificationBell />
+
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs">
             <Users className="w-3.5 h-3.5 text-orange-400" />
             <span className="text-zinc-400">Perfil:</span>
@@ -154,7 +156,7 @@ export default function KanbanPage() {
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
-        </div>
+        </div>{' '}
       </div>
 
       {/* Kanban Board Component */}
