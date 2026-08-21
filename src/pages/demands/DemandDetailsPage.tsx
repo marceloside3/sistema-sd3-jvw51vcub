@@ -263,6 +263,24 @@ export default function DemandDetailsPage() {
     demand?.to_area?.name?.toLowerCase().includes('criação') ||
     demand?.to_area?.name?.toLowerCase().includes('criacao')
 
+  const isProducaoUser = Boolean(
+    userCtx?.areas?.some(
+      (a) =>
+        a.code?.toLowerCase() === 'producao' ||
+        a.name?.toLowerCase().includes('produção') ||
+        a.name?.toLowerCase().includes('producao'),
+    ),
+  )
+
+  const isDemandCreator = Boolean(
+    userCtx?.id &&
+    (userCtx.id === demand?.from_user_id ||
+      userCtx.id === (demand as any)?.created_by ||
+      userCtx.id === demand?.from_user?.id),
+  )
+
+  const canViewFinancialAndItems = isProducaoUser || isDemandCreator
+
   if (loading) return <div className="p-8 text-center">Carregando...</div>
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
@@ -336,8 +354,8 @@ export default function DemandDetailsPage() {
             ))}
         </div>
       </div>
-      {/* 1. Resumo financeiro rápido (Oculto para a área de Criação) */}
-      {!isCriacaoArea && (
+      {/* 1. Resumo financeiro rápido (Total Bruto, Total Custos, Margem Total: visível apenas para Produção ou Solicitante) */}
+      {!isCriacaoArea && canViewFinancialAndItems && (
         <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
       )}
       {/* 2. Cabeçalho compacto de contexto e metadados da demanda */}{' '}
@@ -579,8 +597,8 @@ export default function DemandDetailsPage() {
           )}
         </CardContent>
       </Card>
-      {/* 3. SEÇÃO CENTRAL DE DESTAQUE: ITENS DA DEMANDA (Oculta para a área de Criação) */}
-      {!isCriacaoArea && (
+      {/* 3. SEÇÃO CENTRAL DE DESTAQUE: ITENS DA DEMANDA (visível apenas para Produção ou Solicitante) */}
+      {!isCriacaoArea && canViewFinancialAndItems && (
         <section id="demand-items-main-section" className="space-y-4">
           <DemandItemsSection
             demandId={demand.id}
