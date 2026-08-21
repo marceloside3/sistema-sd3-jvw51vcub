@@ -430,6 +430,22 @@ export default function DemandDetailsPage() {
                 {formatDateBR(demand.due_date)}
               </p>
             </div>
+
+            {demand.tipo_criacao && (
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Tipo de Criação
+                </span>
+                <p className="font-medium text-xs sm:text-sm py-1">
+                  {demand.tipo_criacao === 'peca_digital' && '🖥️ Peça Digital (SLA: 3 dias úteis)'}
+                  {demand.tipo_criacao === 'peca_impressa' &&
+                    '🖨️ Peça Impressa (SLA: 4 dias úteis)'}
+                  {demand.tipo_criacao === '3d' && '🧊 3D (SLA: 5 dias úteis)'}
+                  {!['peca_digital', 'peca_impressa', '3d'].includes(demand.tipo_criacao) &&
+                    demand.tipo_criacao}
+                </p>
+              </div>
+            )}
           </div>
 
           {demand.cancellation_reason && (

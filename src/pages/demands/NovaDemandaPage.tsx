@@ -87,6 +87,7 @@ export default function NovaDemandaPage() {
     priority: 'normal',
     to_area_id: '',
     to_user_id: 'any',
+    tipo_criacao: '' as '' | 'peca_digital' | 'peca_impressa' | '3d',
     due_date: '',
   })
   const [loading, setLoading] = useState(false)
@@ -103,6 +104,7 @@ export default function NovaDemandaPage() {
 
   const selectedArea = areas.find((a) => a.id === formData.to_area_id)
   const areaCode = selectedArea ? normalizeStr(selectedArea.code || '') : ''
+  const isCriacaoArea = areaCode === 'criacao'
   const isProducaoArea = areaCode === 'producao'
   const isFinanceiroArea = areaCode === 'financeiro'
 
@@ -138,6 +140,13 @@ export default function NovaDemandaPage() {
     }
   }, [isFinanceiroArea])
 
+  // Reset tipo_criacao when leaving Criação area
+  useEffect(() => {
+    if (!isCriacaoArea && formData.tipo_criacao) {
+      setFormData((prev) => ({ ...prev, tipo_criacao: '' }))
+    }
+  }, [isCriacaoArea, formData.tipo_criacao])
+
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === formData.project_id),
     [projects, formData.project_id],
@@ -172,17 +181,34 @@ export default function NovaDemandaPage() {
 
   useEffect(() => {
     if (formData.to_area_id) {
-      supabase
-        .from('area_responsibles')
-        .select('user_id, users!inner(id, full_name)')
-        .eq('area_id', formData.to_area_id)
-        .then(({ data }) => {
-          if (data) setUsers(data.map((d) => d.users))
-        })
+      if (isCriacaoArea) {
+        // Gate do Diretor: show only users with is_director = true linked to Criação
+        supabase
+          .from('area_responsibles')
+          .select('user_id, users!inner(id, full_name, profiles!inner(is_director))')
+          .eq('area_id', formData.to_area_id)
+          .eq('users.profiles.is_director', true)
+          .then(({ data }) => {
+            if (data) {
+              const directors = data
+                .map((d: any) => d.users)
+                .filter((u: any) => u?.profiles?.is_director === true)
+              setUsers(directors)
+            }
+          })
+      } else {
+        supabase
+          .from('area_responsibles')
+          .select('user_id, users!inner(id, full_name)')
+          .eq('area_id', formData.to_area_id)
+          .then(({ data }) => {
+            if (data) setUsers(data.map((d) => d.users))
+          })
+      }
     } else {
       setUsers([])
     }
-  }, [formData.to_area_id])
+  }, [formData.to_area_id, isCriacaoArea])
 
   useEffect(() => {
     const clientId = selectedProject?.client?.id || selectedProject?.client_id
@@ -239,6 +265,20 @@ export default function NovaDemandaPage() {
       deadline: itemForm.deadline,
       delivery_location: itemForm.delivery_location,
     })
+  }
+
+  const handleTipoCriacaoChange = (tipo: 'peca_digital' | 'peca_impressa' | '3d') => {
+    const daysToAdd =
+      tipo === 'peca_digital' ? 3 : tipo === 'peca_impressa' ? 4 : tipo === '3d' ? 5 : 0
+    const targetDate = new Date()
+    targetDate.setDate(targetDate.getDate() + daysToAdd)
+    const formattedDate = targetDate.toISOString().split('T')[0]
+
+    setFormData((prev) => ({
+      ...prev,
+      tipo_criacao: tipo,
+      due_date: formattedDate,
+    }))
   }
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -355,6 +395,7 @@ export default function NovaDemandaPage() {
         title: isFinanceiroArea ? financeTitle : formData.title,
         description: isFinanceiroArea ? financeDescription : formData.description,
         priority: formData.priority,
+        tipo_criacao: isCriacaoArea && formData.tipo_criacao ? formData.tipo_criacao : null,
         due_date: isFinanceiroArea
           ? financeForm.payment_due_date || null
           : formData.due_date || null,
@@ -466,7 +507,7 @@ export default function NovaDemandaPage() {
               <Select
                 value={formData.to_area_id}
                 onValueChange={(v) =>
-                  setFormData({ ...formData, to_area_id: v, to_user_id: 'any' })
+                  setFormData({ ...formData, to_area_id: v, to_user_id: 'any', tipo_criacao: '' })
                 }
               >
                 <SelectTrigger>
@@ -489,10 +530,16 @@ export default function NovaDemandaPage() {
                 onValueChange={(v) => setFormData({ ...formData, to_user_id: v })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Qualquer pessoa da área" />
+                  <SelectValue
+                    placeholder={
+                      isCriacaoArea ? 'Qualquer diretor da Criação' : 'Qualquer pessoa da área'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="any">Qualquer pessoa da área</SelectItem>
+                  <SelectItem value="any">
+                    {isCriacaoArea ? 'Qualquer diretor da Criação' : 'Qualquer pessoa da área'}
+                  </SelectItem>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.full_name}
@@ -523,6 +570,37 @@ export default function NovaDemandaPage() {
                 />
               </div>
 
+              {isCriacaoArea && (
+                <div className="space-y-2 p-3 bg-blue-50/50 border border-blue-100 rounded-lg animate-fade-in">
+                  <Label htmlFor="tipo-criacao" className="font-medium text-blue-950">
+                    Tipo de Criação
+                  </Label>
+                  <Select
+                    value={formData.tipo_criacao}
+                    onValueChange={(v) =>
+                      handleTipoCriacaoChange(v as 'peca_digital' | 'peca_impressa' | '3d')
+                    }
+                  >
+                    <SelectTrigger id="tipo-criacao" className="bg-white">
+                      <SelectValue placeholder="Selecione o tipo de criação para calcular o SLA" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="peca_digital">
+                        🖥️ Peça Digital — SLA de 3 dias úteis
+                      </SelectItem>
+                      <SelectItem value="peca_impressa">
+                        🖨️ Peça Impressa — SLA de 4 dias úteis
+                      </SelectItem>
+                      <SelectItem value="3d">🧊 3D — SLA de 5 dias úteis</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Ao selecionar um tipo, a data de entrega é preenchida automaticamente e pode ser
+                    ajustada abaixo.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Prioridade</Label>
@@ -542,7 +620,7 @@ export default function NovaDemandaPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Prazo Ideal</Label>
+                  <Label>Prazo</Label>
                   <Input
                     type="date"
                     value={formData.due_date}

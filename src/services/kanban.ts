@@ -32,6 +32,7 @@ export interface KanbanDemand {
   status: string
   priority: string
   due_date: string | null
+  tipo_criacao?: string | null
   kanban_stage_id: string | null
   to_user_id: string | null
   from_user_id: string | null
@@ -159,6 +160,7 @@ export async function getKanbanDemands(): Promise<{
       status,
       priority,
       due_date,
+      tipo_criacao,
       kanban_stage_id,
       to_user_id,
       from_user_id,
@@ -230,6 +232,7 @@ export async function getKanbanDemands(): Promise<{
       status: d.status,
       priority: d.priority || 'normal',
       due_date: d.due_date,
+      tipo_criacao: d.tipo_criacao || null,
       // Gate do Diretor: if no stage, it belongs to "Fila do Diretor"
       kanban_stage_id: d.kanban_stage_id || filaStage?.id || null,
       to_user_id: d.to_user_id,

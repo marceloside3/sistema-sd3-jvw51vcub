@@ -249,13 +249,22 @@ export function KanbanCard({
         </DropdownMenu>
       </div>
 
-      {/* Demand Title */}
-      <Link
-        to={`/demandas/${demand.id}`}
-        className="block text-xs font-medium text-zinc-200 group-hover:text-orange-400 transition-colors line-clamp-2 leading-relaxed mb-2.5"
-      >
-        {demand.title}
-      </Link>
+      {/* Demand Title & Tipo Criacao Badge */}
+      <div className="mb-2.5 space-y-1">
+        <Link
+          to={`/demandas/${demand.id}`}
+          className="block text-xs font-medium text-zinc-200 group-hover:text-orange-400 transition-colors line-clamp-2 leading-relaxed"
+        >
+          {demand.title}
+        </Link>
+        {demand.tipo_criacao && (
+          <div className="inline-flex items-center gap-1 text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-700/60 font-medium">
+            {demand.tipo_criacao === 'peca_digital' && '🖥️ Digital (3d)'}
+            {demand.tipo_criacao === 'peca_impressa' && '🖨️ Impressa (4d)'}
+            {demand.tipo_criacao === '3d' && '🧊 3D (5d)'}
+          </div>
+        )}
+      </div>
 
       {/* Footer Info: Due date & Creative assigned */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-800/80 text-[11px]">
