@@ -1,16 +1,14 @@
 import { Link } from 'react-router-dom'
 import {
-  Calendar,
-  AlertCircle,
   Clock,
   CheckCircle2,
-  User,
-  Eye,
-  ChevronRight,
+  MoreHorizontal,
   ArrowRight,
   CornerUpLeft,
+  MessageSquare,
+  Paperclip,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import type { KanbanDemand, KanbanStage } from '@/services/kanban'
 
 interface KanbanCardProps {
@@ -34,6 +30,62 @@ interface KanbanCardProps {
   onMoveDirect: (demand: KanbanDemand, targetStage: KanbanStage) => void
 }
 
+// Priority badge styling — soft background, colored text
+function getPriorityInfo(priority: string) {
+  switch (priority) {
+    case 'urgent':
+      return {
+        label: 'Urgente',
+        badge: 'bg-rose-50 text-rose-600 border-rose-100',
+        dot: 'bg-rose-500',
+      }
+    case 'high':
+      return {
+        label: 'Alta',
+        badge: 'bg-red-50 text-red-600 border-red-100',
+        dot: 'bg-red-500',
+      }
+    case 'low':
+      return {
+        label: 'Baixa',
+        badge: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        dot: 'bg-emerald-500',
+      }
+    case 'normal':
+    default:
+      return {
+        label: 'Média',
+        badge: 'bg-orange-50 text-orange-600 border-orange-100',
+        dot: 'bg-orange-500',
+      }
+  }
+}
+
+// Friendly relative-ish date label, e.g. "Amanhã 16:00" or "12 Ago 16:00"
+function formatDueLabel(dueDate: string): { label: string; isToday: boolean; isTomorrow: boolean } {
+  try {
+    const due = new Date(dueDate + 'T00:00:00')
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const isToday = due.toDateString() === today.toDateString()
+    const isTomorrow = due.toDateString() === tomorrow.toDateString()
+
+    const timePart = due.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+    let label = due.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    if (isToday) label = `Hoje ${timePart}`
+    else if (isTomorrow) label = `Amanhã ${timePart}`
+
+    return { label, isToday, isTomorrow }
+  } catch {
+    return { label: dueDate, isToday: false, isTomorrow: false }
+  }
+}
+
 export function KanbanCard({
   demand,
   currentStage,
@@ -45,64 +97,32 @@ export function KanbanCard({
   onRequestFeedback,
   onMoveDirect,
 }: KanbanCardProps) {
-  // Due date & Urgency calculation
-  let isUrgent = false
-  let daysLeft: number | null = null
-  let formattedDate: string | null = null
+  const priorityInfo = getPriorityInfo(demand.priority)
+  const due = demand.due_date ? formatDueLabel(demand.due_date) : null
 
+  // Urgency detection (within 2 days) — keeps it subtle
+  let isUrgent = false
   if (demand.due_date) {
     try {
-      const due = new Date(demand.due_date + 'T00:00:00')
+      const dueDate = new Date(demand.due_date + 'T00:00:00')
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-      const diffTime = due.getTime() - today.getTime()
-      daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      isUrgent = daysLeft <= 3 && currentStage.position < 6 // Not urgent if already completed
-      formattedDate = due.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+      const diff = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000)
+      isUrgent = diff <= 2 && diff >= 0 && currentStage.position < 6
     } catch {
-      formattedDate = demand.due_date
+      /* ignore */
     }
   }
 
-  // Priority color & border style
-  const getPriorityInfo = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return {
-          label: 'Urgente',
-          border: 'border-l-red-500',
-          badge: 'bg-red-500/15 text-red-400 border-red-500/30',
-        }
-      case 'high':
-        return {
-          label: 'Alta',
-          border: 'border-l-orange-500',
-          badge: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-        }
-      case 'low':
-        return {
-          label: 'Baixa',
-          border: 'border-l-zinc-600',
-          badge: 'bg-zinc-800 text-zinc-400 border-zinc-700',
-        }
-      case 'normal':
-      default:
-        return {
-          label: 'Normal',
-          border: 'border-l-blue-500',
-          badge: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-        }
-    }
-  }
-
-  const priorityInfo = getPriorityInfo(demand.priority)
-
-  // Drag permission check
   const canDrag = isDirector || isMyCard
 
-  // Eligible next/prev stages for quick action
   const nextStage = allStages.find((s) => s.position === currentStage.position + 1)
-  const prevStage = allStages.find((s) => s.position === currentStage.position - 1)
+  const commentCount = demand.comment_count ?? 0
+  const attachmentCount = demand.attachment_count ?? 0
+
+  const initials = demand.assigned_creative
+    ? demand.assigned_creative.full_name.charAt(0).toUpperCase()
+    : '?'
 
   return (
     <div
@@ -114,90 +134,138 @@ export function KanbanCard({
         }
       }}
       className={cn(
-        'group relative bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 shadow-sm transition-all duration-200',
-        'border-l-4',
-        priorityInfo.border,
+        'group relative bg-white rounded-2xl p-3.5 border border-zinc-100 transition-all duration-200',
+        'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.03)]',
         canDrag
-          ? 'cursor-grab active:cursor-grabbing hover:border-zinc-700 hover:shadow-md hover:bg-zinc-900/90'
-          : 'opacity-90 cursor-default',
+          ? 'cursor-grab active:cursor-grabbing hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:-translate-y-0.5'
+          : 'cursor-default',
       )}
     >
-      {/* Header: Project & Priority */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          {demand.project && (
-            <span
-              className="text-[10px] font-semibold tracking-wider text-orange-400/90 uppercase truncate max-w-[150px] bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20"
-              title={demand.project.name}
-            >
-              {demand.project.project_code || demand.project.name}
-            </span>
-          )}
-          <Badge
-            variant="outline"
-            className={cn('text-[9px] px-1.5 py-0 uppercase font-semibold h-4', priorityInfo.badge)}
+      {/* Title */}
+      <div className="mb-2.5">
+        <Link
+          to={`/demandas/${demand.id}`}
+          className="block text-[13px] font-semibold text-zinc-900 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors"
+        >
+          {demand.title}
+        </Link>
+        {demand.project && (
+          <span
+            className="inline-block mt-1 text-[10px] font-medium text-zinc-400 truncate max-w-full"
+            title={demand.project.name}
           >
-            {priorityInfo.label}
-          </Badge>
+            {demand.project.project_code || demand.project.name}
+          </span>
+        )}
+      </div>
+
+      {/* Priority badge */}
+      <div className="flex items-center gap-1.5 mb-3">
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+            priorityInfo.badge,
+          )}
+        >
+          <span className={cn('w-1.5 h-1.5 rounded-full', priorityInfo.dot)} />
+          {priorityInfo.label}
+        </span>
+        {demand.tipo_criacao && (
+          <span className="text-[10px] text-zinc-400 font-medium capitalize">
+            {demand.tipo_criacao.replace('_', ' ')}
+          </span>
+        )}
+      </div>
+
+      {/* Footer: avatar + meta */}
+      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-zinc-100">
+        {/* Left: avatar + due date */}
+        <div className="flex items-center gap-2 min-w-0">
+          {demand.assigned_creative ? (
+            <div
+              className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 ring-2 ring-white"
+              title={demand.assigned_creative.full_name}
+            >
+              {initials}
+            </div>
+          ) : (
+            <div
+              className="w-6 h-6 rounded-full bg-zinc-100 text-zinc-400 flex items-center justify-center text-[10px] font-bold shrink-0 ring-2 ring-white"
+              title="Não atribuído"
+            >
+              ?
+            </div>
+          )}
+
+          {due ? (
+            <div
+              className={cn(
+                'flex items-center gap-1 text-[10px] font-medium min-w-0',
+                isUrgent ? 'text-rose-600' : 'text-zinc-500',
+              )}
+              title={`Prazo: ${demand.due_date}`}
+            >
+              <Clock
+                className={cn('w-3 h-3 shrink-0', isUrgent ? 'text-rose-500' : 'text-zinc-400')}
+              />
+              <span className="truncate">{due.label}</span>
+            </div>
+          ) : null}
         </div>
 
-        {/* Actions: View Demand Link & Menu */}
-        <div className="flex items-center gap-0.5 -mr-1">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="w-6 h-6 text-zinc-400 hover:text-orange-400 hover:bg-zinc-800/80 transition-colors"
-            title="Visualizar detalhes da demanda"
-          >
-            <Link to={`/demandas/${demand.id}`}>
-              <Eye className="w-3.5 h-3.5" />
-              <span className="sr-only">Visualizar detalhes da demanda</span>
-            </Link>
-          </Button>
+        {/* Right: counters + check */}
+        <div className="flex items-center gap-2 shrink-0">
+          {commentCount > 0 && (
+            <div className="flex items-center gap-0.5 text-[10px] text-zinc-400 font-medium">
+              <MessageSquare className="w-3 h-3" />
+              <span>{commentCount}</span>
+            </div>
+          )}
+          {attachmentCount > 0 && (
+            <div className="flex items-center gap-0.5 text-[10px] text-zinc-400 font-medium">
+              <Paperclip className="w-3 h-3" />
+              <span>{attachmentCount}</span>
+            </div>
+          )}
 
+          {/* Discrete blue check */}
+          <CheckCircle2 className="w-4 h-4 text-blue-500/70" />
+
+          {/* Actions dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-6 h-6 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              <button
+                type="button"
+                className="p-0.5 rounded text-zinc-300 hover:text-zinc-700 hover:bg-zinc-100 transition-colors outline-none"
                 title="Ações do card"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
-                <span className="sr-only">Opções</span>
-              </Button>
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="bg-zinc-950 border-zinc-800 text-zinc-200 w-48 text-xs"
-            >
+            <DropdownMenuContent align="end" className="w-48 text-xs">
               <DropdownMenuItem asChild>
                 <Link to={`/demandas/${demand.id}`} className="cursor-pointer">
-                  <Eye className="w-3.5 h-3.5 mr-2 text-zinc-400" />
                   Ver detalhes da demanda
                 </Link>
               </DropdownMenuItem>
 
-              {/* Direct quick moves */}
               {isDirector && currentStage.position === 1 && nextStage && (
                 <DropdownMenuItem
                   onClick={() => onAssignClick(demand)}
-                  className="text-orange-400 cursor-pointer"
+                  className="text-amber-600 cursor-pointer"
                 >
                   <ArrowRight className="w-3.5 h-3.5 mr-2" />
                   Distribuir (A Fazer)
                 </DropdownMenuItem>
               )}
 
-              {/* If in Revisão Interna, director options */}
               {isDirector && currentStage.position === 4 && (
                 <>
-                  <DropdownMenuSeparator className="bg-zinc-800" />
+                  <DropdownMenuSeparator />
                   {nextStage && (
                     <DropdownMenuItem
                       onClick={() => onMoveDirect(demand, nextStage)}
-                      className="text-purple-400 cursor-pointer"
+                      className="text-violet-600 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
                       Aprovar (Aguardando Cliente)
@@ -205,7 +273,7 @@ export function KanbanCard({
                   )}
                   <DropdownMenuItem
                     onClick={() => onRequestFeedback(demand)}
-                    className="text-red-400 cursor-pointer"
+                    className="text-rose-600 cursor-pointer"
                   >
                     <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
                     Devolver p/ Criação
@@ -213,14 +281,13 @@ export function KanbanCard({
                 </>
               )}
 
-              {/* If in Aguardando Cliente, options to proceed */}
               {isDirector && currentStage.position === 5 && (
                 <>
-                  <DropdownMenuSeparator className="bg-zinc-800" />
+                  <DropdownMenuSeparator />
                   {nextStage && (
                     <DropdownMenuItem
                       onClick={() => onMoveDirect(demand, nextStage)}
-                      className="text-green-400 cursor-pointer"
+                      className="text-emerald-600 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
                       Cliente Aprovou (Concluir)
@@ -228,7 +295,7 @@ export function KanbanCard({
                   )}
                   <DropdownMenuItem
                     onClick={() => onRequestFeedback(demand)}
-                    className="text-orange-400 cursor-pointer"
+                    className="text-amber-600 cursor-pointer"
                   >
                     <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
                     Cliente Pediu Ajustes
@@ -236,7 +303,6 @@ export function KanbanCard({
                 </>
               )}
 
-              {/* Creative moves between A Fazer (2) -> Em Criação (3) -> Revisão Interna (4) */}
               {(isDirector || isMyCard) && currentStage.position === 2 && (
                 <DropdownMenuItem
                   onClick={() => {
@@ -245,7 +311,7 @@ export function KanbanCard({
                   }}
                   className="cursor-pointer"
                 >
-                  <ArrowRight className="w-3.5 h-3.5 mr-2 text-orange-400" />
+                  <ArrowRight className="w-3.5 h-3.5 mr-2 text-indigo-500" />
                   Iniciar (Em Criação)
                 </DropdownMenuItem>
               )}
@@ -258,7 +324,7 @@ export function KanbanCard({
                   }}
                   className="cursor-pointer"
                 >
-                  <ArrowRight className="w-3.5 h-3.5 mr-2 text-red-400" />
+                  <ArrowRight className="w-3.5 h-3.5 mr-2 text-rose-500" />
                   Enviar p/ Revisão Interna
                 </DropdownMenuItem>
               )}
@@ -267,73 +333,13 @@ export function KanbanCard({
         </div>
       </div>
 
-      {/* Demand Title & Tipo Criacao Badge */}
-      <div className="mb-2.5 space-y-1">
-        <Link
-          to={`/demandas/${demand.id}`}
-          className="block text-xs font-medium text-zinc-200 group-hover:text-orange-400 transition-colors line-clamp-2 leading-relaxed"
-        >
-          {demand.title}
-        </Link>
-        {demand.tipo_criacao && (
-          <div className="inline-flex items-center gap-1 text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-700/60 font-medium">
-            {demand.tipo_criacao === 'peca_digital' && '🖥️ Digital (3d)'}
-            {demand.tipo_criacao === 'peca_impressa' && '🖨️ Impressa (4d)'}
-            {demand.tipo_criacao === '3d' && '🧊 3D (5d)'}
-          </div>
-        )}
-      </div>
-
-      {/* Footer Info: Due date & Creative assigned */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-800/80 text-[11px]">
-        {/* Due date tag */}
-        {demand.due_date ? (
-          <div
-            className={cn(
-              'flex items-center gap-1 font-medium',
-              isUrgent ? 'text-red-400 font-semibold animate-pulse' : 'text-zinc-400',
-            )}
-            title={daysLeft !== null ? `Prazo: ${daysLeft} dias restantes` : undefined}
-          >
-            {isUrgent ? (
-              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-400" />
-            ) : (
-              <Calendar className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
-            )}
-            <span>{formattedDate}</span>
-            {isUrgent && daysLeft !== null && (
-              <span className="text-[9px] bg-red-500/20 text-red-300 px-1 py-0.2 rounded">
-                {daysLeft < 0 ? 'Atrasado' : `${daysLeft}d`}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 text-zinc-500">
-            <Clock className="w-3.5 h-3.5" />
-            <span className="text-[10px]">Sem data</span>
-          </div>
-        )}
-
-        {/* Assigned Creative Avatar/Badge */}
-        {demand.assigned_creative ? (
-          <div
-            className="flex items-center gap-1.5 bg-zinc-800/80 hover:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700/60 max-w-[130px]"
-            title={`Responsável: ${demand.assigned_creative.full_name}`}
-          >
-            <div className="w-4 h-4 rounded-full bg-orange-500 text-zinc-950 flex items-center justify-center text-[9px] font-bold shrink-0">
-              {demand.assigned_creative.full_name.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-[10px] text-zinc-300 font-medium truncate">
-              {demand.assigned_creative.full_name.split(' ')[0]}
-            </span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 text-zinc-500 text-[10px]">
-            <User className="w-3 h-3 text-zinc-600" />
-            <span className="italic">Não atribuído</span>
-          </div>
-        )}
-      </div>
+      {/* Urgent marker */}
+      {isUrgent && (
+        <span
+          className="absolute top-0 left-3 right-3 h-0.5 rounded-full bg-rose-500/70"
+          aria-hidden
+        />
+      )}
     </div>
   )
 }

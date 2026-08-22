@@ -38,26 +38,26 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] bg-zinc-950 border-zinc-800 text-zinc-100">
+      <DialogContent className="sm:max-w-[480px] bg-white border-zinc-200 text-zinc-900 rounded-2xl">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-red-400">
+          <div className="flex items-center gap-2 text-rose-500">
             <AlertCircle className="w-5 h-5" />
-            <DialogTitle className="text-lg font-semibold text-zinc-100">
+            <DialogTitle className="text-lg font-semibold text-zinc-900">
               Devolver para Criação (Ajustes)
             </DialogTitle>
           </div>
-          <DialogDescription className="text-zinc-400 text-xs">
+          <DialogDescription className="text-zinc-500 text-xs">
             Informe ao criativo o que precisa ser ajustado ou revisado na peça.
           </DialogDescription>
         </DialogHeader>
 
         {demand && (
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 my-2 space-y-1">
-            <p className="text-xs font-semibold text-zinc-200 line-clamp-1">{demand.title}</p>
+          <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-3 my-2 space-y-1">
+            <p className="text-xs font-semibold text-zinc-800 line-clamp-1">{demand.title}</p>
             {demand.assigned_creative && (
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-zinc-500">
                 Criativo:{' '}
-                <span className="text-orange-400 font-medium">
+                <span className="text-orange-500 font-medium">
                   {demand.assigned_creative.full_name}
                 </span>
               </p>
@@ -66,8 +66,8 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
         )}
 
         <div className="space-y-2 py-2">
-          <Label htmlFor="feedback-text" className="text-xs font-medium text-zinc-300">
-            Feedback e Instruções de Ajuste <span className="text-red-400">*</span>
+          <Label htmlFor="feedback-text" className="text-xs font-medium text-zinc-700">
+            Feedback e Instruções de Ajuste <span className="text-rose-500">*</span>
           </Label>
           <Textarea
             id="feedback-text"
@@ -75,7 +75,7 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder="Ex.: Ajustar o contraste do logotipo no fundo escuro e trocar a tipografia secundária conforme manual da marca..."
-            className="w-full bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:ring-red-500 focus:border-red-500 resize-none text-xs"
+            className="w-full bg-zinc-50 border-zinc-200 text-zinc-800 placeholder:text-zinc-400 focus:ring-rose-500 focus:border-rose-400 resize-none text-xs rounded-xl"
           />
         </div>
 
@@ -85,7 +85,7 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
             variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={submitting}
-            className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            className="text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
           >
             Cancelar
           </Button>
@@ -93,7 +93,7 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
             type="button"
             onClick={handleConfirm}
             disabled={!feedback.trim() || submitting}
-            className="bg-red-600 hover:bg-red-700 text-white font-medium"
+            className="bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-xl"
           >
             {submitting ? (
               <>

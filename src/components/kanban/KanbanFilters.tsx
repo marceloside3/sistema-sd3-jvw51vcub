@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, X, Filter } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import type { CreativeUser } from '@/services/kanban'
 
 interface KanbanFiltersProps {
@@ -46,7 +46,7 @@ export function KanbanFilters({
     selectedPriority !== 'all'
 
   return (
-    <div className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-3 md:p-4 shadow-sm backdrop-blur-sm space-y-3">
+    <div className="bg-white border border-zinc-100 rounded-2xl p-3 md:p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
@@ -54,8 +54,8 @@ export function KanbanFilters({
           <Input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por título ou descrição..."
-            className="pl-9 bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 h-9 text-xs focus:ring-orange-500"
+            placeholder="Buscar por título, descrição ou projeto..."
+            className="pl-9 bg-zinc-50 border-zinc-200 text-zinc-800 placeholder:text-zinc-400 h-9 text-xs focus:ring-orange-500 focus:border-orange-400 rounded-xl"
           />
         </div>
 
@@ -63,10 +63,10 @@ export function KanbanFilters({
         {isDirector && (
           <div className="w-full sm:w-[180px]">
             <Select value={selectedCreative} onValueChange={onCreativeChange}>
-              <SelectTrigger className="bg-zinc-950 border-zinc-700 text-zinc-200 h-9 text-xs">
+              <SelectTrigger className="bg-zinc-50 border-zinc-200 text-zinc-700 h-9 text-xs rounded-xl">
                 <SelectValue placeholder="Criativo" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
+              <SelectContent className="bg-white border-zinc-200 text-zinc-800">
                 <SelectItem value="all">Todos os Criativos</SelectItem>
                 <SelectItem value="unassigned">Não atribuídos</SelectItem>
                 {creatives.map((creative) => (
@@ -82,10 +82,10 @@ export function KanbanFilters({
         {/* Filter by Project */}
         <div className="w-full sm:w-[200px]">
           <Select value={selectedProject} onValueChange={onProjectChange}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-700 text-zinc-200 h-9 text-xs">
+            <SelectTrigger className="bg-zinc-50 border-zinc-200 text-zinc-700 h-9 text-xs rounded-xl">
               <SelectValue placeholder="Projeto" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100 max-h-60">
+            <SelectContent className="bg-white border-zinc-200 text-zinc-800 max-h-60">
               <SelectItem value="all">Todos os Projetos</SelectItem>
               {projects.map((proj) => (
                 <SelectItem key={proj.id} value={proj.id}>
@@ -99,14 +99,14 @@ export function KanbanFilters({
         {/* Filter by Priority */}
         <div className="w-full sm:w-[140px]">
           <Select value={selectedPriority} onValueChange={onPriorityChange}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-700 text-zinc-200 h-9 text-xs">
+            <SelectTrigger className="bg-zinc-50 border-zinc-200 text-zinc-700 h-9 text-xs rounded-xl">
               <SelectValue placeholder="Prioridade" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
+            <SelectContent className="bg-white border-zinc-200 text-zinc-800">
               <SelectItem value="all">Prioridades</SelectItem>
               <SelectItem value="urgent">Urgente</SelectItem>
               <SelectItem value="high">Alta</SelectItem>
-              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="normal">Média</SelectItem>
               <SelectItem value="low">Baixa</SelectItem>
             </SelectContent>
           </Select>
@@ -118,7 +118,7 @@ export function KanbanFilters({
             variant="ghost"
             size="sm"
             onClick={onReset}
-            className="h-9 px-2.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 shrink-0"
+            className="h-9 px-2.5 text-xs text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 shrink-0 rounded-xl"
           >
             <X className="w-3.5 h-3.5 mr-1" />
             Limpar

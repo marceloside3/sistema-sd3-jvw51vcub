@@ -54,43 +54,43 @@ export function AssignDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px] bg-zinc-950 border-zinc-800 text-zinc-100">
+      <DialogContent className="sm:max-w-[440px] bg-white border-zinc-200 text-zinc-900 rounded-2xl">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-orange-400">
+          <div className="flex items-center gap-2 text-orange-500">
             <UserCheck className="w-5 h-5" />
-            <DialogTitle className="text-lg font-semibold text-zinc-100">
+            <DialogTitle className="text-lg font-semibold text-zinc-900">
               Distribuir Demanda
             </DialogTitle>
           </div>
-          <DialogDescription className="text-zinc-400 text-xs">
+          <DialogDescription className="text-zinc-500 text-xs">
             Atribua um criativo da equipe para mover a demanda para{' '}
-            <strong className="text-blue-400 font-medium">A Fazer</strong>.
+            <strong className="text-blue-500 font-medium">A Fazer</strong>.
           </DialogDescription>
         </DialogHeader>
 
         {demand && (
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 my-2 space-y-1">
-            <p className="text-xs font-semibold text-zinc-200 line-clamp-1">{demand.title}</p>
+          <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-3 my-2 space-y-1">
+            <p className="text-xs font-semibold text-zinc-800 line-clamp-1">{demand.title}</p>
             {demand.project && (
-              <p className="text-[11px] text-zinc-400">
-                Projeto: <span className="text-zinc-300">{demand.project.name}</span>
+              <p className="text-[11px] text-zinc-500">
+                Projeto: <span className="text-zinc-700">{demand.project.name}</span>
               </p>
             )}
           </div>
         )}
 
         <div className="space-y-3 py-2">
-          <Label htmlFor="creative-select" className="text-xs font-medium text-zinc-300">
-            Selecione o Criativo Responsável <span className="text-red-400">*</span>
+          <Label htmlFor="creative-select" className="text-xs font-medium text-zinc-700">
+            Selecione o Criativo Responsável <span className="text-rose-500">*</span>
           </Label>
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
             <SelectTrigger
               id="creative-select"
-              className="w-full bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:ring-orange-500"
+              className="w-full bg-zinc-50 border-zinc-200 text-zinc-800 placeholder:text-zinc-400 focus:ring-orange-500 rounded-xl"
             >
               <SelectValue placeholder="Escolha um criativo..." />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
+            <SelectContent className="bg-white border-zinc-200 text-zinc-800">
               {availableCreatives.length === 0 ? (
                 <div className="p-2 text-xs text-zinc-400 text-center">
                   Nenhum criativo disponível
@@ -100,10 +100,10 @@ export function AssignDialog({
                   <SelectItem
                     key={creative.id}
                     value={creative.id}
-                    className="focus:bg-zinc-800 focus:text-orange-400 cursor-pointer"
+                    className="focus:bg-orange-50 focus:text-orange-600 cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-semibold">
+                      <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-semibold">
                         {creative.full_name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex flex-col text-left">
@@ -124,7 +124,7 @@ export function AssignDialog({
             variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={submitting}
-            className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            className="text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
           >
             Cancelar
           </Button>
@@ -132,7 +132,7 @@ export function AssignDialog({
             type="button"
             onClick={handleConfirm}
             disabled={!selectedUserId || submitting}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-medium"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl"
           >
             {submitting ? (
               <>

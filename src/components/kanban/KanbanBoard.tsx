@@ -301,7 +301,7 @@ export function KanbanBoard({
       />
 
       {/* Horizontal Scrollable Kanban Columns */}
-      <div className="flex gap-4 overflow-x-auto pb-6 pt-1 items-start scrollbar-thin scrollbar-thumb-zinc-700">
+      <div className="flex gap-4 overflow-x-auto pb-6 pt-1 items-start">
         {stages.map((stage) => (
           <KanbanColumn
             key={stage.id}

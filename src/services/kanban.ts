@@ -44,6 +44,8 @@ export interface KanbanDemand {
   to_area_id: string | null
   from_area_id: string | null
   created_at: string
+  comment_count?: number
+  attachment_count?: number
   project?: {
     id: string
     name: string
@@ -183,6 +185,9 @@ export async function getKanbanDemands(): Promise<{
   const demandIds = (demandsData || []).map((d: any) => d.id)
   let assignmentsByDemand: Record<string, DemandAssignment[]> = {}
 
+  let commentCountByDemand: Record<string, number> = {}
+  let attachmentCountByDemand: Record<string, number> = {}
+
   if (demandIds.length > 0) {
     const { data: assignmentsData, error: assignmentsError } = await db
       .from('demand_assignments')
@@ -209,6 +214,38 @@ export async function getKanbanDemands(): Promise<{
             created_at: curr.created_at,
             user: curr.user,
           })
+          return acc
+        },
+        {},
+      )
+    }
+
+    // Comment counts per demand
+    const { data: commentsAgg, error: commentsError } = await db
+      .from('demand_comments')
+      .select('demand_id')
+      .in('demand_id', demandIds)
+
+    if (!commentsError && commentsAgg) {
+      commentCountByDemand = (commentsAgg as any[]).reduce(
+        (acc: Record<string, number>, row: any) => {
+          acc[row.demand_id] = (acc[row.demand_id] || 0) + 1
+          return acc
+        },
+        {},
+      )
+    }
+
+    // Attachment counts per demand
+    const { data: attachmentsAgg, error: attachmentsError } = await db
+      .from('demand_attachments')
+      .select('demand_id')
+      .in('demand_id', demandIds)
+
+    if (!attachmentsError && attachmentsAgg) {
+      attachmentCountByDemand = (attachmentsAgg as any[]).reduce(
+        (acc: Record<string, number>, row: any) => {
+          acc[row.demand_id] = (acc[row.demand_id] || 0) + 1
           return acc
         },
         {},
@@ -245,6 +282,8 @@ export async function getKanbanDemands(): Promise<{
       to_area_id: d.to_area_id,
       from_area_id: d.from_area_id,
       created_at: d.created_at,
+      comment_count: commentCountByDemand[d.id] || 0,
+      attachment_count: attachmentCountByDemand[d.id] || 0,
       project: Array.isArray(d.project) ? d.project[0] : d.project,
       assignments,
       assigned_creative: assignedCreative,
