@@ -8,6 +8,7 @@ import { ArrowLeft, Save } from 'lucide-react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { getClientById, createClient, updateClient } from '@/services/clients'
 import { LpuUploadSection } from '@/components/admin/LpuUploadSection'
+import { ClientFormSkeleton } from '@/components/admin/ClientFormSkeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -98,6 +99,7 @@ export default function ClientFormPage() {
   const canManage =
     currentUser?.profile?.is_admin === true || currentUser?.profile?.is_director === true
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -124,6 +126,7 @@ export default function ClientFormPage() {
   useEffect(() => {
     if (id) {
       setLoading(true)
+      setInitialLoading(true)
       getClientById(id)
         .then((data) => {
           form.reset({
@@ -141,7 +144,10 @@ export default function ClientFormPage() {
           toast({ title: 'Erro ao carregar', variant: 'destructive' })
           navigate('/admin/clientes')
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          setLoading(false)
+          setInitialLoading(false)
+        })
     }
   }, [id, form, navigate])
 
@@ -188,6 +194,10 @@ export default function ClientFormPage() {
         form.setValue('code', '')
       }
     }
+  }
+
+  if (initialLoading) {
+    return <ClientFormSkeleton />
   }
 
   return (

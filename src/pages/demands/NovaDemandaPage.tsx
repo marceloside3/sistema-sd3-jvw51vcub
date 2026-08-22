@@ -39,6 +39,7 @@ import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
 import { getLpuItems, LpuItem, findMatchingLpuItem } from '@/services/lpu'
 import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
+import { NovaDemandaSkeleton } from '@/components/demands/NovaDemandaSkeleton'
 
 interface DemandItem {
   item_name: string
@@ -108,6 +109,7 @@ export default function NovaDemandaPage() {
   // Separate state for the link references input (one link per line)
   const [refLinksInput, setRefLinksInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
     null,
@@ -194,30 +196,32 @@ export default function NovaDemandaPage() {
   )
 
   useEffect(() => {
-    getProjects().then((res) => {
-      const filtered = res.filter((p) => ['active', 'in_progress'].includes(p.status))
-      setProjects(filtered)
-      if (initialProjectId) {
-        setFormData((prev) => ({ ...prev, project_id: initialProjectId }))
-      }
-    })
-    supabase
-      .from('areas')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order')
-      .then(({ data }) => {
-        if (data) setAreas(data)
-      })
-    // Load active clients for the Financeiro area dropdown
-    supabase
-      .from('clients')
-      .select('id, code, name, cnpj')
-      .eq('status', 'active')
-      .order('name', { ascending: true })
-      .then(({ data }) => {
-        if (data) setClients(data)
-      })
+    Promise.all([
+      getProjects().then((res) => {
+        const filtered = res.filter((p) => ['active', 'in_progress'].includes(p.status))
+        setProjects(filtered)
+        if (initialProjectId) {
+          setFormData((prev) => ({ ...prev, project_id: initialProjectId }))
+        }
+      }),
+      supabase
+        .from('areas')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order')
+        .then(({ data }) => {
+          if (data) setAreas(data)
+        }),
+      // Load active clients for the Financeiro area dropdown
+      supabase
+        .from('clients')
+        .select('id, code, name, cnpj')
+        .eq('status', 'active')
+        .order('name', { ascending: true })
+        .then(({ data }) => {
+          if (data) setClients(data)
+        }),
+    ]).finally(() => setInitialLoading(false))
   }, [])
 
   useEffect(() => {
@@ -529,6 +533,10 @@ export default function NovaDemandaPage() {
   }
 
   const hasLpu = lpuItems.length > 0
+
+  if (initialLoading) {
+    return <NovaDemandaSkeleton />
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">

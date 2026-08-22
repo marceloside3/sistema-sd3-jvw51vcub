@@ -25,6 +25,7 @@ import {
   maskAgency,
   maskAccount,
 } from '@/lib/validators'
+import { SupplierFormSkeleton } from '@/components/suppliers/SupplierFormSkeleton'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -124,6 +125,10 @@ export default function SupplierFormPage() {
 
   const docLabel = form.type === 'PF' ? 'CPF' : 'CNPJ'
   const docMask = form.type === 'PF' ? maskCPF : maskCNPJ
+
+  if (loading) {
+    return <SupplierFormSkeleton />
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
