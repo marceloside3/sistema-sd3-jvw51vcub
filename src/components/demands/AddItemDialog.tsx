@@ -270,7 +270,7 @@ export function AddItemDialog({
                 2. Quantidades e Valor de Venda
               </span>
               {isLpu ? (
-                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-200 text-[10px]">
+                <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px]">
                   Preço fixado pela LPU
                 </Badge>
               ) : (

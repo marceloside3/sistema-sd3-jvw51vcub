@@ -58,7 +58,7 @@ export function HomeKpiCards({
         <Card
           key={card.label}
           className={cn(
-            'hover-card-elevate border-l-4 dark:bg-zinc-900 dark:border-zinc-800',
+            'hover-card-elevate border-l-4',
             card.border,
           )}
         >
@@ -66,12 +66,12 @@ export function HomeKpiCards({
             <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {card.label}
             </CardTitle>
-            <div className={cn('p-1.5 rounded-lg dark:bg-zinc-800', card.bg)}>
+            <div className={cn('p-1.5 rounded-lg', card.bg)}>
               <card.icon className={cn('h-4 w-4', card.color)} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{card.value}</div>
+            <div className="text-2xl font-bold text-zinc-900">{card.value}</div>
           </CardContent>
         </Card>
       ))}

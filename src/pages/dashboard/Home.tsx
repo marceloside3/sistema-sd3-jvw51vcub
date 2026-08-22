@@ -22,12 +22,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                'rounded-2xl border border-zinc-200/60 dark:border-zinc-800 p-5 space-y-3',
-              )}
-            >
+            <div key={i} className={cn('rounded-2xl border border-zinc-200/60 p-5 space-y-3')}>
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-24 rounded-lg" />
                 <Skeleton className="h-8 w-8 rounded-xl" />

@@ -719,14 +719,14 @@ export function DemandItemsSection({
                                     {item.is_custom ? (
                                       <Badge
                                         variant="outline"
-                                        className="text-[10px] bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300"
+                                        className="text-[10px] bg-amber-50 text-amber-800 border-amber-200"
                                       >
                                         Personalizado
                                       </Badge>
                                     ) : (
                                       <Badge
                                         variant="outline"
-                                        className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
+                                        className="text-[10px] bg-blue-50 text-blue-700 border-blue-200"
                                       >
                                         LPU
                                       </Badge>
@@ -813,11 +813,11 @@ export function DemandItemsSection({
                               {/* Status do Custo */}
                               <TableCell className="text-center align-middle">
                                 {completed ? (
-                                  <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 text-[10px] font-semibold">
+                                  <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200 text-[10px] font-semibold">
                                     Concluído
                                   </Badge>
                                 ) : (
-                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300 border-amber-200 text-[10px] font-medium">
+                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[10px] font-medium">
                                     Pendente
                                   </Badge>
                                 )}
@@ -827,7 +827,7 @@ export function DemandItemsSection({
                               <TableCell className="text-center align-middle">
                                 <div className="flex items-center justify-center gap-1">
                                   {hasFinanceReq ? (
-                                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 whitespace-nowrap text-[10px]">
+                                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 whitespace-nowrap text-[10px]">
                                       <CheckCircle2 className="w-3 h-3 mr-1" />
                                       No Financeiro
                                     </Badge>

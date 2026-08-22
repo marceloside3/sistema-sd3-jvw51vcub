@@ -17,7 +17,6 @@ interface KanbanBoardProps {
   creatives: CreativeUser[]
   isDirector: boolean
   currentUserId?: string
-  isDark?: boolean
   onRefresh: () => Promise<void>
   /** Fired when a card is clicked — opens the detail sheet over the Kanban. */
   onCardClick?: (demand: KanbanDemand) => void
@@ -29,7 +28,6 @@ export function KanbanBoard({
   creatives,
   isDirector,
   currentUserId,
-  isDark,
   onRefresh,
   onCardClick,
 }: KanbanBoardProps) {
@@ -288,7 +286,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="space-y-4 dark:bg-slate-900">
+    <div className="space-y-4">
       {/* Filters Bar */}
       <KanbanFilters
         search={search}

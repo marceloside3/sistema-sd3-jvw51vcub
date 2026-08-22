@@ -39,30 +39,26 @@ function getPriorityInfo(priority: string) {
     case 'urgent':
       return {
         label: 'Urgente',
-        badge:
-          'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900',
+        badge: 'bg-rose-50 text-rose-600 border-rose-100',
         dot: 'bg-rose-500',
       }
     case 'high':
       return {
         label: 'Alta',
-        badge:
-          'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900',
+        badge: 'bg-red-50 text-red-600 border-red-100',
         dot: 'bg-red-500',
       }
     case 'low':
       return {
         label: 'Baixa',
-        badge:
-          'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900',
+        badge: 'bg-emerald-50 text-emerald-600 border-emerald-100',
         dot: 'bg-emerald-500',
       }
     case 'normal':
     default:
       return {
         label: 'Média',
-        badge:
-          'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-900',
+        badge: 'bg-orange-50 text-orange-600 border-orange-100',
         dot: 'bg-orange-500',
       }
   }
@@ -180,7 +176,6 @@ export function KanbanCard({
   const openTimer = useRef<number | null>(null)
   const closeTimer = useRef<number | null>(null)
   const [tooltipOpen, setTooltipOpen] = useState(false)
-  const [tooltipDark, setTooltipDark] = useState(false)
   const [tooltipPos, setTooltipPos] = useState<{
     top: number
     left: number
@@ -211,10 +206,6 @@ export function KanbanCard({
       const el = cardRef.current
       if (!el) return
       const r = el.getBoundingClientRect()
-      // Detect scoped dark theme (the criacao page root carries the `dark` class).
-      // The tooltip is portaled to document.body (outside the .dark subtree), so we
-      // capture the theme here and apply direct conditional classes to the popover.
-      setTooltipDark(el.closest('.dark') != null)
       const showBelow = r.top < 240
       const clampedLeft = Math.min(Math.max(r.left + r.width / 2, 150), window.innerWidth - 150)
       setTooltipPos({
@@ -249,7 +240,7 @@ export function KanbanCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        'group relative bg-white rounded-2xl p-3.5 border border-zinc-100 transition-all duration-200 dark:bg-slate-700 dark:border-slate-600',
+        'group relative bg-white rounded-2xl p-3.5 border border-zinc-100 transition-all duration-200',
         'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.03)]',
         canDrag
           ? 'cursor-grab active:cursor-grabbing hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:-translate-y-0.5'
@@ -261,13 +252,13 @@ export function KanbanCard({
         <button
           type="button"
           onClick={() => onCardClick?.(demand)}
-          className="block text-left w-full text-[13px] font-semibold text-zinc-900 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors dark:text-slate-100 dark:group-hover:text-indigo-400"
+          className="block text-left w-full text-[13px] font-semibold text-zinc-900 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors"
         >
           {demand.title}
         </button>
         {demand.project && (
           <span
-            className="inline-block mt-1 text-[10px] font-medium text-zinc-400 truncate max-w-full dark:text-slate-400"
+            className="inline-block mt-1 text-[10px] font-medium text-zinc-400 truncate max-w-full"
             title={demand.project.name}
           >
             {demand.project.project_code || demand.project.name}
@@ -287,26 +278,26 @@ export function KanbanCard({
           {priorityInfo.label}
         </span>
         {demand.tipo_criacao && (
-          <span className="text-[10px] text-zinc-400 font-medium capitalize dark:text-slate-400">
+          <span className="text-[10px] text-zinc-400 font-medium capitalize">
             {demand.tipo_criacao.replace('_', ' ')}
           </span>
         )}
       </div>
 
       {/* Footer: avatar + meta */}
-      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-zinc-100 dark:border-slate-600">
+      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-zinc-100">
         {/* Left: avatar + due date */}
         <div className="flex items-center gap-2 min-w-0">
           {demand.assigned_creative ? (
             <div
-              className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 ring-2 ring-white dark:ring-slate-700"
+              className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 ring-2 ring-white"
               title={demand.assigned_creative.full_name}
             >
               {initials}
             </div>
           ) : (
             <div
-              className="w-6 h-6 rounded-full bg-zinc-100 text-zinc-400 flex items-center justify-center text-[10px] font-bold shrink-0 ring-2 ring-white dark:bg-slate-600 dark:text-slate-300 dark:ring-slate-700"
+              className="w-6 h-6 rounded-full bg-zinc-100 text-zinc-400 flex items-center justify-center text-[10px] font-bold shrink-0 ring-2 ring-white"
               title="Não atribuído"
             >
               ?
@@ -317,15 +308,12 @@ export function KanbanCard({
             <div
               className={cn(
                 'flex items-center gap-1 text-[10px] font-medium min-w-0',
-                isUrgent ? 'text-rose-600' : 'text-zinc-500 dark:text-slate-400',
+                isUrgent ? 'text-rose-600' : 'text-zinc-500',
               )}
               title={`Prazo: ${demand.due_date}`}
             >
               <Clock
-                className={cn(
-                  'w-3 h-3 shrink-0',
-                  isUrgent ? 'text-rose-500' : 'text-zinc-400 dark:text-slate-500',
-                )}
+                className={cn('w-3 h-3 shrink-0', isUrgent ? 'text-rose-500' : 'text-zinc-400')}
               />
               <span className="truncate">{due.label}</span>
             </div>
@@ -335,13 +323,13 @@ export function KanbanCard({
         {/* Right: counters + check */}
         <div className="flex items-center gap-2 shrink-0">
           {commentCount > 0 && (
-            <div className="flex items-center gap-0.5 text-[10px] text-zinc-400 font-medium dark:text-slate-400">
+            <div className="flex items-center gap-0.5 text-[10px] text-zinc-400 font-medium">
               <MessageSquare className="w-3 h-3" />
               <span>{commentCount}</span>
             </div>
           )}
           {attachmentCount > 0 && (
-            <div className="flex items-center gap-0.5 text-[10px] text-zinc-400 font-medium dark:text-slate-400">
+            <div className="flex items-center gap-0.5 text-[10px] text-zinc-400 font-medium">
               <Paperclip className="w-3 h-3" />
               <span>{attachmentCount}</span>
             </div>
@@ -362,7 +350,7 @@ export function KanbanCard({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="p-0.5 rounded text-zinc-300 hover:text-zinc-700 hover:bg-zinc-100 transition-colors outline-none dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-600"
+                className="p-0.5 rounded text-zinc-300 hover:text-zinc-700 hover:bg-zinc-100 transition-colors outline-none"
                 title="Ações do card"
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
@@ -486,30 +474,17 @@ export function KanbanCard({
                 tooltipPos.placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
               zIndex: 9999,
             }}
-            className={cn(
-              'pointer-events-auto w-72 rounded-xl border p-3 shadow-xl text-xs animate-fade-in',
-              tooltipDark
-                ? 'bg-slate-700 border-slate-600 text-slate-100'
-                : 'bg-white border-zinc-200 text-zinc-700',
-            )}
+            className="pointer-events-auto w-72 rounded-xl border border-zinc-200 bg-white p-3 shadow-xl text-xs text-zinc-700 animate-fade-in"
           >
             <div className="flex items-center gap-1.5 font-semibold mb-1.5">
               {activity?.type === 'comment' ? (
-                <MessageSquare
-                  className={cn('w-3.5 h-3.5', tooltipDark ? 'text-orange-400' : 'text-orange-500')}
-                />
+                <MessageSquare className="w-3.5 h-3.5 text-orange-500" />
               ) : activity?.type === 'attachment' ? (
-                <Paperclip
-                  className={cn('w-3.5 h-3.5', tooltipDark ? 'text-sky-400' : 'text-sky-500')}
-                />
+                <Paperclip className="w-3.5 h-3.5 text-sky-500" />
               ) : (
-                <Clock
-                  className={cn('w-3.5 h-3.5', tooltipDark ? 'text-slate-400' : 'text-zinc-400')}
-                />
+                <Clock className="w-3.5 h-3.5 text-zinc-400" />
               )}
-              <span className={tooltipDark ? 'text-slate-200' : 'text-zinc-800'}>
-                Atividade recente
-              </span>
+              <span className="text-zinc-800">Atividade recente</span>
             </div>
 
             {activity ? (
@@ -518,24 +493,17 @@ export function KanbanCard({
                   className={cn(
                     'leading-snug break-words',
                     activity.type === 'attachment' && 'truncate',
-                    tooltipDark ? 'text-slate-300' : 'text-zinc-600',
+                    'text-zinc-600',
                   )}
                 >
                   {activity.text}
                 </p>
-                <p
-                  className={cn(
-                    'mt-1.5 text-[10px]',
-                    tooltipDark ? 'text-slate-400' : 'text-zinc-400',
-                  )}
-                >
+                <p className="mt-1.5 text-[10px] text-zinc-400">
                   {activity.meta} • {formatDateTime(activity.date)}
                 </p>
               </>
             ) : (
-              <p className={cn('italic', tooltipDark ? 'text-slate-400' : 'text-zinc-400')}>
-                Nenhuma atividade recente
-              </p>
+              <p className="italic text-zinc-400">Nenhuma atividade recente</p>
             )}
           </div>,
           document.body,

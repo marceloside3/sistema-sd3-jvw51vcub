@@ -7,7 +7,6 @@ import { DemandDetailSheet } from '@/components/kanban/DemandDetailSheet'
 import { KanbanLoadingSkeleton } from '@/components/kanban/KanbanLoadingSkeleton'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
-import { useTheme } from '@/hooks/use-theme'
 import {
   getKanbanStages,
   getCreationTeamUsers,
@@ -18,7 +17,6 @@ import {
 } from '@/services/kanban'
 
 export default function KanbanPage() {
-  const { isDark } = useTheme()
   const { data: currentUser, loading: userLoading } = useCurrentUser()
   const { toast } = useToast()
 
@@ -113,17 +111,17 @@ export default function KanbanPage() {
   return (
     <div className="space-y-6 max-w-full min-h-[calc(100vh-6rem)] transition-colors">
       {/* Header & Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-5 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center dark:bg-orange-950/40 dark:text-orange-400">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-zinc-900 flex items-center gap-2 dark:text-slate-100">
+              <h1 className="text-xl font-bold tracking-tight text-zinc-900 flex items-center gap-2">
                 Criação - Kanban
               </h1>
-              <p className="text-xs text-zinc-500 dark:text-slate-400">
+              <p className="text-xs text-zinc-500">
                 Fluxo de produção visual e distribuição de peças da equipe criativa
               </p>
             </div>
@@ -131,10 +129,10 @@ export default function KanbanPage() {
         </div>
         {/* Header Actions & Profile Badge */}
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-100 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:bg-slate-800 dark:border-slate-700">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-100 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
             <Users className="w-3.5 h-3.5 text-orange-500" />
-            <span className="text-zinc-400 dark:text-slate-400">Perfil:</span>
-            <span className="font-semibold text-zinc-700 dark:text-slate-200">
+            <span className="text-zinc-400">Perfil:</span>
+            <span className="font-semibold text-zinc-700">
               {isDirector ? 'Diretor de Criação' : 'Criativo'}
             </span>
           </div>
@@ -144,7 +142,7 @@ export default function KanbanPage() {
             size="sm"
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className="border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 text-xs h-8 rounded-xl"
+            className="border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 text-xs h-8 rounded-xl"
           >
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
             Atualizar
@@ -159,7 +157,6 @@ export default function KanbanPage() {
         creatives={creatives}
         isDirector={isDirector}
         currentUserId={currentUser?.id}
-        isDark={isDark}
         onRefresh={loadKanbanData}
         onCardClick={handleCardClick}
       />

@@ -422,12 +422,12 @@ export function ItemCostEditorDialog({
               />
 
               {isComplete ? (
-                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 text-xs font-semibold">
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs font-semibold">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
                   Custos Completos
                 </Badge>
               ) : (
-                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200 text-xs">
+                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
                   <AlertCircle className="w-3 h-3 mr-1" />
                   Pendente Fornecedor/Custo
                 </Badge>

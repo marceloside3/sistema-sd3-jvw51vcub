@@ -10,7 +10,6 @@ interface KanbanColumnProps {
   allStages: KanbanStage[]
   isDirector: boolean
   currentUserId?: string
-  isDark?: boolean
   onDragStart: (e: React.DragEvent, demand: KanbanDemand) => void
   onDropDemand: (targetStage: KanbanStage) => void
   onAssignClick: (demand: KanbanDemand) => void
@@ -51,7 +50,6 @@ export function KanbanColumn({
   allStages,
   isDirector,
   currentUserId,
-  isDark,
   onDragStart,
   onDropDemand,
   onAssignClick,
@@ -61,11 +59,6 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [collapsed, setCollapsed] = useState<boolean>(() => readCollapsed(stage.id))
-
-  // Dark mode is now driven globally by the `.dark` class on <html>, but the
-  // column still needs to know whether to render its slate-800 base + inline
-  // color tweaks, so we keep a local `dark` flag derived from the prop.
-  const dark = Boolean(isDark)
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -97,18 +90,12 @@ export function KanbanColumn({
   const tintStrong = hexToRgba(stage.color, 0.12)
   const borderColor = hexToRgba(stage.color, 0.2)
 
-  // Inline backgroundColor/borderColor override Tailwind classes, so we branch
-  // per theme here: light keeps the soft stage-color tint; dark uses slate-800
-  // as the column base (spec: colunas com fundo slate-800).
-  const containerStyle: React.CSSProperties = dark
-    ? {
-        backgroundColor: isDragOver ? hexToRgba(stage.color, 0.18) : 'rgb(30 41 59)',
-        borderColor: isDragOver ? stage.color : hexToRgba(stage.color, 0.35),
-      }
-    : {
-        backgroundColor: isDragOver ? tintStrong : tint,
-        borderColor: isDragOver ? stage.color : borderColor,
-      }
+  // Inline backgroundColor/borderColor override Tailwind classes.
+  // Light keeps the soft stage-color tint.
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: isDragOver ? tintStrong : tint,
+    borderColor: isDragOver ? stage.color : borderColor,
+  }
 
   // Collapsed view: thin vertical strip (~52px) with count + vertical title.
   // Stays in the horizontal flow so it works as a shortcut and doesn't break scroll.
@@ -127,7 +114,7 @@ export function KanbanColumn({
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100/60 transition-colors dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-700/60"
+          className="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100/60 transition-colors"
           title="Expandir coluna"
           aria-label={`Expandir coluna ${stage.name}`}
         >
@@ -172,7 +159,7 @@ export function KanbanColumn({
         </span>
         <h3
           className="text-sm font-semibold tracking-tight truncate"
-          style={{ color: hexToRgba(stage.color, dark ? 0.95 : 0.85) }}
+          style={{ color: hexToRgba(stage.color, 0.85) }}
         >
           {stage.name}
         </h3>
@@ -180,7 +167,7 @@ export function KanbanColumn({
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="ml-auto p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100/60 transition-colors dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-700/60"
+          className="ml-auto p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100/60 transition-colors"
           title="Colapsar coluna"
           aria-label={`Colapsar coluna ${stage.name}`}
         >
@@ -191,12 +178,7 @@ export function KanbanColumn({
       {/* Cards List */}
       <div className="flex-1 px-3 space-y-2.5 overflow-y-auto max-h-[calc(100vh-340px)] min-h-[120px] pb-3">
         {demands.length === 0 ? (
-          <EmptyDropZone
-            isDragOver={isDragOver}
-            tint={tintStrong}
-            color={stage.color}
-            dark={dark}
-          />
+          <EmptyDropZone isDragOver={isDragOver} tint={tintStrong} color={stage.color} />
         ) : (
           demands.map((demand) => {
             const isMyCard = Boolean(
@@ -232,22 +214,20 @@ function EmptyDropZone({
   isDragOver,
   tint,
   color,
-  dark,
 }: {
   isDragOver: boolean
   tint: string
   color: string
-  dark: boolean
 }): ReactNode {
   return (
     <div
       className="h-28 rounded-2xl border-2 border-dashed flex items-center justify-center text-center p-4 transition-colors"
       style={{
-        borderColor: isDragOver ? color : dark ? 'rgba(148,163,184,0.3)' : 'rgba(0,0,0,0.1)',
-        backgroundColor: isDragOver ? tint : dark ? 'rgba(51,65,85,0.4)' : 'rgba(255,255,255,0.4)',
+        borderColor: isDragOver ? color : 'rgba(0,0,0,0.1)',
+        backgroundColor: isDragOver ? tint : 'rgba(255,255,255,0.4)',
       }}
     >
-      <span className={cn('text-xs font-medium', dark ? 'text-slate-500' : 'text-zinc-400')}>
+      <span className={cn('text-xs font-medium text-zinc-400')}>
         {isDragOver ? 'Solte aqui para mover' : 'Nenhuma demanda'}
       </span>
     </div>

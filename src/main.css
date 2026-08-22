@@ -4,10 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ensure the `dark` variant is driven by the `.dark` class on <html>
-   so the global ThemeProvider can flip the whole system at once. */
-@custom-variant dark (&:where(.dark, .dark *));
-
 @layer base {
   :root {
     --background: 240 5% 96%;
@@ -54,51 +50,6 @@
     --chart-3: 0 84% 60%;
     --chart-4: 43 74% 61%;
     --chart-5: 240 4% 50%;
-  }
-
-  .dark {
-    --background: 240 6% 10%;
-    --foreground: 240 5% 95%;
-
-    --card: 240 5% 14%;
-    --card-foreground: 240 5% 95%;
-
-    --popover: 240 5% 14%;
-    --popover-foreground: 240 5% 95%;
-
-    --primary: 22 92% 52%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 240 4% 18%;
-    --secondary-foreground: 240 5% 90%;
-
-    --muted: 240 4% 18%;
-    --muted-foreground: 240 4% 60%;
-
-    --accent: 240 4% 18%;
-    --accent-foreground: 240 5% 95%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 240 4% 18%;
-    --input: 240 4% 20%;
-    --ring: 22 92% 52%;
-
-    --sidebar-background: 240 6% 8%;
-    --sidebar-foreground: 240 5% 75%;
-    --sidebar-primary: 22 92% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 14%;
-    --sidebar-accent-foreground: 240 5% 95%;
-    --sidebar-border: 240 4% 14%;
-    --sidebar-ring: 22 92% 52%;
-
-    --chart-1: 22 92% 52%;
-    --chart-2: 240 6% 40%;
-    --chart-3: 0 84% 60%;
-    --chart-4: 43 74% 61%;
-    --chart-5: 240 4% 60%;
   }
 
   * {

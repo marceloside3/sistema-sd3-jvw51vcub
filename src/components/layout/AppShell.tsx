@@ -19,7 +19,6 @@ import {
 } from 'lucide-react'
 
 import { NotificationBell } from '@/components/notifications/NotificationBell'
-import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
@@ -221,12 +220,12 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   }
 
   return (
-    <header className="h-16 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800/80 sticky top-0 z-10 transition-colors duration-300">
+    <header className="h-16 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md border-b border-zinc-200/80 sticky top-0 z-10 transition-colors duration-300">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:text-zinc-50 dark:hover:bg-zinc-800 transition-all duration-300 ease-smooth rounded-lg"
+          className="md:hidden text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-300 ease-smooth rounded-lg"
           onClick={onMenuClick}
         >
           <Menu className="w-5 h-5" />
@@ -241,24 +240,19 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4 ml-auto">
-        <ThemeToggle />
         <NotificationBell />
         {data && (
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-none">
-              {data.full_name}
-            </span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              {data.profile?.name || 'Sem perfil'}
-            </span>
+            <span className="text-sm font-medium text-zinc-900 leading-none">{data.full_name}</span>
+            <span className="text-xs text-zinc-500 mt-1">{data.profile?.name || 'Sem perfil'}</span>
           </div>
         )}
-        <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700" />
+        <div className="w-px h-8 bg-zinc-200" />
         <Button
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-950/40 transition-all duration-300 ease-smooth rounded-lg"
+          className="text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300 ease-smooth rounded-lg"
         >
           <LogOut className="w-4 h-4 md:mr-2" />
           <span className="hidden md:inline">Sair</span>
@@ -272,7 +266,7 @@ export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-50/80 dark:bg-zinc-950 transition-colors duration-300">
+    <div className="flex h-screen overflow-hidden bg-zinc-50/80 transition-colors duration-300">
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />

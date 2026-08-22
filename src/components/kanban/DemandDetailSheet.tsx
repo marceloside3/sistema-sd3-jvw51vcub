@@ -66,7 +66,7 @@ export function DemandDetailSheet({
               asChild
               size="sm"
               variant="outline"
-              className="shrink-0 h-8 text-xs rounded-xl border-zinc-200 dark:border-slate-700"
+              className="shrink-0 h-8 text-xs rounded-xl border-zinc-200"
               title="Abrir a página completa da demanda em uma nova aba"
             >
               <a href={`/demandas/${demandId}`} target="_blank" rel="noopener noreferrer">

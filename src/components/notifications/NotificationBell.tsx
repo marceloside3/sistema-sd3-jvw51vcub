@@ -174,40 +174,34 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 dark:bg-zinc-900 dark:border-zinc-800" align="end">
-        <div className="flex items-center justify-between px-4 py-3 border-b dark:border-zinc-800">
-          <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Notificações</h3>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h3 className="font-semibold text-sm text-zinc-900">Notificações</h3>
           <Link
             to="/notificacoes"
-            className="text-xs text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 hover:underline transition-colors"
+            className="text-xs text-orange-500 hover:text-orange-600 hover:underline transition-colors"
           >
             Ver todas
           </Link>
         </div>
         <div className="max-h-[300px] overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
-              Nenhuma notificação
-            </div>
+            <div className="p-4 text-center text-sm text-zinc-500">Nenhuma notificação</div>
           ) : (
             notifications.map((n) => (
               <div
                 key={n.id}
-                className={`p-3 border-b last:border-0 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 transition-colors ${!n.is_read ? 'bg-orange-50/30 dark:bg-orange-950/20' : ''}`}
+                className={`p-3 border-b last:border-0 cursor-pointer hover:bg-orange-50/50 transition-colors ${!n.is_read ? 'bg-orange-50/30' : ''}`}
                 onClick={() => handleRead(n)}
               >
                 <div className="flex justify-between items-start mb-1 gap-2">
-                  <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100 leading-tight">
-                    {n.title}
-                  </span>
+                  <span className="font-medium text-sm text-zinc-900 leading-tight">{n.title}</span>
                   {!n.is_read && (
                     <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500 mt-1" />
                   )}
                 </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-1">
-                  {n.message}
-                </p>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 block">
+                <p className="text-xs text-zinc-600 line-clamp-2 mt-1">{n.message}</p>
+                <span className="text-[10px] text-zinc-400 mt-2 block">
                   {format(new Date(n.created_at), "dd/MM 'às' HH:mm")}
                 </span>
               </div>

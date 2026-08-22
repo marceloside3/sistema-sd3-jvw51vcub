@@ -523,7 +523,7 @@ export function DemandDetails({
             )}
           </div>
           {demand.cancellation_reason && (
-            <div className="mt-3 bg-red-50 dark:bg-red-950/40 p-2.5 rounded border border-red-200 dark:border-red-800/50 text-xs text-red-800 dark:text-red-300 flex items-center gap-2">
+            <div className="mt-3 bg-red-50 p-2.5 rounded border border-red-200 text-xs text-red-800 flex items-center gap-2">
               <strong className="font-semibold">Motivo ({demand.status}):</strong>
               <span>{demand.cancellation_reason}</span>
             </div>

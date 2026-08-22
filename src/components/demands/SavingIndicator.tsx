@@ -27,9 +27,9 @@ export function SavingIndicator({
         'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-all duration-300 border shadow-2xs select-none',
         status === 'saving' && 'text-muted-foreground bg-muted/80 border-border animate-pulse',
         status === 'saved' &&
-          'text-emerald-700 bg-emerald-50 border-emerald-200/80 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800/50',
+          'text-emerald-700 bg-emerald-50 border-emerald-200/80',
         status === 'error' &&
-          'text-destructive bg-destructive/10 border-destructive/30 dark:bg-destructive/20 dark:border-destructive/40',
+          'text-destructive bg-destructive/10 border-destructive/30',
         status === 'idle' &&
           lastSavedAt &&
           'text-muted-foreground bg-background/80 border-border/60',
@@ -44,7 +44,7 @@ export function SavingIndicator({
       )}
       {status === 'saved' && (
         <>
-          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
           <span>Salvo ✓</span>
         </>
       )}
