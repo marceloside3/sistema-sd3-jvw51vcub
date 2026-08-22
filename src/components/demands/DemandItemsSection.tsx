@@ -388,7 +388,7 @@ export function DemandItemsSection({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-primary text-primary-foreground shadow-xs">
+                <div className="p-2 rounded-xl bg-orange-500 text-white shadow-xs">
                   <Package className="w-5 h-5" />
                 </div>
                 <div>
@@ -497,25 +497,25 @@ export function DemandItemsSection({
               </div>
 
               <div className="md:col-span-7 flex flex-wrap items-center justify-start md:justify-end gap-3 text-muted-foreground">
-                <div className="flex items-center gap-1.5 bg-background/80 px-2.5 py-1 rounded-md border text-xs">
+                <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-zinc-200 text-xs">
                   <span className="text-muted-foreground">Total de Peças:</span>
                   <span className="font-semibold font-mono text-foreground">
                     {totalQuantitySum}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-background/80 px-2.5 py-1 rounded-md border text-xs">
+                <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-zinc-200 text-xs">
                   <span className="text-muted-foreground">Receita Venda:</span>
                   <span className="font-semibold font-mono text-foreground">
                     {formatCurrency(totalRevenueSum)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-background/80 px-2.5 py-1 rounded-md border text-xs">
+                <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-zinc-200 text-xs">
                   <span className="text-muted-foreground">Custo Total:</span>
                   <span className="font-semibold font-mono text-foreground">
                     {formatCurrency(totalCostSum)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-background/80 px-2.5 py-1 rounded-md border text-xs">
+                <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-zinc-200 text-xs">
                   <span className="text-muted-foreground">Margem Geral:</span>
                   <span className={`font-bold font-mono ${getMarginColor(totalMarginPct)}`}>
                     {formatPercent(totalMarginPct)}
@@ -530,7 +530,7 @@ export function DemandItemsSection({
           {loading ? (
             <div className="space-y-3 py-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                <Skeleton key={i} className="h-14 w-full rounded-xl" />
               ))}
             </div>
           ) : items.length === 0 ? (
@@ -593,7 +593,7 @@ export function DemandItemsSection({
               {/* ABA 1: VISÃO INTERNA COMPLETA COM CUSTOS, FORNECEDORES E MARGENS */}
               <TabsContent value="internal" className="m-0 focus-visible:outline-hidden">
                 <div
-                  className={`rounded-lg border bg-card shadow-xs overflow-hidden ${
+                  className={`rounded-xl border border-zinc-200/60 bg-white shadow-xs overflow-hidden ${
                     isExpanded ? 'min-h-[480px]' : ''
                   }`}
                 >
@@ -951,7 +951,7 @@ export function DemandItemsSection({
               {/* ABA 2: VISÃO CLIENTE / ORÇAMENTO EXTERNO */}
               <TabsContent value="external" className="m-0 focus-visible:outline-hidden">
                 <div
-                  className={`rounded-lg border bg-card shadow-xs overflow-hidden ${
+                  className={`rounded-xl border border-zinc-200/60 bg-white shadow-xs overflow-hidden ${
                     isExpanded ? 'min-h-[480px]' : ''
                   }`}
                 >

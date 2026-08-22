@@ -292,7 +292,7 @@ export default function MyDemandsPage() {
         </CardContent>
       </Card>
 
-      <div className="bg-white rounded-md border overflow-hidden">
+      <div className="bg-white rounded-2xl border border-zinc-200/60 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

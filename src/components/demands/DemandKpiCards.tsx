@@ -37,9 +37,9 @@ export function DemandKpiCards({
       value: received,
       icon: Inbox,
       color: 'text-blue-600',
-      border: 'border-l-blue-500',
-      activeBg: 'bg-blue-50',
-      activeRing: 'ring-2 ring-blue-400',
+      border: 'border-l-blue-400',
+      activeBg: 'bg-blue-50/60',
+      activeRing: 'ring-2 ring-blue-300',
     },
     {
       key: 'sent',
@@ -47,9 +47,9 @@ export function DemandKpiCards({
       value: sent,
       icon: Send,
       color: 'text-purple-600',
-      border: 'border-l-purple-500',
-      activeBg: 'bg-purple-50',
-      activeRing: 'ring-2 ring-purple-400',
+      border: 'border-l-purple-400',
+      activeBg: 'bg-purple-50/60',
+      activeRing: 'ring-2 ring-purple-300',
     },
     {
       key: 'completed',
@@ -57,9 +57,9 @@ export function DemandKpiCards({
       value: completed,
       icon: CheckCircle2,
       color: 'text-green-600',
-      border: 'border-l-green-500',
-      activeBg: 'bg-green-50',
-      activeRing: 'ring-2 ring-green-400',
+      border: 'border-l-green-400',
+      activeBg: 'bg-green-50/60',
+      activeRing: 'ring-2 ring-green-300',
     },
     {
       key: 'overdue',
@@ -67,9 +67,9 @@ export function DemandKpiCards({
       value: overdue,
       icon: AlertTriangle,
       color: 'text-red-600',
-      border: 'border-l-red-500',
-      activeBg: 'bg-red-50',
-      activeRing: 'ring-2 ring-red-400',
+      border: 'border-l-red-400',
+      activeBg: 'bg-red-50/60',
+      activeRing: 'ring-2 ring-red-300',
     },
   ]
 
@@ -82,7 +82,7 @@ export function DemandKpiCards({
             key={card.key}
             onClick={() => onCardClick?.(card.key)}
             className={cn(
-              'border-l-4 transition-all duration-200 cursor-pointer select-none',
+              'border-l-4 border-zinc-200/60 transition-all duration-200 cursor-pointer select-none',
               'hover:shadow-md hover:-translate-y-0.5',
               card.border,
               isActive && cn(card.activeBg, card.activeRing, 'shadow-md'),

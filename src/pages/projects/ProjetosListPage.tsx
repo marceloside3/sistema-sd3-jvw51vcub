@@ -88,7 +88,7 @@ export default function ProjetosListPage() {
         </div>
       </div>
 
-      <div className="border rounded-md bg-white shadow-sm overflow-hidden">
+      <div className="border border-zinc-200/60 rounded-2xl bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

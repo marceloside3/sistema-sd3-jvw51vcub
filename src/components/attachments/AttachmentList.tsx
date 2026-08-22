@@ -107,7 +107,7 @@ export function AttachmentList({ kind, entityId, refreshKey = 0 }: AttachmentLis
       {attachments.map((attachment) => (
         <li
           key={attachment.id}
-          className="flex items-center justify-between p-3 bg-gray-50 border rounded-md"
+          className="flex items-center justify-between p-3 bg-gray-50 border border-zinc-200/60 rounded-xl"
         >
           <div className="flex items-center space-x-3 overflow-hidden">
             <FileIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />

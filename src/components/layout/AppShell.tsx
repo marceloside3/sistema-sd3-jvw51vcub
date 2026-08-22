@@ -27,10 +27,10 @@ import iconUrl from '@/assets/icone3-6f0c6.png'
 
 const navLinkClass = (isActive: boolean) =>
   cn(
-    'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 ease-smooth',
+    'flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-300 ease-smooth border-l-[3px]',
     isActive
-      ? 'bg-orange-500/15 text-orange-400 border-l-[3px] border-orange-500'
-      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 border-l-[3px] border-transparent',
+      ? 'bg-orange-500/15 text-orange-400 border-orange-500'
+      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 border-transparent',
   )
 
 function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) {
@@ -61,11 +61,11 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 transform transition-transform duration-300 ease-smooth md:relative md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800/80 transform transition-transform duration-300 ease-smooth md:relative md:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="h-20 flex items-center justify-between px-5 border-b border-zinc-800">
+        <div className="h-20 flex items-center justify-between px-5 border-b border-zinc-800/80">
           <div className="flex-1 flex items-center justify-center h-full">
             <img
               src={iconUrl}
@@ -76,7 +76,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-300 ease-smooth absolute right-4 top-6"
+            className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-300 ease-smooth absolute right-4 top-6 rounded-lg"
             onClick={() => setIsOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -220,12 +220,12 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   }
 
   return (
-    <header className="h-16 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md border-b border-zinc-200 sticky top-0 z-10">
+    <header className="h-16 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md border-b border-zinc-200/80 sticky top-0 z-10">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-300 ease-smooth"
+          className="md:hidden text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-300 ease-smooth rounded-lg"
           onClick={onMenuClick}
         >
           <Menu className="w-5 h-5" />
@@ -252,7 +252,7 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300 ease-smooth"
+          className="text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300 ease-smooth rounded-lg"
         >
           <LogOut className="w-4 h-4 md:mr-2" />
           <span className="hidden md:inline">Sair</span>
@@ -266,7 +266,7 @@ export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-50">
+    <div className="flex h-screen overflow-hidden bg-zinc-50/80">
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />

@@ -50,7 +50,7 @@ export function QuickActions() {
               className="h-auto p-3 justify-start border-zinc-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all duration-200 group"
             >
               <Link to={action.href}>
-                <div className={`p-2 rounded-lg ${action.bg} transition-colors`}>
+                <div className={`p-2 rounded-xl ${action.bg} transition-colors`}>
                   <action.icon className={action.color} />
                 </div>
                 <div className="ml-2 text-left">

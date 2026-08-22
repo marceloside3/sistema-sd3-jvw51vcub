@@ -99,7 +99,7 @@ export function UserFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Áreas de Atuação</Label>
-            <div className="border rounded-md p-4 space-y-3 max-h-48 overflow-y-auto">
+            <div className="border border-zinc-200/60 rounded-xl p-4 space-y-3 max-h-48 overflow-y-auto">
               {allAreas.map((area) => {
                 const isSelected = formData.areas.some((a) => a.area_id === area.id)
                 const isPrincipal = formData.areas.find((a) => a.area_id === area.id)?.is_principal

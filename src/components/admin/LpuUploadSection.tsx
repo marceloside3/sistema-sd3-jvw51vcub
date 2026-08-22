@@ -116,7 +116,7 @@ export function LpuUploadSection({
   }
 
   return (
-    <div className="space-y-4 rounded-md border p-4">
+    <div className="space-y-4 rounded-xl border border-zinc-200/60 bg-white p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="w-5 h-5 text-primary" />
@@ -194,7 +194,7 @@ export function LpuUploadSection({
       )}
 
       {!loading && items.length === 0 && (
-        <div className="flex items-start gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md p-3">
+        <div className="flex items-start gap-2 text-sm text-muted-foreground bg-muted/30 rounded-lg border border-zinc-200/60 p-3">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
             Nenhum item na LPU. Importe um arquivo Excel/CSV para adicionar itens com faixas de
@@ -204,7 +204,7 @@ export function LpuUploadSection({
       )}
 
       {!loading && items.length > 0 && (
-        <div className="max-h-48 overflow-y-auto rounded-md border">
+        <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200/60">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 sticky top-0">
               <tr>

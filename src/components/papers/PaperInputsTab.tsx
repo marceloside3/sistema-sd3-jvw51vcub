@@ -201,7 +201,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
 
   return (
     <div className="space-y-6 mt-6">
-      <div className="border rounded-lg bg-white p-6 shadow-sm relative">
+      <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm relative">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Informações Paper</h3>
@@ -262,7 +262,7 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
       </div>
 
       {project?.id && (
-        <div className="border rounded-lg bg-white p-6 shadow-sm">
+        <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
           <AttachmentsSection kind="project" entityId={project.id} />
         </div>
       )}

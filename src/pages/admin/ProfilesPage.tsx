@@ -131,7 +131,7 @@ export default function ProfilesPage() {
         </Tooltip>
       </div>
 
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-2xl border border-zinc-200/60 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

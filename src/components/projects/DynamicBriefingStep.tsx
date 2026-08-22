@@ -82,7 +82,7 @@ export function DynamicBriefingStep({
                 {pendingFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between px-3 py-2 bg-muted rounded-md"
+                    className="flex items-center justify-between px-3 py-2 bg-muted rounded-lg border border-zinc-200/60"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />

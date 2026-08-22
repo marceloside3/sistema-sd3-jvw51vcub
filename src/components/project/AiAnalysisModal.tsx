@@ -27,7 +27,7 @@ export function AiAnalysisModal({ children }: { children: React.ReactNode }) {
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-md text-sm flex items-start gap-2">
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-xl text-sm flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
             <p>
               Este é um ambiente de demonstração. A integração real com IA será disponibilizada na
@@ -36,7 +36,7 @@ export function AiAnalysisModal({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="grid gap-4">
-            <div className="bg-green-50 border border-green-100 p-4 rounded-lg">
+            <div className="bg-green-50 border border-green-100 p-4 rounded-xl">
               <h4 className="flex items-center gap-2 font-medium text-green-800 mb-2">
                 <CheckCircle2 className="w-4 h-4" />
                 Pontos Positivos
@@ -48,7 +48,7 @@ export function AiAnalysisModal({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
 
-            <div className="bg-amber-50 border border-amber-100 p-4 rounded-lg">
+            <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
               <h4 className="flex items-center gap-2 font-medium text-amber-800 mb-2">
                 <AlertTriangle className="w-4 h-4" />
                 Pontos de Atenção
@@ -59,7 +59,7 @@ export function AiAnalysisModal({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
 
-            <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
+            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
               <h4 className="flex items-center gap-2 font-medium text-blue-800 mb-2">
                 <Lightbulb className="w-4 h-4" />
                 Sugestões da IA

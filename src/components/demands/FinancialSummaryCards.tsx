@@ -55,7 +55,7 @@ export function FinancialSummaryCards({
   return (
     <div className="grid gap-3 sm:grid-cols-3 mb-4">
       {cards.map((card) => (
-        <Card key={card.label} className={`border-l-4 ${card.border}`}>
+        <Card key={card.label} className={`border-l-4 border-zinc-200/60 ${card.border}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">
               {card.label}

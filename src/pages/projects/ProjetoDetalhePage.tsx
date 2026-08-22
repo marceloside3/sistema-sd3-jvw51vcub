@@ -144,7 +144,7 @@ export default function ProjetoDetalhePage() {
             <p className="text-sm text-gray-400">Aguarde enquanto carregamos os dados.</p>
           </div>
         </div>
-        <div className="border rounded-lg bg-white p-12 shadow-sm text-center">
+        <div className="border border-zinc-200/60 rounded-2xl bg-white p-12 shadow-sm text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
           <p className="mt-4 text-sm text-gray-500">Processando...</p>
         </div>
@@ -342,7 +342,7 @@ export default function ProjetoDetalhePage() {
 
         <TabsContent
           value="timeline"
-          className="mt-6 border rounded-lg bg-white p-6 shadow-sm min-h-[400px]"
+          className="mt-6 border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm min-h-[400px]"
         >
           <h3 className="text-lg font-semibold mb-4">Cronograma de Demandas</h3>
           <div className="space-y-4">
@@ -388,7 +388,7 @@ export default function ProjetoDetalhePage() {
             </Button>
           </div>
 
-          <div className="border rounded-md bg-white shadow-sm overflow-hidden">
+          <div className="border border-zinc-200/60 rounded-2xl bg-white shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -442,12 +442,15 @@ export default function ProjetoDetalhePage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="anexos" className="mt-6 border rounded-lg bg-white p-6 shadow-sm">
+        <TabsContent
+          value="anexos"
+          className="mt-6 border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm"
+        >
           {project.id && <AttachmentsSection type="project" entityId={project.id} />}
         </TabsContent>
 
         <TabsContent value="detalhes" className="mt-6 space-y-6">
-          <div className="border rounded-lg bg-white p-6 shadow-sm">
+          <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-6">Informações Gerais</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
@@ -487,7 +490,7 @@ export default function ProjetoDetalhePage() {
             </div>
           </div>
 
-          <div className="border rounded-lg bg-white p-6 shadow-sm">
+          <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-6">Briefing do Projeto</h3>
             {(() => {
               const briefingEntries = getDynamicBriefingEntries(project.briefing_data)

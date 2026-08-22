@@ -104,7 +104,7 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
   if (!paper) return null
 
   return (
-    <div className="border rounded-lg bg-white p-6 shadow-sm space-y-4">
+    <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Revisão G3 — Diretor de Planejamento</h3>
         {isAdmin && paper.status !== 'approved' && paper.status !== 'override' && (
@@ -122,7 +122,7 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
 
       {paper.status === 'submitted' ? (
         <div className="space-y-4">
-          <div className="rounded-lg border p-4 bg-muted/30">
+          <div className="rounded-xl border border-zinc-200/60 p-4 bg-muted/30">
             <h4 className="text-sm font-medium mb-3">Resumo dos 8 Inputs Estratégicos</h4>
             <dl className="space-y-2 text-sm">
               <div>

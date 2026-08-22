@@ -539,7 +539,10 @@ export default function NovaDemandaPage() {
         <h1 className="text-2xl font-bold">Nova Demanda</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-2xl border border-zinc-200/60 shadow-sm space-y-6"
+      >
         <div className="space-y-4">
           {!initialProjectId && (
             <div className="space-y-2">
@@ -679,7 +682,7 @@ export default function NovaDemandaPage() {
                 <h3 className="font-semibold text-lg">Detalhes da Criação</h3>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-1 gap-4 p-4 bg-muted/30 rounded-xl border border-zinc-200/60">
                 <div className="space-y-2">
                   <Label>Entrega a ser feita</Label>
                   <Textarea
@@ -767,7 +770,7 @@ export default function NovaDemandaPage() {
               <h3 className="font-semibold text-lg">Dados Financeiros</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-xl border border-zinc-200/60">
               <div className="space-y-2 col-span-2">
                 <Label>Cliente *</Label>
                 <Select
@@ -891,13 +894,13 @@ export default function NovaDemandaPage() {
             )}
 
             {!hasLpu && lpuLoaded && (
-              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
                 Este cliente ainda não possui itens cadastrados na LPU
               </div>
             )}
 
             {hasLpu && itemMode === 'lpu' && (
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-xl border border-zinc-200/60">
                 <div className="space-y-2 col-span-2">
                   <Label>Selecionar Item da LPU *</Label>
                   <LpuItemPicker
@@ -980,7 +983,7 @@ export default function NovaDemandaPage() {
             )}
 
             {(!hasLpu || itemMode === 'manual') && (
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-xl border border-zinc-200/60">
                 <div className="space-y-2 col-span-2">
                   <Label>Item *</Label>
                   <Input
@@ -1057,7 +1060,7 @@ export default function NovaDemandaPage() {
             )}
 
             {demandItems.length > 0 && (
-              <div className="rounded-lg border overflow-hidden">
+              <div className="rounded-2xl border border-zinc-200/60 overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>

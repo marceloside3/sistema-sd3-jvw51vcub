@@ -445,7 +445,7 @@ export function ItemCostEditorDialog({
 
         <div className="space-y-4 py-2">
           {/* BLOCO 1: Item & Quantidade & Venda */}
-          <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+          <div className="p-3.5 rounded-xl border border-zinc-200/60 bg-muted/20 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Receipt className="w-3.5 h-3.5 text-primary" />
@@ -522,7 +522,7 @@ export function ItemCostEditorDialog({
           </div>
 
           {/* BLOCO 2: Fornecedor e Custos de Produção (Destaque para Produção) */}
-          <div className="p-3.5 rounded-lg border-2 border-primary/20 bg-primary/[0.02] space-y-3">
+          <div className="p-3.5 rounded-xl border-2 border-orange-200 bg-orange-50/40 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5" />
@@ -534,7 +534,7 @@ export function ItemCostEditorDialog({
             </div>
 
             {/* Destaque Seleção de Fornecedor */}
-            <div className="space-y-1.5 p-3 rounded-md bg-background border shadow-xs">
+            <div className="space-y-1.5 p-3 rounded-lg bg-white border border-zinc-200/60 shadow-xs">
               <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
                 <span>
                   Fornecedor / Prestador de Serviço <span className="text-destructive">*</span>
@@ -618,7 +618,7 @@ export function ItemCostEditorDialog({
           </div>
 
           {/* BLOCO 3: Honorários e Taxa de Agência */}
-          <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+          <div className="p-3.5 rounded-xl border border-zinc-200/60 bg-muted/20 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Percent className="w-3.5 h-3.5 text-primary" />
@@ -654,7 +654,7 @@ export function ItemCostEditorDialog({
           </div>
 
           {/* BLOCO 4: Simulação Financeira em Tempo Real */}
-          <div className="p-3.5 rounded-lg border bg-card shadow-xs space-y-2.5">
+          <div className="p-3.5 rounded-xl border border-zinc-200/60 bg-white shadow-xs space-y-2.5">
             <div className="flex items-center justify-between border-b pb-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" />

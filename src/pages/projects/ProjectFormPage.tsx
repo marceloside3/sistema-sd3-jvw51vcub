@@ -311,7 +311,7 @@ export default function ProjectFormPage() {
           </CardDescription>
         </CardHeader>
         {isProjectCompleted && (
-          <div className="mx-6 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm mb-4">
+          <div className="mx-6 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm mb-4">
             Projeto Concluído. Campos críticos estão bloqueados.
           </div>
         )}
@@ -382,7 +382,7 @@ export default function ProjectFormPage() {
               </div>
 
               {projectCodePreview && (
-                <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 flex items-center gap-3 animate-fade-in">
+                <div className="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 flex items-center gap-3 animate-fade-in">
                   <Badge variant="outline" className="bg-orange-600 text-white border-orange-600">
                     Prévia do Código
                   </Badge>

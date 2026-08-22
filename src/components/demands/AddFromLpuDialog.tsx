@@ -204,7 +204,7 @@ export function AddFromLpuDialog({
                 {selectedIds.size === uniqueByName.length ? 'Desmarcar todos' : 'Selecionar todos'}
               </Button>
             </div>
-            <ScrollArea className="h-[360px] rounded-md border">
+            <ScrollArea className="h-[360px] rounded-xl border border-zinc-200/60">
               <div className="divide-y">
                 {uniqueByName.map((item) => (
                   <label

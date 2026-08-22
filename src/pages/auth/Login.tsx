@@ -96,9 +96,10 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-brand hover:shadow-lg hover:shadow-orange-500/30 transition-all duration-300 ease-smooth hover:scale-[1.02] group"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold hover:shadow-lg hover:shadow-orange-500/30 transition-all duration-300 ease-smooth hover:scale-[1.02] group shadow-sm"
               disabled={isLoading}
             >
+              {' '}
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

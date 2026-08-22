@@ -84,7 +84,7 @@ export function PendingFilesPicker({ files, onChange, maxSizeMB = 50 }: PendingF
           {files.map((file, idx) => (
             <li
               key={idx}
-              className="flex items-center justify-between p-2 text-sm border rounded-md bg-slate-50"
+              className="flex items-center justify-between p-2 text-sm border border-zinc-200/60 rounded-xl bg-slate-50"
             >
               <span className="truncate max-w-[80%]">{file.name}</span>
               <div className="flex items-center gap-3">

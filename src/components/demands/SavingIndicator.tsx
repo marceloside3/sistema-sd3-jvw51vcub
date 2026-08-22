@@ -24,7 +24,7 @@ export function SavingIndicator({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-all duration-300 border shadow-2xs select-none',
+        'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-all duration-300 border shadow-2xs select-none',
         status === 'saving' && 'text-muted-foreground bg-muted/80 border-border animate-pulse',
         status === 'saved' &&
           'text-emerald-700 bg-emerald-50 border-emerald-200/80 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800/50',

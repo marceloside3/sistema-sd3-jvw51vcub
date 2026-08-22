@@ -56,11 +56,11 @@ export function AiAgentSection({ projectId }: { projectId: string }) {
       </CardHeader>
       <CardContent>
         {response ? (
-          <div className="bg-black/90 text-green-400 p-4 rounded-md font-mono text-sm overflow-x-auto shadow-inner animate-fade-in-up">
+          <div className="bg-black/90 text-green-400 p-4 rounded-xl font-mono text-sm overflow-x-auto shadow-inner animate-fade-in-up">
             <pre>{response}</pre>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground bg-background/50 p-4 rounded-md border border-dashed flex items-center justify-center h-32">
+          <div className="text-sm text-muted-foreground bg-background/50 p-4 rounded-xl border border-dashed border-zinc-300 flex items-center justify-center h-32">
             Clique em "Analisar Briefing" para acionar o endpoint mock do Agente de IA.
           </div>
         )}

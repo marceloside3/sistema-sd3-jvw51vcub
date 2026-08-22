@@ -738,10 +738,10 @@ export default function DemandDetailsPage() {
                       className={`flex flex-col ${c.user_id === userCtx?.id ? 'items-end' : 'items-start'}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-lg p-3 text-sm ${
+                        className={`max-w-[85%] rounded-xl p-3 text-sm ${
                           c.user_id === userCtx?.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-foreground'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-zinc-100 text-zinc-800'
                         }`}
                       >
                         <div className="font-semibold text-xs opacity-80 mb-1">

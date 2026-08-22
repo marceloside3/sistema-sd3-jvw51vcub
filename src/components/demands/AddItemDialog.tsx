@@ -209,7 +209,7 @@ export function AddItemDialog({
 
         <div className="space-y-4 py-2">
           {/* GRUPO 1: Identificação do Item */}
-          <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+          <div className="p-3.5 rounded-xl border border-zinc-200/60 bg-muted/20 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-primary" />
@@ -263,7 +263,7 @@ export function AddItemDialog({
           </div>
 
           {/* GRUPO 2: Quantidades e Valores Estimados */}
-          <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+          <div className="p-3.5 rounded-xl border border-zinc-200/60 bg-muted/20 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-primary" />
@@ -345,7 +345,7 @@ export function AddItemDialog({
           </div>
 
           {/* Opção de sequência rápida */}
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-primary/5 border-primary/20">
+          <div className="flex items-center justify-between p-3 rounded-xl border border-orange-200 bg-orange-50/60">
             <div className="space-y-0.5">
               <Label
                 htmlFor="keep-open-toggle"

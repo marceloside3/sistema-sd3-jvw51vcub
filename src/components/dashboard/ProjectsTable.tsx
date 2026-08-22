@@ -33,7 +33,7 @@ export function ProjectsTable() {
   const { projects } = useAppStore()
 
   return (
-    <div className="rounded-md border bg-card text-card-foreground shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-zinc-200/60 bg-white text-card-foreground shadow-sm overflow-hidden">
       <div className="p-4 border-b flex justify-between items-center bg-muted/20">
         <h3 className="font-semibold text-lg">Projetos Prioritários</h3>
       </div>

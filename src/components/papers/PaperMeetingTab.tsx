@@ -72,7 +72,7 @@ export function PaperMeetingTab({
       </div>
 
       {meetings.length === 0 ? (
-        <div className="p-12 text-center text-gray-500 border border-dashed rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+        <div className="p-12 text-center text-gray-500 border border-dashed border-zinc-300 rounded-2xl bg-gray-50 flex flex-col items-center justify-center">
           <Calendar fill="currentColor" className="w-12 h-12 text-gray-300 mb-4" />
           <p className="text-lg mb-2">Nenhuma reunião agendada ainda.</p>
           <Button

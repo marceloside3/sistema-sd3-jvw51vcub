@@ -146,7 +146,7 @@ export function BenchmarksTab({ paper, readOnly, onReload }: BenchmarksTabProps)
 
   return (
     <div className="space-y-6 mt-6">
-      <div className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
+      <div className="flex items-center gap-2 rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3">
         <Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0" />
         <span className="text-sm font-medium text-yellow-800">
           Sugestões mockadas (V2 terá IA real)
