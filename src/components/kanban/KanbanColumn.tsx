@@ -59,6 +59,9 @@ export function KanbanColumn({
   const [isDragOver, setIsDragOver] = useState(false)
   const [collapsed, setCollapsed] = useState<boolean>(() => readCollapsed(stage.id))
 
+  // Dark mode is now driven globally by the `.dark` class on <html>, but the
+  // column still needs to know whether to render its slate-800 base + inline
+  // color tweaks, so we keep a local `dark` flag derived from the prop.
   const dark = Boolean(isDark)
 
   const toggleCollapsed = () => {

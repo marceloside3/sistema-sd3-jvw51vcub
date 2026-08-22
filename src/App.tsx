@@ -4,6 +4,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
 import { CurrentUserProvider } from '@/hooks/use-current-user'
+import { ThemeProvider } from '@/hooks/use-theme'
 
 import Login from './pages/auth/Login'
 import ForgotPassword from './pages/auth/ForgotPassword'
@@ -38,75 +39,77 @@ import KanbanPage from './pages/criacao/KanbanPage'
 const App = () => (
   <AuthProvider>
     <CurrentUserProvider>
-      <BrowserRouter>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/auth/set-password" element={<SetPassword />} />
-
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Home />} />
-              <Route path="/dashboard" element={<Navigate to="/" replace />} />
-
-              <Route path="/projetos" element={<ProjetosListPage />} />
-              <Route path="/projetos/novo" element={<ProjectFormPage />} />
-              <Route path="/projetos/:id/editar" element={<ProjectFormPage />} />
-              <Route path="/projetos/:id" element={<ProjetoDetalhePage />} />
-              <Route path="/projetos/:projectId/paper" element={<PaperEditPage />} />
-              <Route path="/projetos/:id/demandas/nova" element={<NovaDemandaPage />} />
-
-              <Route path="/demandas/:id" element={<DemandDetailsPage />} />
-              <Route path="/demandas/:id/orcamento" element={<ClientBudgetPage />} />
-              <Route path="/minhas-demandas" element={<MyDemandsPage />} />
-              <Route path="/notificacoes" element={<NotificationsPage />} />
-
-              <Route path="/fornecedores" element={<SuppliersListPage />} />
-              <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
-              <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
-
-              <Route path="/criacao" element={<KanbanPage />} />
-              <Route path="/area/:area_slug" element={<AreaPage />} />
-              <Route path="/auditoria" element={<AuditReport />} />
+      <ThemeProvider>
+        <BrowserRouter>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/auth/set-password" element={<SetPassword />} />
 
               <Route
-                path="/hub"
                 element={
-                  <HubGuard>
-                    <HubDashboardPage />
-                  </HubGuard>
-                }
-              />
-
-              <Route
-                path="/admin"
-                element={
-                  <AdminGuard>
-                    <Outlet />
-                  </AdminGuard>
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
                 }
               >
-                <Route path="usuarios" element={<UsersPage />} />
-                <Route path="areas" element={<AreasPage />} />
-                <Route path="perfis" element={<ProfilesPage />} />
-                <Route path="clientes" element={<ClientsPage />} />
-                <Route path="clientes/novo" element={<ClientFormPage />} />
-                <Route path="clientes/:id" element={<ClientFormPage />} />
-              </Route>
-            </Route>
+                <Route path="/" element={<Home />} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </TooltipProvider>
-      </BrowserRouter>
+                <Route path="/projetos" element={<ProjetosListPage />} />
+                <Route path="/projetos/novo" element={<ProjectFormPage />} />
+                <Route path="/projetos/:id/editar" element={<ProjectFormPage />} />
+                <Route path="/projetos/:id" element={<ProjetoDetalhePage />} />
+                <Route path="/projetos/:projectId/paper" element={<PaperEditPage />} />
+                <Route path="/projetos/:id/demandas/nova" element={<NovaDemandaPage />} />
+
+                <Route path="/demandas/:id" element={<DemandDetailsPage />} />
+                <Route path="/demandas/:id/orcamento" element={<ClientBudgetPage />} />
+                <Route path="/minhas-demandas" element={<MyDemandsPage />} />
+                <Route path="/notificacoes" element={<NotificationsPage />} />
+
+                <Route path="/fornecedores" element={<SuppliersListPage />} />
+                <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
+                <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
+
+                <Route path="/criacao" element={<KanbanPage />} />
+                <Route path="/area/:area_slug" element={<AreaPage />} />
+                <Route path="/auditoria" element={<AuditReport />} />
+
+                <Route
+                  path="/hub"
+                  element={
+                    <HubGuard>
+                      <HubDashboardPage />
+                    </HubGuard>
+                  }
+                />
+
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminGuard>
+                      <Outlet />
+                    </AdminGuard>
+                  }
+                >
+                  <Route path="usuarios" element={<UsersPage />} />
+                  <Route path="areas" element={<AreasPage />} />
+                  <Route path="perfis" element={<ProfilesPage />} />
+                  <Route path="clientes" element={<ClientsPage />} />
+                  <Route path="clientes/novo" element={<ClientFormPage />} />
+                  <Route path="clientes/:id" element={<ClientFormPage />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </TooltipProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </CurrentUserProvider>
   </AuthProvider>
 )

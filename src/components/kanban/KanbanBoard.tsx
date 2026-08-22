@@ -312,7 +312,6 @@ export function KanbanBoard({
             allStages={stages}
             isDirector={isDirector}
             currentUserId={currentUserId}
-            isDark={isDark}
             onDragStart={handleDragStart}
             onDropDemand={handleDropDemand}
             onAssignClick={(d) => {

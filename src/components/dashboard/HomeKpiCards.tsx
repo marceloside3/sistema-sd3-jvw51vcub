@@ -55,17 +55,23 @@ export function HomeKpiCards({
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.label} className={cn('hover-card-elevate border-l-4', card.border)}>
+        <Card
+          key={card.label}
+          className={cn(
+            'hover-card-elevate border-l-4 dark:bg-zinc-900 dark:border-zinc-800',
+            card.border,
+          )}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {card.label}
             </CardTitle>
-            <div className={cn('p-1.5 rounded-lg', card.bg)}>
+            <div className={cn('p-1.5 rounded-lg dark:bg-zinc-800', card.bg)}>
               <card.icon className={cn('h-4 w-4', card.color)} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{card.value}</div>
           </CardContent>
         </Card>
       ))}

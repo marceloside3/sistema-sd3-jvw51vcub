@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { HomeKpiCards } from '@/components/dashboard/HomeKpiCards'
@@ -8,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { User, MapPin } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function Home() {
   const { data, loading: userLoading } = useCurrentUser()
@@ -16,16 +16,29 @@ export default function Home() {
   if (userLoading || !data) {
     return (
       <div className="space-y-6 animate-page-enter">
-        <Skeleton className="h-10 w-72" />
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-72 rounded-xl" />
+          <Skeleton className="h-4 w-80 rounded-lg" />
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'rounded-2xl border border-zinc-200/60 dark:border-zinc-800 p-5 space-y-3',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-24 rounded-lg" />
+                <Skeleton className="h-8 w-8 rounded-xl" />
+              </div>
+              <Skeleton className="h-7 w-16 rounded-lg" />
+            </div>
+          ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-96 w-full lg:col-span-2" />
-          <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-96 w-full rounded-2xl lg:col-span-2" />
+          <Skeleton className="h-96 w-full rounded-2xl" />
         </div>
       </div>
     )

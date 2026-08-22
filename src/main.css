@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure the `dark` variant is driven by the `.dark` class on <html>
+   so the global ThemeProvider can flip the whole system at once. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --background: 240 5% 96%;
@@ -230,6 +234,12 @@
 
   .hover-card-elevate {
     @apply transition-all duration-300 ease-smooth hover:shadow-lg hover:-translate-y-0.5 hover:scale-[1.02];
+  }
+
+  /* Smooth entrance animation applied to the routed page wrapper in AppShell.
+     Combines a fade-in with a slight slide-up for a polished navigation feel. */
+  .animate-page-enter {
+    animation: page-enter 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   .hover-scale-soft {

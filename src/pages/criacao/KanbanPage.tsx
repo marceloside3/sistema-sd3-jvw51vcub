@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Sparkles, RefreshCw, ShieldAlert, Loader2, Users, Sun, Moon } from 'lucide-react'
+import { Sparkles, RefreshCw, ShieldAlert, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
-import { NotificationBell } from '@/components/notifications/NotificationBell'
+import { KanbanLoadingSkeleton } from '@/components/kanban/KanbanLoadingSkeleton'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
-import { useCriacaoTheme } from '@/hooks/use-criacao-theme'
+import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import {
   getKanbanStages,
@@ -18,9 +18,9 @@ import {
 } from '@/services/kanban'
 
 export default function KanbanPage() {
+  const { isDark } = useTheme()
   const { data: currentUser, loading: userLoading } = useCurrentUser()
   const { toast } = useToast()
-  const { isDark, toggle: toggleTheme } = useCriacaoTheme()
 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -72,12 +72,7 @@ export default function KanbanPage() {
 
   // Loading state
   if (userLoading || (loading && hasAccess)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
-        <span className="text-sm text-zinc-400">Carregando Kanban da Criação...</span>
-      </div>
-    )
+    return <KanbanLoadingSkeleton />
   }
 
   // Access restriction screen
@@ -100,12 +95,7 @@ export default function KanbanPage() {
   }
 
   return (
-    <div
-      className={cn(
-        'space-y-6 max-w-full min-h-[calc(100vh-6rem)] transition-colors',
-        isDark && 'dark bg-slate-900',
-      )}
-    >
+    <div className="space-y-6 max-w-full min-h-[calc(100vh-6rem)] transition-colors">
       {/* Header & Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-5 dark:border-slate-800">
         <div>
@@ -125,23 +115,6 @@ export default function KanbanPage() {
         </div>
         {/* Header Actions & Profile Badge */}
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="relative hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors"
-            title={isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
-            aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-amber-400" />
-            ) : (
-              <Moon className="w-5 h-5 text-zinc-600" />
-            )}
-          </Button>
-
-          <NotificationBell />
-
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-100 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:bg-slate-800 dark:border-slate-700">
             <Users className="w-3.5 h-3.5 text-orange-500" />
             <span className="text-zinc-400 dark:text-slate-400">Perfil:</span>

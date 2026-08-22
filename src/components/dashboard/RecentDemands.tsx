@@ -26,9 +26,9 @@ const priorityConfig: Record<string, string> = {
 
 export function RecentDemands({ demands, loading }: RecentDemandsProps) {
   return (
-    <Card className="shadow-premium border-zinc-100">
+    <Card className="shadow-premium border-zinc-100 dark:border-zinc-800">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
           <Inbox className="h-4 w-4 text-orange-500" />
           Demandas Recentes
         </CardTitle>
@@ -40,14 +40,16 @@ export function RecentDemands({ demands, loading }: RecentDemandsProps) {
               <div key={i} className="flex items-center gap-3">
                 <Skeleton className="h-9 w-9 rounded-lg" />
                 <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-4 w-3/4 rounded-lg" />
+                  <Skeleton className="h-3 w-1/2 rounded-lg" />
                 </div>
               </div>
             ))}
           </div>
         ) : demands.length === 0 ? (
-          <p className="text-sm text-zinc-400 italic py-6 text-center">Nenhuma demanda recente.</p>
+          <p className="text-sm text-zinc-400 dark:text-zinc-500 italic py-6 text-center">
+            Nenhuma demanda recente.
+          </p>
         ) : (
           <ul className="space-y-1">
             {demands.map((demand) => {
@@ -57,21 +59,23 @@ export function RecentDemands({ demands, loading }: RecentDemandsProps) {
                 <li key={demand.id}>
                   <Link
                     to={`/demandas/${demand.id}`}
-                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-50 transition-colors duration-200 group"
+                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors duration-200 group"
                   >
-                    <div className="p-2 bg-zinc-50 rounded-lg group-hover:bg-white transition-colors">
+                    <div className="p-2 bg-zinc-50 dark:bg-zinc-800 rounded-lg group-hover:bg-white dark:group-hover:bg-zinc-700 transition-colors">
                       <StatusIcon className={config.color} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-900 truncate">{demand.title}</p>
+                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                        {demand.title}
+                      </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {demand.project_name && (
-                          <span className="text-xs text-zinc-400 truncate">
+                          <span className="text-xs text-zinc-400 dark:text-zinc-500 truncate">
                             {demand.project_name}
                           </span>
                         )}
                         {demand.due_date && (
-                          <span className="text-xs text-zinc-400">
+                          <span className="text-xs text-zinc-400 dark:text-zinc-500">
                             • {formatDateBR(demand.due_date)}
                           </span>
                         )}
