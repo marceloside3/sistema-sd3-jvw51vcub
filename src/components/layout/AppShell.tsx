@@ -272,6 +272,11 @@ export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const location = useLocation()
 
+  // Enable native View Transitions (cross-fade + slide) between routes.
+  // Browsers without the API are no-ops and fall back to the CSS
+  // `.animate-page-enter` animation applied to <main> below.
+  useEffect(() => installViewTransitions(), [])
+
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-50/80 dark:bg-zinc-950 transition-colors duration-300">
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
