@@ -64,10 +64,7 @@ export function useDashboardData(): DashboardData {
             .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
             .order('created_at', { ascending: false })
             .limit(50),
-          supabase
-            .from('projects')
-            .select('id, status', { count: 'exact', head: true })
-            .eq('status', 'active'),
+          supabase.from('projects').select('id, status', { count: 'exact' }).eq('status', 'active'),
         ])
 
         if (cancelled) return
@@ -95,7 +92,7 @@ export function useDashboardData(): DashboardData {
 
         setData({
           pendingDemands: demands.filter((d: any) => d.status === 'pending').length,
-          activeProjects: projectsRes.count ?? 0,
+          activeProjects: projectsRes.count ?? projectsRes.data?.length ?? 0,
           completedDemands: demands.filter((d: any) => d.status === 'completed').length,
           totalDemands: demands.length,
           overdueDemands,
