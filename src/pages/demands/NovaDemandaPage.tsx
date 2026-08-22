@@ -611,86 +611,7 @@ export default function NovaDemandaPage() {
             </div>
           </div>
 
-          {!isFinanceiroArea && (
-            <>
-              <div className="space-y-2">
-                <Label>Título *</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Ex: Criar KV da campanha"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Descrição detalhada *</Label>
-                <Textarea
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-
-              {isCriacaoArea && (
-                <div className="space-y-2 p-3 bg-blue-50/50 border border-blue-100 rounded-lg animate-fade-in">
-                  <Label htmlFor="tipo-criacao" className="font-medium text-blue-950">
-                    Tipo de Criação
-                  </Label>
-                  <Select
-                    value={formData.tipo_criacao}
-                    onValueChange={(v) =>
-                      handleTipoCriacaoChange(v as 'peca_digital' | 'peca_impressa' | '3d')
-                    }
-                  >
-                    <SelectTrigger id="tipo-criacao" className="bg-white">
-                      <SelectValue placeholder="Selecione o tipo de criação para calcular o SLA" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="peca_digital">
-                        🖥️ Peça Digital — SLA de 3 dias úteis
-                      </SelectItem>
-                      <SelectItem value="peca_impressa">
-                        🖨️ Peça Impressa — SLA de 4 dias úteis
-                      </SelectItem>
-                      <SelectItem value="3d">🧊 3D — SLA de 5 dias úteis</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Ao selecionar um tipo, a data de entrega é preenchida automaticamente e pode ser
-                    ajustada abaixo.
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Prioridade</Label>
-                  <Select
-                    value={formData.priority}
-                    onValueChange={(v) => setFormData({ ...formData, priority: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Baixa</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
-                      <SelectItem value="urgent">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Prazo</Label>
-                  <Input
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  />
-                </div>
-              </div>
-            </>
-          )}
+          {!isFinanceiroArea && null}
 
           {isCriacaoArea && (
             <div className="pt-4 border-t space-y-4 animate-fade-in">
@@ -1132,10 +1053,6 @@ export default function NovaDemandaPage() {
             )}
           </div>
         )}
-
-        <div className="pt-4 border-t">
-          <PendingFilesPicker files={pendingFiles} onChange={setPendingFiles} />
-        </div>
 
         <div className="flex items-center justify-end gap-4 pt-4 border-t">
           {uploadProgress && (

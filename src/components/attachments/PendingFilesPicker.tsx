@@ -61,7 +61,6 @@ export function PendingFilesPicker({ files, onChange, maxSizeMB = 50 }: PendingF
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Anexos Pendentes</h3>
         <input
           type="file"
           multiple
