@@ -101,17 +101,6 @@ export default function KanbanPage() {
       {/* Header & Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-5">
         <div>
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-xs text-zinc-400 mb-1.5">
-            <Link to="/" className="hover:text-zinc-700 transition-colors">
-              Início
-            </Link>
-            <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
-            <span className="text-zinc-700 font-medium">Criação</span>
-            <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
-            <span className="text-orange-500 font-semibold">Kanban</span>
-          </nav>
-
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
               <Sparkles className="w-5 h-5" />

@@ -126,25 +126,6 @@ export function KanbanColumn({
           })
         )}
       </div>
-
-      {/* Add new demand — dashed button matching the reference */}
-      <div className="p-3">
-        <Link
-          to="/projetos"
-          className={cn(
-            'flex items-center justify-center gap-1.5 w-full py-2.5 rounded-2xl border-2 border-dashed text-xs font-medium transition-all duration-200',
-            'text-zinc-400 hover:text-zinc-700 hover:border-zinc-300',
-          )}
-          style={{
-            borderColor: isDragOver ? stage.color : undefined,
-            backgroundColor: isDragOver ? hexToRgba(stage.color, 0.08) : 'rgba(255,255,255,0.5)',
-          }}
-          title="Criar nova demanda"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Adicionar nova demanda
-        </Link>
-      </div>
     </div>
   )
 }
