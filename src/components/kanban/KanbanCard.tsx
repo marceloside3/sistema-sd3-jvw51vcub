@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
 import {
   Clock,
   CheckCircle2,
@@ -30,6 +29,8 @@ interface KanbanCardProps {
   onAssignClick: (demand: KanbanDemand) => void
   onRequestFeedback: (demand: KanbanDemand) => void
   onMoveDirect: (demand: KanbanDemand, targetStage: KanbanStage) => void
+  /** Fired when the card body is clicked — opens the detail sheet over the Kanban. */
+  onCardClick?: (demand: KanbanDemand) => void
 }
 
 // Priority badge styling — soft background, colored text
@@ -368,10 +369,8 @@ export function KanbanCard({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 text-xs">
-              <DropdownMenuItem asChild>
-                <Link to={`/demandas/${demand.id}`} className="cursor-pointer">
-                  Ver detalhes da demanda
-                </Link>
+              <DropdownMenuItem onClick={() => onCardClick?.(demand)} className="cursor-pointer">
+                Ver detalhes da demanda
               </DropdownMenuItem>
 
               {isDirector && currentStage.position === 1 && nextStage && (

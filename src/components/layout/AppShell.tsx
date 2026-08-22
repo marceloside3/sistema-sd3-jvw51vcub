@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home,
@@ -25,6 +25,7 @@ import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import iconUrl from '@/assets/icone3-6f0c6.png'
+import { installViewTransitions } from '@/lib/view-transitions'
 
 const navLinkClass = (isActive: boolean) =>
   cn(

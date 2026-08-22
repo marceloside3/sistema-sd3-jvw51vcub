@@ -57,6 +57,7 @@ export function KanbanColumn({
   onAssignClick,
   onRequestFeedback,
   onMoveDirect,
+  onCardClick,
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [collapsed, setCollapsed] = useState<boolean>(() => readCollapsed(stage.id))

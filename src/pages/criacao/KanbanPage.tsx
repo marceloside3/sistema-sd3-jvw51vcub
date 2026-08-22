@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { Sparkles, RefreshCw, ShieldAlert, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
+import { DemandDetailSheet } from '@/components/kanban/DemandDetailSheet'
 import { KanbanLoadingSkeleton } from '@/components/kanban/KanbanLoadingSkeleton'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
 import { useTheme } from '@/hooks/use-theme'
-import { cn } from '@/lib/utils'
 import {
   getKanbanStages,
   getCreationTeamUsers,
@@ -27,6 +27,10 @@ export default function KanbanPage() {
   const [stages, setStages] = useState<KanbanStage[]>([])
   const [demands, setDemands] = useState<KanbanDemand[]>([])
   const [creatives, setCreatives] = useState<CreativeUser[]>([])
+
+  // Demand detail flyout — opens over the Kanban without leaving /criacao.
+  const [sheetDemandId, setSheetDemandId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   // Access check: User must be linked to "criacao" area or be admin
   const isLinkedToCriacao = currentUser?.areas?.some((a) => a.code === 'criacao')
@@ -68,6 +72,18 @@ export default function KanbanPage() {
     setRefreshing(true)
     await loadKanbanData()
     setRefreshing(false)
+  }
+
+  // Clicking a card opens the demand details in a right-side sheet over the
+  // Kanban. The board stays mounted underneath, so scroll position and the
+  // per-column expand/collapse state are preserved exactly when it closes.
+  const handleCardClick = (demand: KanbanDemand) => {
+    setSheetDemandId(demand.id)
+    setSheetOpen(true)
+  }
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setSheetOpen(open)
   }
 
   // Loading state

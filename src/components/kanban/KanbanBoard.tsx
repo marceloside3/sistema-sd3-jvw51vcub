@@ -19,6 +19,8 @@ interface KanbanBoardProps {
   currentUserId?: string
   isDark?: boolean
   onRefresh: () => Promise<void>
+  /** Fired when a card is clicked — opens the detail sheet over the Kanban. */
+  onCardClick?: (demand: KanbanDemand) => void
 }
 
 export function KanbanBoard({
@@ -328,6 +330,7 @@ export function KanbanBoard({
               }
             }}
             onMoveDirect={(d, target) => handleMoveDemand(d, target)}
+            onCardClick={onCardClick}
           />
         ))}
       </div>
