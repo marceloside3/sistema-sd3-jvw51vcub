@@ -267,3 +267,63 @@ export async function updateProjectStatus(
 
   return data
 }
+
+export interface ProjectAreaStatus {
+  areaId: string
+  areaName: string
+  total: number
+  pending: number
+  in_progress: number
+  review: number
+  done: number
+  cancelled: number
+  rejected: number
+  completedPct: number
+}
+
+/**
+ * Loads, on demand, the per-area demand breakdown for a single project.
+ * Demands are grouped by their destination area (`to_area_id`) and status.
+ * Used by the expandable status dropdown on the projects list page.
+ */
+export async function getProjectAreaStatus(projectId: string): Promise<ProjectAreaStatus[]> {
+  const { data, error } = await supabase
+    .from('demands')
+    .select('id, status, to_area_id, to_area:areas!demands_to_area_id_fkey(id, name)')
+    .eq('project_id', projectId)
+
+  if (error) throw error
+
+  const byArea = new Map<string, ProjectAreaStatus>()
+
+  for (const d of data || []) {
+    const areaId = d.to_area_id
+    if (!areaId) continue
+    const areaName = (d as any).to_area?.name || 'Sem área'
+    if (!byArea.has(areaId)) {
+      byArea.set(areaId, {
+        areaId,
+        areaName,
+        total: 0,
+        pending: 0,
+        in_progress: 0,
+        review: 0,
+        done: 0,
+        cancelled: 0,
+        rejected: 0,
+        completedPct: 0,
+      })
+    }
+    const a = byArea.get(areaId)!
+    a.total += 1
+    if (d.status in a) (a as any)[d.status] += 1
+  }
+
+  const result = Array.from(byArea.values())
+  for (const a of result) {
+    a.completedPct = a.total > 0 ? Math.round((a.done / a.total) * 100) : 0
+  }
+  // Sort by area name for stable display
+  result.sort((a, b) => a.areaName.localeCompare(b.areaName, 'pt-BR'))
+  return result
+}
