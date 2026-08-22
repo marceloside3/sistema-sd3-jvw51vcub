@@ -16,6 +16,8 @@ interface KanbanColumnProps {
   onAssignClick: (demand: KanbanDemand) => void
   onRequestFeedback: (demand: KanbanDemand) => void
   onMoveDirect: (demand: KanbanDemand, targetStage: KanbanStage) => void
+  /** Fired when a card is clicked — opens the detail sheet over the Kanban. */
+  onCardClick?: (demand: KanbanDemand) => void
 }
 
 const COLLAPSED_KEY = (stageId: string) => `kanban-col-collapsed-${stageId}`
@@ -215,6 +217,7 @@ export function KanbanColumn({
                 onAssignClick={onAssignClick}
                 onRequestFeedback={onRequestFeedback}
                 onMoveDirect={onMoveDirect}
+                onCardClick={onCardClick}
               />
             )
           })

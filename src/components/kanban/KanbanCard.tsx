@@ -145,6 +145,7 @@ export function KanbanCard({
   onAssignClick,
   onRequestFeedback,
   onMoveDirect,
+  onCardClick,
 }: KanbanCardProps) {
   const priorityInfo = getPriorityInfo(demand.priority)
   const due = demand.due_date ? formatDueLabel(demand.due_date) : null
@@ -254,14 +255,15 @@ export function KanbanCard({
           : 'cursor-default',
       )}
     >
-      {/* Title */}
+      {/* Title — opens the detail sheet over the Kanban (no route change). */}
       <div className="mb-2.5">
-        <Link
-          to={`/demandas/${demand.id}`}
-          className="block text-[13px] font-semibold text-zinc-900 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors dark:text-slate-100 dark:group-hover:text-indigo-400"
+        <button
+          type="button"
+          onClick={() => onCardClick?.(demand)}
+          className="block text-left w-full text-[13px] font-semibold text-zinc-900 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors dark:text-slate-100 dark:group-hover:text-indigo-400"
         >
           {demand.title}
-        </Link>
+        </button>
         {demand.project && (
           <span
             className="inline-block mt-1 text-[10px] font-medium text-zinc-400 truncate max-w-full dark:text-slate-400"

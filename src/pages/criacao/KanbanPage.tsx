@@ -145,6 +145,15 @@ export default function KanbanPage() {
         currentUserId={currentUser?.id}
         isDark={isDark}
         onRefresh={loadKanbanData}
+        onCardClick={handleCardClick}
+      />
+
+      {/* Demand detail flyout — opens over the Kanban (URL stays on /criacao). */}
+      <DemandDetailSheet
+        demandId={sheetDemandId}
+        open={sheetOpen}
+        onOpenChange={handleSheetOpenChange}
+        onDemandChanged={loadKanbanData}
       />
     </div>
   )

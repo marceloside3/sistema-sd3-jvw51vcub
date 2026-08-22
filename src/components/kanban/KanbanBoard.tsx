@@ -29,6 +29,7 @@ export function KanbanBoard({
   currentUserId,
   isDark,
   onRefresh,
+  onCardClick,
 }: KanbanBoardProps) {
   const { toast } = useToast()
 
