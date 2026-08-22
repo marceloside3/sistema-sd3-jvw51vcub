@@ -623,6 +623,21 @@ export default function DemandDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
+            {demand.tipo_criacao && (
+              <div className="space-y-1 pb-2">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Tipo de Criação
+                </span>
+                <p className="font-medium text-sm">
+                  {demand.tipo_criacao === 'peca_digital' && '🖥️ Peça Digital (SLA: 3 dias úteis)'}
+                  {demand.tipo_criacao === 'peca_impressa' &&
+                    '🖨️ Peça Impressa (SLA: 4 dias úteis)'}
+                  {demand.tipo_criacao === '3d' && '🧊 3D (SLA: 5 dias úteis)'}
+                  {!['peca_digital', 'peca_impressa', '3d'].includes(demand.tipo_criacao) &&
+                    demand.tipo_criacao}
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">

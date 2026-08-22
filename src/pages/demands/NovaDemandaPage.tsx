@@ -611,7 +611,66 @@ export default function NovaDemandaPage() {
             </div>
           </div>
 
-          {!isFinanceiroArea && null}
+          {!isFinanceiroArea && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Título *</Label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Título da demanda"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Descrição</Label>
+                <Textarea
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Descrição da demanda"
+                />
+              </div>
+            </div>
+          )}
+
+          {isCriacaoArea && (
+            <div className="grid grid-cols-2 gap-4 animate-fade-in">
+              <div className="space-y-2">
+                <Label>Tipo de Criação *</Label>
+                <Select
+                  value={formData.tipo_criacao}
+                  onValueChange={(v) =>
+                    handleTipoCriacaoChange(v as 'peca_digital' | 'peca_impressa' | '3d')
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="peca_digital">
+                      🖥️ Peça Digital (SLA: 3 dias úteis)
+                    </SelectItem>
+                    <SelectItem value="peca_impressa">
+                      🖨️ Peça Impressa (SLA: 4 dias úteis)
+                    </SelectItem>
+                    <SelectItem value="3d">🧊 3D (SLA: 5 dias úteis)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Prazo</Label>
+                <Input
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Preenchido automaticamente conforme o tipo de criação. Ajuste manualmente se
+                  necessário.
+                </p>
+              </div>
+            </div>
+          )}
 
           {isCriacaoArea && (
             <div className="pt-4 border-t space-y-4 animate-fade-in">
