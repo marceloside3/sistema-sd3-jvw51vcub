@@ -65,7 +65,13 @@ export function NotificationBell() {
         channelRef.current = null
       }
 
-      const channel = supabase.channel('notifications-realtime')
+      // Use a unique channel name per setupChannel call so the Supabase client
+      // never returns an already-subscribed cached channel (which would throw
+      // "cannot add `postgres_changes` callbacks after `subscribe()`" under
+      // React StrictMode double-invoked effects). Date.now() + random suffix
+      // guards against same-millisecond collisions.
+      const channelName = `notifications-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const channel = supabase.channel(channelName)
 
       // Register all postgres_changes callbacks BEFORE subscribing.
       // Supabase Realtime requires .on() calls to happen before .subscribe().
