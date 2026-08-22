@@ -65,8 +65,11 @@ export function NotificationBell() {
         channelRef.current = null
       }
 
-      const channel = supabase
-        .channel('notifications-realtime')
+      const channel = supabase.channel('notifications-realtime')
+
+      // Register all postgres_changes callbacks BEFORE subscribing.
+      // Supabase Realtime requires .on() calls to happen before .subscribe().
+      channel
         .on(
           'postgres_changes',
           {
@@ -103,14 +106,15 @@ export function NotificationBell() {
             if (isMounted) fetchNotifications(userId)
           },
         )
-        .subscribe((status) => {
-          if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && isMounted) {
-            if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
-            reconnectTimeoutRef.current = setTimeout(() => {
-              if (isMounted) setupChannel()
-            }, 5000)
-          }
-        })
+
+      channel.subscribe((status) => {
+        if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && isMounted) {
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMounted) setupChannel()
+          }, 5000)
+        }
+      })
 
       channelRef.current = channel
     }
