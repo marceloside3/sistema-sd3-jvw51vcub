@@ -26,10 +26,8 @@ export function SavingIndicator({
       className={cn(
         'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-all duration-300 border shadow-2xs select-none',
         status === 'saving' && 'text-muted-foreground bg-muted/80 border-border animate-pulse',
-        status === 'saved' &&
-          'text-emerald-700 bg-emerald-50 border-emerald-200/80',
-        status === 'error' &&
-          'text-destructive bg-destructive/10 border-destructive/30',
+        status === 'saved' && 'text-emerald-700 bg-emerald-50 border-emerald-200/80',
+        status === 'error' && 'text-destructive bg-destructive/10 border-destructive/30',
         status === 'idle' &&
           lastSavedAt &&
           'text-muted-foreground bg-background/80 border-border/60',

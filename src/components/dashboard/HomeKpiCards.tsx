@@ -55,13 +55,7 @@ export function HomeKpiCards({
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card
-          key={card.label}
-          className={cn(
-            'hover-card-elevate border-l-4',
-            card.border,
-          )}
-        >
+        <Card key={card.label} className={cn('hover-card-elevate border-l-4', card.border)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {card.label}
