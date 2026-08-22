@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase/client'
 import { DynamicBriefingStep } from '@/components/projects/DynamicBriefingStep'
 import { getBriefingFieldsForAreas } from '@/lib/briefing-fields'
 import { cn } from '@/lib/utils'
+import { DetailSkeleton } from '@/components/ui/page-skeleton'
 
 const MONTHS = [
   { value: '1', label: 'Janeiro' },
@@ -263,7 +264,7 @@ export default function ProjectFormPage() {
   }
 
   if (isLoadingProject) {
-    return <div className="p-8 text-center">Carregando projeto...</div>
+    return <DetailSkeleton />
   }
 
   const stepTitles = ['Cliente', 'Informações', 'Áreas', 'Briefing']

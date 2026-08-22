@@ -26,6 +26,7 @@ import { getAllUserDemands, checkAndNotifyDeadlineAlerts } from '@/services/dema
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { DemandKpiCards, type KpiCardKey } from '@/components/demands/DemandKpiCards'
 import { DEMAND_PRIORITY_CONFIG, DEMAND_STATUS_CONFIG } from '@/lib/constants/demand-status'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 type TabKey = 'received' | 'sent' | 'completed'
 type SortKey = 'title' | 'due_date' | 'priority' | 'status'
@@ -191,12 +192,8 @@ export default function MyDemandsPage() {
     }
   }
 
-  if (userLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
-      </div>
-    )
+  if (userLoading || loading) {
+    return <PageSkeleton kpiCount={4} />
   }
 
   return (

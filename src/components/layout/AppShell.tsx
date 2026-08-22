@@ -270,14 +270,18 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
 
 export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const location = useLocation()
 
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-50/80 dark:bg-zinc-950 transition-colors duration-300">
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />
+        {/* The `key` re-mounts the main element on every route change so the
+            `animate-page-enter` CSS animation replays, giving a smooth fade/slide
+            transition between screens. */}
         <main
-          key={useLocation().pathname}
+          key={location.pathname}
           className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 animate-page-enter"
         >
           <Outlet />

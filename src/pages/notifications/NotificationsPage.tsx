@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 const RedirectLink = ({ url }: { url: string }) => {
   const navigate = useNavigate()
@@ -80,11 +81,7 @@ export default function NotificationsPage() {
   }
 
   if (userLoading) {
-    return (
-      <div className="container mx-auto p-6 max-w-4xl flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
-      </div>
-    )
+    return <PageSkeleton kpiCount={0} />
   }
 
   return (

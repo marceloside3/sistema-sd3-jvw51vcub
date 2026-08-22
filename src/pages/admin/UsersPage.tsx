@@ -26,7 +26,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/use-toast'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,6 +33,7 @@ import { Search, Plus, Edit2, ChevronRight, ChevronDown, X } from 'lucide-react'
 import { UserKpiCards } from '@/components/admin/UserKpiCards'
 import { UserExpandedRow } from '@/components/admin/UserExpandedRow'
 import { UserFormDialog, UserFormData } from '@/components/admin/UserFormDialog'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 interface UserArea {
   is_principal: boolean
@@ -217,18 +217,7 @@ export default function UsersPage() {
   }
 
   if (isPageLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
+    return <PageSkeleton kpiCount={3} />
   }
 
   return (

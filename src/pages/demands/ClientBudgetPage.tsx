@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/financial'
 import { formatDateBR } from '@/lib/utils'
 import logoUrl from '@/assets/logoside3-0c37e.png'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 interface BudgetItem {
   id: string
@@ -64,7 +65,9 @@ export default function ClientBudgetPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center">Carregando...</div>
+  if (loading) {
+    return <PageSkeleton kpiCount={0} />
+  }
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
   const subtotal = items.reduce((sum, item) => sum + item.quantity * (item.unit_price ?? 0), 0)

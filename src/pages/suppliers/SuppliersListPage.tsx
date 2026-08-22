@@ -29,6 +29,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import { toast } from '@/components/ui/use-toast'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 export default function SuppliersListPage() {
   const [suppliers, setSuppliers] = useState<any[]>([])
@@ -56,6 +57,10 @@ export default function SuppliersListPage() {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
   }, [page, search, typeFilter])
+
+  if (loading) {
+    return <PageSkeleton kpiCount={0} />
+  }
 
   const formatDoc = (doc: string, type: string) => {
     const d = doc.replace(/\D/g, '')

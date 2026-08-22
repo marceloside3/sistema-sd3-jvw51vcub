@@ -27,6 +27,7 @@ import { useSlaConfig } from '@/hooks/use-sla-config'
 import { calculateSla } from '@/lib/sla'
 import { HubKpiCards, type HubKpiCardKey } from '@/components/hub/HubKpiCards'
 import { HubExpandedRow } from '@/components/hub/HubExpandedRow'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 export default function HubDashboardPage() {
   const [projects, setProjects] = useState<any[]>([])
@@ -132,6 +133,10 @@ export default function HubDashboardPage() {
   function getLeadArea(p: any): string {
     const lead = p.project_areas?.find((pa: any) => pa.is_lead)
     return lead?.area?.name || p.project_areas?.[0]?.area?.name || '-'
+  }
+
+  if (loading) {
+    return <PageSkeleton kpiCount={4} />
   }
 
   return (

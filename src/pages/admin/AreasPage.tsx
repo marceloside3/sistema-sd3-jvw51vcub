@@ -24,12 +24,14 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Edit2, Plus } from 'lucide-react'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 export default function AreasPage() {
   const { data: currentUser } = useCurrentUser()
   const isAdmin = currentUser?.profile?.is_admin === true
 
   const [areas, setAreas] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingArea, setEditingArea] = useState<any>(null)
 
@@ -49,7 +51,13 @@ export default function AreasPage() {
       setAreas(await getAreas())
     } catch (error) {
       toast({ title: 'Erro ao carregar áreas', variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
+  }
+
+  if (loading) {
+    return <PageSkeleton kpiCount={0} />
   }
 
   const openNewArea = () => {

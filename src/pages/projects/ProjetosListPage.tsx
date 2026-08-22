@@ -17,6 +17,7 @@ import { getProjects } from '@/services/projects'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { format } from 'date-fns'
 import { getProjectStatusBadge } from '@/lib/constants/project-status'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 export default function ProjetosListPage() {
   const { data: currentUser } = useCurrentUser()
@@ -49,6 +50,10 @@ export default function ProjetosListPage() {
 
     fetchProjects()
   }, [])
+
+  if (loading) {
+    return <PageSkeleton kpiCount={0} />
+  }
 
   const filtered = projects.filter(
     (p) =>

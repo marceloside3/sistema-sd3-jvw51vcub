@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/components/ui/use-toast'
+import { DetailSkeleton } from '@/components/ui/page-skeleton'
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Ativo',
@@ -133,23 +134,7 @@ export default function ProjetoDetalhePage() {
   const isDataReady = !loading && !userLoading && !!project && !!userCtx
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto space-y-6 pb-12">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" disabled>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-300">Carregando projeto...</h1>
-            <p className="text-sm text-gray-400">Aguarde enquanto carregamos os dados.</p>
-          </div>
-        </div>
-        <div className="border border-zinc-200/60 rounded-2xl bg-white p-12 shadow-sm text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
-          <p className="mt-4 text-sm text-gray-500">Processando...</p>
-        </div>
-      </div>
-    )
+    return <DetailSkeleton />
   }
   if (!project) return <div className="p-8 text-center text-gray-500">Projeto não encontrado</div>
 

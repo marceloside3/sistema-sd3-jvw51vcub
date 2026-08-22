@@ -30,6 +30,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 export default function ClientsPage() {
   const navigate = useNavigate()
@@ -69,6 +70,10 @@ export default function ClientsPage() {
     }, 300)
     return () => clearTimeout(timer)
   }, [page, search, statusFilter])
+
+  if (loading) {
+    return <PageSkeleton kpiCount={0} />
+  }
 
   const handleToggleStatus = async (client: any) => {
     try {

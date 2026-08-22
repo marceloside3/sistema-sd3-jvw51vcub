@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DetailSkeleton } from '@/components/ui/page-skeleton'
 
 interface RequiredField {
   key: string
@@ -229,7 +230,9 @@ export default function PaperEditPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center text-zinc-500">Carregando...</div>
+  if (loading) {
+    return <DetailSkeleton />
+  }
   if (!project) return <div className="p-8 text-center text-zinc-500">Projeto não encontrado</div>
 
   const canReview = isAdmin || isPlanningDirector

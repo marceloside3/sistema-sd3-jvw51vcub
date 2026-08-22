@@ -44,6 +44,7 @@ import {
 } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
+import { DetailSkeleton } from '@/components/ui/page-skeleton'
 import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
 import { DemandItemsSection } from '@/components/demands/DemandItemsSection'
 import { DemandFinancialHeader } from '@/components/demands/DemandFinancialHeader'
@@ -283,7 +284,7 @@ export default function DemandDetailsPage() {
 
   const canViewFinancialAndItems = isProducaoUser || isDemandCreator
 
-  if (loading) return <div className="p-8 text-center">Carregando...</div>
+  if (loading) return <DetailSkeleton />
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
   return (
