@@ -17,6 +17,7 @@ interface KanbanBoardProps {
   creatives: CreativeUser[]
   isDirector: boolean
   currentUserId?: string
+  isDark?: boolean
   onRefresh: () => Promise<void>
 }
 
@@ -26,6 +27,7 @@ export function KanbanBoard({
   creatives,
   isDirector,
   currentUserId,
+  isDark,
   onRefresh,
 }: KanbanBoardProps) {
   const { toast } = useToast()
@@ -283,7 +285,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 dark:bg-slate-900">
       {/* Filters Bar */}
       <KanbanFilters
         search={search}
@@ -310,6 +312,7 @@ export function KanbanBoard({
             allStages={stages}
             isDirector={isDirector}
             currentUserId={currentUserId}
+            isDark={isDark}
             onDragStart={handleDragStart}
             onDropDemand={handleDropDemand}
             onAssignClick={(d) => {

@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Sparkles, RefreshCw, ChevronRight, ShieldAlert, Loader2, Users } from 'lucide-react'
+import { Sparkles, RefreshCw, ShieldAlert, Loader2, Users, Sun, Moon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/hooks/use-toast'
+import { useCriacaoTheme } from '@/hooks/use-criacao-theme'
+import { cn } from '@/lib/utils'
 import {
   getKanbanStages,
   getCreationTeamUsers,
@@ -18,6 +20,7 @@ import {
 export default function KanbanPage() {
   const { data: currentUser, loading: userLoading } = useCurrentUser()
   const { toast } = useToast()
+  const { isDark, toggle: toggleTheme } = useCriacaoTheme()
 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -97,19 +100,24 @@ export default function KanbanPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-full">
+    <div
+      className={cn(
+        'space-y-6 max-w-full min-h-[calc(100vh-6rem)] transition-colors',
+        isDark && 'dark bg-slate-900',
+      )}
+    >
       {/* Header & Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-5 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center dark:bg-orange-950/40 dark:text-orange-400">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-zinc-900 flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-zinc-900 flex items-center gap-2 dark:text-slate-100">
                 Criação - Kanban
               </h1>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-500 dark:text-slate-400">
                 Fluxo de produção visual e distribuição de peças da equipe criativa
               </p>
             </div>
@@ -117,12 +125,27 @@ export default function KanbanPage() {
         </div>
         {/* Header Actions & Profile Badge */}
         <div className="flex items-center gap-2 self-start sm:self-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            className="relative hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors"
+            title={isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+            aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Moon className="w-5 h-5 text-zinc-600" />
+            )}
+          </Button>
+
           <NotificationBell />
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-100 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-100 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:bg-slate-800 dark:border-slate-700">
             <Users className="w-3.5 h-3.5 text-orange-500" />
-            <span className="text-zinc-400">Perfil:</span>
-            <span className="font-semibold text-zinc-700">
+            <span className="text-zinc-400 dark:text-slate-400">Perfil:</span>
+            <span className="font-semibold text-zinc-700 dark:text-slate-200">
               {isDirector ? 'Diretor de Criação' : 'Criativo'}
             </span>
           </div>
@@ -132,7 +155,7 @@ export default function KanbanPage() {
             size="sm"
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className="border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 text-xs h-8 rounded-xl"
+            className="border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 text-xs h-8 rounded-xl"
           >
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
             Atualizar
@@ -147,6 +170,7 @@ export default function KanbanPage() {
         creatives={creatives}
         isDirector={isDirector}
         currentUserId={currentUser?.id}
+        isDark={isDark}
         onRefresh={loadKanbanData}
       />
     </div>

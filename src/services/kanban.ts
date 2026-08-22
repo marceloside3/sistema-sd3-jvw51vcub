@@ -46,6 +46,15 @@ export interface KanbanDemand {
   created_at: string
   comment_count?: number
   attachment_count?: number
+  last_comment?: {
+    content: string
+    author_name: string
+    created_at: string
+  } | null
+  last_attachment?: {
+    file_name: string
+    created_at: string
+  } | null
   project?: {
     id: string
     name: string
@@ -187,6 +196,11 @@ export async function getKanbanDemands(): Promise<{
 
   let commentCountByDemand: Record<string, number> = {}
   let attachmentCountByDemand: Record<string, number> = {}
+  let lastCommentByDemand: Record<
+    string,
+    { content: string; author_name: string; created_at: string }
+  > = {}
+  let lastAttachmentByDemand: Record<string, { file_name: string; created_at: string }> = {}
 
   if (demandIds.length > 0) {
     const { data: assignmentsData, error: assignmentsError } = await db
@@ -220,36 +234,44 @@ export async function getKanbanDemands(): Promise<{
       )
     }
 
-    // Comment counts per demand
+    // Comment counts + latest comment per demand.
+    // Rows are ordered by created_at desc, so the first row seen for a demand is its latest.
     const { data: commentsAgg, error: commentsError } = await db
       .from('demand_comments')
-      .select('demand_id')
+      .select('demand_id, content, created_at, user:users!demand_comments_user_id_fkey(full_name)')
       .in('demand_id', demandIds)
+      .order('created_at', { ascending: false })
 
     if (!commentsError && commentsAgg) {
-      commentCountByDemand = (commentsAgg as any[]).reduce(
-        (acc: Record<string, number>, row: any) => {
-          acc[row.demand_id] = (acc[row.demand_id] || 0) + 1
-          return acc
-        },
-        {},
-      )
+      ;(commentsAgg as any[]).forEach((row: any) => {
+        commentCountByDemand[row.demand_id] = (commentCountByDemand[row.demand_id] || 0) + 1
+        if (!lastCommentByDemand[row.demand_id]) {
+          lastCommentByDemand[row.demand_id] = {
+            content: row.content || '',
+            author_name: row.user?.full_name || '—',
+            created_at: row.created_at,
+          }
+        }
+      })
     }
 
-    // Attachment counts per demand
+    // Attachment counts + latest attachment per demand (ordered desc).
     const { data: attachmentsAgg, error: attachmentsError } = await db
       .from('demand_attachments')
-      .select('demand_id')
+      .select('demand_id, file_name, created_at')
       .in('demand_id', demandIds)
+      .order('created_at', { ascending: false })
 
     if (!attachmentsError && attachmentsAgg) {
-      attachmentCountByDemand = (attachmentsAgg as any[]).reduce(
-        (acc: Record<string, number>, row: any) => {
-          acc[row.demand_id] = (acc[row.demand_id] || 0) + 1
-          return acc
-        },
-        {},
-      )
+      ;(attachmentsAgg as any[]).forEach((row: any) => {
+        attachmentCountByDemand[row.demand_id] = (attachmentCountByDemand[row.demand_id] || 0) + 1
+        if (!lastAttachmentByDemand[row.demand_id]) {
+          lastAttachmentByDemand[row.demand_id] = {
+            file_name: row.file_name || '',
+            created_at: row.created_at,
+          }
+        }
+      })
     }
   }
 
@@ -284,6 +306,8 @@ export async function getKanbanDemands(): Promise<{
       created_at: d.created_at,
       comment_count: commentCountByDemand[d.id] || 0,
       attachment_count: attachmentCountByDemand[d.id] || 0,
+      last_comment: lastCommentByDemand[d.id] || null,
+      last_attachment: lastAttachmentByDemand[d.id] || null,
       project: Array.isArray(d.project) ? d.project[0] : d.project,
       assignments,
       assigned_creative: assignedCreative,
