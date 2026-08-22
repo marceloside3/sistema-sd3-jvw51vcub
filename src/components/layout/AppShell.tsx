@@ -271,7 +271,6 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
 
 export function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const location = useLocation()
 
   // Enable native View Transitions (cross-fade + slide) between routes.
   // Browsers without the API are no-ops and fall back to the CSS
@@ -283,13 +282,7 @@ export function AppShell() {
       <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />
-        {/* The `key` re-mounts the main element on every route change so the
-            `animate-page-enter` CSS animation replays, giving a smooth fade/slide
-            transition between screens. */}
-        <main
-          key={location.pathname}
-          className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 animate-page-enter"
-        >
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 animate-page-enter">
           <Outlet />
         </main>
       </div>
