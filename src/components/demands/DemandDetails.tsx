@@ -304,15 +304,7 @@ export function DemandDetails({
     ),
   )
 
-  const isDemandCreator = Boolean(
-    userCtx?.id &&
-    (userCtx.id === demand?.from_user_id ||
-      userCtx.id === (demand as any)?.created_by ||
-      userCtx.id === demand?.from_user?.id),
-  )
-
-  const canViewFinancialAndItems = isProducaoUser || isDemandCreator
-
+  const canViewFinancialAndItems = isProducaoUser
   if (loading) return <DetailSkeleton />
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
