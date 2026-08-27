@@ -104,7 +104,6 @@ export function DistributionModal({
           users ( id, full_name )
         `)
         .in('area_id', areaIds)
-        .eq('is_principal', true)
 
       if (error) {
         toast({
