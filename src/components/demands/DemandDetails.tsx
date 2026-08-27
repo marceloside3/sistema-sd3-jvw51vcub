@@ -290,21 +290,38 @@ export function DemandDetails({
     }
   }
 
+  const [producaoAreaId, setProducaoAreaId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchProducaoAreaId() {
+      const { data } = await import('@/lib/supabase/client').then((m) =>
+        m.supabase
+          .from('areas')
+          .select('id, code, name')
+          .or('code.eq.producao,name.ilike.%produção%,name.ilike.%producao%')
+          .limit(1)
+          .maybeSingle(),
+      )
+      if (data?.id) {
+        setProducaoAreaId(data.id)
+      }
+    }
+    fetchProducaoAreaId()
+  }, [])
+
   const isCriacaoArea =
     demand?.to_area?.code === 'criacao' ||
     demand?.to_area?.name?.toLowerCase().includes('criação') ||
     demand?.to_area?.name?.toLowerCase().includes('criacao')
 
-  const isProducaoUser = Boolean(
-    userCtx?.areas?.some(
-      (a) =>
-        a.code?.toLowerCase() === 'producao' ||
-        a.name?.toLowerCase().includes('produção') ||
-        a.name?.toLowerCase().includes('producao'),
-    ),
+  const isProducaoDemand = Boolean(
+    (producaoAreaId && demand?.to_area_id === producaoAreaId) ||
+    demand?.to_area?.code === 'producao' ||
+    demand?.to_area?.name?.toLowerCase().includes('produção') ||
+    demand?.to_area?.name?.toLowerCase().includes('producao'),
   )
 
-  const canViewFinancialAndItems = isProducaoUser
+  const canViewFinancialAndItems = isProducaoDemand
   if (loading) return <DetailSkeleton />
   if (!demand) return <div className="p-8 text-center">Demanda não encontrada</div>
 
