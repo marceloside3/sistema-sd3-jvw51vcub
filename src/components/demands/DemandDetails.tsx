@@ -403,6 +403,15 @@ export function DemandDetails({
       {!isCriacaoArea && canViewFinancialAndItems && (
         <DemandFinancialHeader demandId={demand.id} refreshKey={auditRefreshKey} />
       )}
+      {/* Card destacado de Descrição da Demanda */}
+      {demand.description && (
+        <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50/50 p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-zinc-700 mb-3">📝 Descrição da Demanda</h2>
+          <p className="text-base text-foreground whitespace-pre-wrap leading-relaxed">
+            {demand.description}
+          </p>
+        </div>
+      )}
       {/* 2. Cabeçalho compacto de contexto e metadados da demanda */}{' '}
       <Card className="border shadow-sm bg-gradient-to-r from-card via-card to-muted/20">
         <CardContent className="p-4 sm:p-5">
@@ -536,13 +545,6 @@ export function DemandDetails({
             <div className="mt-3 bg-red-50 p-2.5 rounded border border-red-200 text-xs text-red-800 flex items-center gap-2">
               <strong className="font-semibold">Motivo ({demand.status}):</strong>
               <span>{demand.cancellation_reason}</span>
-            </div>
-          )}
-
-          {demand.description && (
-            <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground mr-1">Descrição:</span>
-              <span className="whitespace-pre-wrap">{demand.description}</span>
             </div>
           )}
 
