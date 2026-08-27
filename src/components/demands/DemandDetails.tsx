@@ -383,6 +383,7 @@ export function DemandDetails({
             filters={auditFilters}
           />
           {!isCriacaoArea &&
+            canViewFinancialAndItems &&
             (demand.status === 'done' ? (
               <Button asChild>
                 <Link to={`/demandas/${demand.id}/orcamento`}>
@@ -545,7 +546,7 @@ export function DemandDetails({
             </div>
           )}
 
-          {!isCriacaoArea && demand.status === 'done' && (
+          {!isCriacaoArea && canViewFinancialAndItems && demand.status === 'done' && (
             <div className="mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs">
               {' '}
               <div className="flex items-center gap-4">
