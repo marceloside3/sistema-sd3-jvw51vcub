@@ -34,6 +34,7 @@ import ClientFormPage from './pages/admin/ClientFormPage'
 import SuppliersListPage from './pages/suppliers/SuppliersListPage'
 import SupplierFormPage from './pages/suppliers/SupplierFormPage'
 import KanbanPage from './pages/criacao/KanbanPage'
+import PlanejamentoKanbanPage from './pages/planejamento/KanbanPage'
 
 const App = () => (
   <AuthProvider>
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
 
               <Route path="/criacao" element={<KanbanPage />} />
+              <Route path="/planejamento" element={<PlanejamentoKanbanPage />} />
               <Route path="/area/:area_slug" element={<AreaPage />} />
               <Route path="/auditoria" element={<AuditReport />} />
 

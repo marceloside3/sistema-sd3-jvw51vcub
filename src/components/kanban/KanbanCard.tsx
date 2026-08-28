@@ -26,11 +26,15 @@ interface KanbanCardProps {
   isDirector: boolean
   isMyCard: boolean
   onDragStart: (e: React.DragEvent, demand: KanbanDemand) => void
-  onAssignClick: (demand: KanbanDemand) => void
-  onRequestFeedback: (demand: KanbanDemand) => void
+  onAssignClick?: (demand: KanbanDemand) => void
+  onRequestFeedback?: (demand: KanbanDemand) => void
   onMoveDirect: (demand: KanbanDemand, targetStage: KanbanStage) => void
   /** Fired when the card body is clicked — opens the detail sheet over the Kanban. */
   onCardClick?: (demand: KanbanDemand) => void
+  /** Area-specific custom actions / permission rules handler */
+  areaCode?: string
+  canMoveToStage?: (demand: KanbanDemand, targetStage: KanbanStage) => boolean
+  onCustomValidate?: (demand: KanbanDemand, targetStage: KanbanStage) => void
 }
 
 // Priority badge styling — soft background, colored text
@@ -143,6 +147,9 @@ export function KanbanCard({
   onRequestFeedback,
   onMoveDirect,
   onCardClick,
+  areaCode = 'criacao',
+  canMoveToStage,
+  onCustomValidate,
 }: KanbanCardProps) {
   const priorityInfo = getPriorityInfo(demand.priority)
   const due = demand.due_date ? formatDueLabel(demand.due_date) : null
@@ -161,7 +168,28 @@ export function KanbanCard({
     }
   }
 
-  const canDrag = isDirector || isMyCard
+  const isPlanejamento = areaCode === 'planejamento'
+
+  // Drag permission:
+  // In Planejamento:
+  // - Pos 1 (Briefing): only director
+  // - Pos 2 (Reunião com Equipe): only director
+  // - Pos 3, 4, 5: both requester (isRequester) and requested/assignee (isMyCard) + director
+  // - Pos 6 (Apresentação Interna): only director
+  // - Pos 7 (Apresentação Atendimento): only director
+  let canDrag = isDirector || isMyCard
+  if (isPlanejamento) {
+    if (
+      currentStage.position === 1 ||
+      currentStage.position === 2 ||
+      currentStage.position === 6 ||
+      currentStage.position === 7
+    ) {
+      canDrag = isDirector
+    } else {
+      canDrag = isDirector || isMyCard
+    }
+  }
 
   const nextStage = allStages.find((s) => s.position === currentStage.position + 1)
   const commentCount = demand.comment_count ?? 0
@@ -361,84 +389,206 @@ export function KanbanCard({
                 Ver detalhes da demanda
               </DropdownMenuItem>
 
-              {isDirector && currentStage.position === 1 && nextStage && (
-                <DropdownMenuItem
-                  onClick={() => onAssignClick(demand)}
-                  className="text-amber-600 cursor-pointer"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 mr-2" />
-                  Distribuir (A Fazer)
-                </DropdownMenuItem>
-              )}
-
-              {isDirector && currentStage.position === 4 && (
+              {/* Context-aware actions for Planejamento vs Criação */}
+              {isPlanejamento ? (
                 <>
-                  <DropdownMenuSeparator />
-                  {nextStage && (
+                  {/* Pos 1: Briefing -> only Director can move to Reunião com Equipe */}
+                  {isDirector && currentStage.position === 1 && nextStage && (
                     <DropdownMenuItem
                       onClick={() => onMoveDirect(demand, nextStage)}
-                      className="text-violet-600 cursor-pointer"
+                      className="text-amber-600 cursor-pointer"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
-                      Aprovar (Aguardando Cliente)
+                      <ArrowRight className="w-3.5 h-3.5 mr-2" />
+                      Avançar para Reunião com Equipe
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => onRequestFeedback(demand)}
-                    className="text-rose-600 cursor-pointer"
-                  >
-                    <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
-                    Devolver p/ Criação
-                  </DropdownMenuItem>
-                </>
-              )}
 
-              {isDirector && currentStage.position === 5 && (
-                <>
-                  <DropdownMenuSeparator />
-                  {nextStage && (
+                  {/* Pos 2: Reunião com Equipe -> Director distributes/assigns */}
+                  {isDirector && currentStage.position === 2 && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        onAssignClick
+                          ? onAssignClick(demand)
+                          : nextStage && onMoveDirect(demand, nextStage)
+                      }
+                      className="text-blue-600 cursor-pointer"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 mr-2" />
+                      Distribuir para Equipe
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Pos 3: Realização de Pesquisa -> requester or requested can move to 4 */}
+                  {(isDirector || isMyCard) && currentStage.position === 3 && nextStage && (
                     <DropdownMenuItem
                       onClick={() => onMoveDirect(demand, nextStage)}
-                      className="text-emerald-600 cursor-pointer"
+                      className="text-cyan-600 cursor-pointer"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
-                      Cliente Aprovou (Concluir)
+                      <ArrowRight className="w-3.5 h-3.5 mr-2" />
+                      Avançar para Apresentação de Papper
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => onRequestFeedback(demand)}
-                    className="text-amber-600 cursor-pointer"
-                  >
-                    <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
-                    Cliente Pediu Ajustes
-                  </DropdownMenuItem>
+
+                  {/* Pos 4: Apresentação de Papper -> requester or requested can move to 5 */}
+                  {(isDirector || isMyCard) && currentStage.position === 4 && nextStage && (
+                    <DropdownMenuItem
+                      onClick={() => onMoveDirect(demand, nextStage)}
+                      className="text-purple-600 cursor-pointer"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 mr-2" />
+                      Avançar para Planejamento Apresentação
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Pos 5: Planejamento Apresentação -> requester or requested can move to 6 (Apresentação Interna) */}
+                  {(isDirector || isMyCard) && currentStage.position === 5 && nextStage && (
+                    <DropdownMenuItem
+                      onClick={() => onMoveDirect(demand, nextStage)}
+                      className="text-pink-600 cursor-pointer"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 mr-2" />
+                      Enviar para Apresentação Interna
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Pos 6: Apresentação Interna -> Director validates, checks areas, adjusts or approves to 7 */}
+                  {isDirector && currentStage.position === 6 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {onCustomValidate ? (
+                        <DropdownMenuItem
+                          onClick={() => nextStage && onCustomValidate(demand, nextStage)}
+                          className="text-rose-600 font-medium cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+                          Validar Apresentação / Checar Áreas
+                        </DropdownMenuItem>
+                      ) : (
+                        nextStage && (
+                          <DropdownMenuItem
+                            onClick={() => onMoveDirect(demand, nextStage)}
+                            className="text-emerald-600 cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
+                            Aprovar para Apresentação Atendimento
+                          </DropdownMenuItem>
+                        )
+                      )}
+                      {onRequestFeedback && (
+                        <DropdownMenuItem
+                          onClick={() => onRequestFeedback(demand)}
+                          className="text-rose-600 cursor-pointer"
+                        >
+                          <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
+                          Solicitar Ajustes
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+
+                  {/* Pos 7: Apresentação Atendimento -> Director presents to Atendimento / client */}
+                  {isDirector && currentStage.position === 7 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {onRequestFeedback && (
+                        <DropdownMenuItem
+                          onClick={() => onRequestFeedback(demand)}
+                          className="text-amber-600 cursor-pointer"
+                        >
+                          <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
+                          Ajustes do Atendimento / Cliente
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
                 </>
-              )}
+              ) : (
+                /* Standard Criação Actions */
+                <>
+                  {isDirector && currentStage.position === 1 && nextStage && onAssignClick && (
+                    <DropdownMenuItem
+                      onClick={() => onAssignClick(demand)}
+                      className="text-amber-600 cursor-pointer"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 mr-2" />
+                      Distribuir (A Fazer)
+                    </DropdownMenuItem>
+                  )}
 
-              {(isDirector || isMyCard) && currentStage.position === 2 && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    const s3 = allStages.find((s) => s.position === 3)
-                    if (s3) onMoveDirect(demand, s3)
-                  }}
-                  className="cursor-pointer"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-                  Iniciar (Em Criação)
-                </DropdownMenuItem>
-              )}
+                  {isDirector && currentStage.position === 4 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {nextStage && (
+                        <DropdownMenuItem
+                          onClick={() => onMoveDirect(demand, nextStage)}
+                          className="text-violet-600 cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
+                          Aprovar (Aguardando Cliente)
+                        </DropdownMenuItem>
+                      )}
+                      {onRequestFeedback && (
+                        <DropdownMenuItem
+                          onClick={() => onRequestFeedback(demand)}
+                          className="text-rose-600 cursor-pointer"
+                        >
+                          <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
+                          Devolver p/ Criação
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
 
-              {(isDirector || isMyCard) && currentStage.position === 3 && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    const s4 = allStages.find((s) => s.position === 4)
-                    if (s4) onMoveDirect(demand, s4)
-                  }}
-                  className="cursor-pointer"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 mr-2 text-rose-500" />
-                  Enviar p/ Revisão Interna
-                </DropdownMenuItem>
+                  {isDirector && currentStage.position === 5 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {nextStage && (
+                        <DropdownMenuItem
+                          onClick={() => onMoveDirect(demand, nextStage)}
+                          className="text-emerald-600 cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
+                          Cliente Aprovou (Concluir)
+                        </DropdownMenuItem>
+                      )}
+                      {onRequestFeedback && (
+                        <DropdownMenuItem
+                          onClick={() => onRequestFeedback(demand)}
+                          className="text-amber-600 cursor-pointer"
+                        >
+                          <CornerUpLeft className="w-3.5 h-3.5 mr-2" />
+                          Cliente Pediu Ajustes
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+
+                  {(isDirector || isMyCard) && currentStage.position === 2 && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const s3 = allStages.find((s) => s.position === 3)
+                        if (s3) onMoveDirect(demand, s3)
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+                      Iniciar (Em Criação)
+                    </DropdownMenuItem>
+                  )}
+
+                  {(isDirector || isMyCard) && currentStage.position === 3 && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const s4 = allStages.find((s) => s.position === 4)
+                        if (s4) onMoveDirect(demand, s4)
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 mr-2 text-rose-500" />
+                      Enviar p/ Revisão Interna
+                    </DropdownMenuItem>
+                  )}
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

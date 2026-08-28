@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Truck,
   Palette,
+  Compass,
 } from 'lucide-react'
 
 import { NotificationBell } from '@/components/notifications/NotificationBell'
@@ -49,6 +50,10 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
     data?.profile?.is_system ||
     (data?.profile?.is_director && data?.areas?.some((a) => a.is_hub))
   const canSeeCriacao = data?.profile?.is_admin || data?.areas?.some((a) => a.code === 'criacao')
+  const canSeePlanejamento =
+    data?.profile?.is_admin ||
+    data?.areas?.some((a) => a.code === 'planejamento') ||
+    data?.profile?.code === 'planejamento'
 
   return (
     <>
@@ -127,6 +132,17 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               >
                 <Palette className="w-4 h-4 mr-3 shrink-0" />
                 Kanban Criação
+              </Link>
+            )}
+
+            {canSeePlanejamento && (
+              <Link
+                to="/planejamento"
+                onClick={() => setIsOpen(false)}
+                className={navLinkClass(location.pathname.startsWith('/planejamento'))}
+              >
+                <Compass className="w-4 h-4 mr-3 shrink-0" />
+                Kanban Planejamento
               </Link>
             )}
 

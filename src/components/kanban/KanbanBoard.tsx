@@ -17,6 +17,7 @@ interface KanbanBoardProps {
   creatives: CreativeUser[]
   isDirector: boolean
   currentUserId?: string
+  areaCode?: string
   onRefresh: () => Promise<void>
   /** Fired when a card is clicked — opens the detail sheet over the Kanban. */
   onCardClick?: (demand: KanbanDemand) => void
@@ -28,6 +29,7 @@ export function KanbanBoard({
   creatives,
   isDirector,
   currentUserId,
+  areaCode = 'criacao',
   onRefresh,
   onCardClick,
 }: KanbanBoardProps) {

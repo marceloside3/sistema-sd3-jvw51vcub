@@ -25,6 +25,8 @@ interface AssignDialogProps {
   demand: KanbanDemand | null
   creatives: CreativeUser[]
   onConfirm: (creativeUserId: string) => Promise<void>
+  targetStageName?: string
+  roleLabel?: string
 }
 
 export function AssignDialog({
@@ -33,6 +35,8 @@ export function AssignDialog({
   demand,
   creatives,
   onConfirm,
+  targetStageName = 'A Fazer',
+  roleLabel = 'criativo',
 }: AssignDialogProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
@@ -63,8 +67,8 @@ export function AssignDialog({
             </DialogTitle>
           </div>
           <DialogDescription className="text-zinc-500 text-xs">
-            Atribua um criativo da equipe para mover a demanda para{' '}
-            <strong className="text-blue-500 font-medium">A Fazer</strong>.
+            Atribua um membro da equipe para mover a demanda para{' '}
+            <strong className="text-blue-500 font-medium">{targetStageName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -81,19 +85,19 @@ export function AssignDialog({
 
         <div className="space-y-3 py-2">
           <Label htmlFor="creative-select" className="text-xs font-medium text-zinc-700">
-            Selecione o Criativo Responsável <span className="text-rose-500">*</span>
+            Selecione o Responsável <span className="text-rose-500">*</span>
           </Label>
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
             <SelectTrigger
               id="creative-select"
               className="w-full bg-zinc-50 border-zinc-200 text-zinc-800 placeholder:text-zinc-400 focus:ring-orange-500 rounded-xl"
             >
-              <SelectValue placeholder="Escolha um criativo..." />
+              <SelectValue placeholder={`Escolha um ${roleLabel}...`} />
             </SelectTrigger>
             <SelectContent className="bg-white border-zinc-200 text-zinc-800">
               {availableCreatives.length === 0 ? (
                 <div className="p-2 text-xs text-zinc-400 text-center">
-                  Nenhum criativo disponível
+                  Nenhum membro disponível
                 </div>
               ) : (
                 availableCreatives.map((creative) => (

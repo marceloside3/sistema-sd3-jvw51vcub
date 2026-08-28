@@ -75,6 +75,8 @@ export interface CreativeUser {
   is_director: boolean
 }
 
+export type TeamUser = CreativeUser
+
 /**
  * Fetch all kanban stages for a specific area (default: 'criacao')
  */
@@ -100,13 +102,13 @@ export async function getKanbanStages(areaCode: string = 'criacao'): Promise<Kan
 }
 
 /**
- * Fetch creative team users for Criação area (users assigned to area 'criacao')
+ * Fetch team users for an area (e.g., 'criacao', 'planejamento')
  */
-export async function getCreationTeamUsers(): Promise<CreativeUser[]> {
+export async function getAreaTeamUsers(areaCode: string = 'criacao'): Promise<TeamUser[]> {
   const { data: area, error: areaError } = await db
     .from('areas')
     .select('id')
-    .eq('code', 'criacao')
+    .eq('code', areaCode)
     .single()
 
   if (areaError || !area) throw areaError
@@ -126,7 +128,7 @@ export async function getCreationTeamUsers(): Promise<CreativeUser[]> {
 
   if (error) throw error
 
-  const usersMap = new Map<string, CreativeUser>()
+  const usersMap = new Map<string, TeamUser>()
   ;(data || []).forEach((item: any) => {
     if (item.user && item.user.id) {
       const isDirector = Boolean(item.user.profile?.is_director)
@@ -143,16 +145,23 @@ export async function getCreationTeamUsers(): Promise<CreativeUser[]> {
 }
 
 /**
- * Fetch demands for the Criação Kanban board
+ * Fetch creative team users for Criação area (backward compatibility)
  */
-export async function getKanbanDemands(): Promise<{
+export async function getCreationTeamUsers(): Promise<CreativeUser[]> {
+  return getAreaTeamUsers('criacao')
+}
+
+/**
+ * Fetch demands for an Area's Kanban board (e.g. 'criacao', 'planejamento')
+ */
+export async function getKanbanDemands(areaCode: string = 'criacao'): Promise<{
   demands: KanbanDemand[]
   areaId: string
 }> {
   const { data: area, error: areaError } = await db
     .from('areas')
     .select('id')
-    .eq('code', 'criacao')
+    .eq('code', areaCode)
     .single()
 
   if (areaError || !area) throw areaError
@@ -164,9 +173,9 @@ export async function getKanbanDemands(): Promise<{
     .eq('area_id', area.id)
     .order('position', { ascending: true })
 
-  const filaStage = stages?.find((s: any) => s.position === 1 || s.name.includes('Fila'))
+  const firstStage = stages?.find((s: any) => s.position === 1)
 
-  // Fetch all demands assigned to to_area_id = criacao
+  // Fetch all demands assigned to to_area_id = area.id
   const { data: demandsData, error: demandsError } = await db
     .from('demands')
     .select(`
@@ -298,7 +307,7 @@ export async function getKanbanDemands(): Promise<{
       due_date: d.due_date,
       tipo_criacao: d.tipo_criacao || null,
       // Gate do Diretor: if no stage, it belongs to "Fila do Diretor"
-      kanban_stage_id: d.kanban_stage_id || filaStage?.id || null,
+      kanban_stage_id: d.kanban_stage_id || firstStage?.id || null,
       to_user_id: d.to_user_id,
       from_user_id: d.from_user_id,
       to_area_id: d.to_area_id,

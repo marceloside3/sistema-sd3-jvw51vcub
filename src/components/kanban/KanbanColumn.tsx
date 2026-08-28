@@ -12,11 +12,13 @@ interface KanbanColumnProps {
   currentUserId?: string
   onDragStart: (e: React.DragEvent, demand: KanbanDemand) => void
   onDropDemand: (targetStage: KanbanStage) => void
-  onAssignClick: (demand: KanbanDemand) => void
-  onRequestFeedback: (demand: KanbanDemand) => void
+  onAssignClick?: (demand: KanbanDemand) => void
+  onRequestFeedback?: (demand: KanbanDemand) => void
   onMoveDirect: (demand: KanbanDemand, targetStage: KanbanStage) => void
   /** Fired when a card is clicked — opens the detail sheet over the Kanban. */
   onCardClick?: (demand: KanbanDemand) => void
+  areaCode?: string
+  onCustomValidate?: (demand: KanbanDemand, targetStage: KanbanStage) => void
 }
 
 const COLLAPSED_KEY = (stageId: string) => `kanban-col-collapsed-${stageId}`
@@ -56,6 +58,8 @@ export function KanbanColumn({
   onRequestFeedback,
   onMoveDirect,
   onCardClick,
+  areaCode = 'criacao',
+  onCustomValidate,
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [collapsed, setCollapsed] = useState<boolean>(() => readCollapsed(stage.id))
@@ -185,6 +189,7 @@ export function KanbanColumn({
               currentUserId &&
               (demand.assigned_creative?.id === currentUserId ||
                 demand.to_user_id === currentUserId ||
+                demand.from_user_id === currentUserId ||
                 demand.assignments?.some((a) => a.assigned_to === currentUserId)),
             )
 
@@ -201,6 +206,8 @@ export function KanbanColumn({
                 onRequestFeedback={onRequestFeedback}
                 onMoveDirect={onMoveDirect}
                 onCardClick={onCardClick}
+                areaCode={areaCode}
+                onCustomValidate={onCustomValidate}
               />
             )
           })

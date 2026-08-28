@@ -18,9 +18,20 @@ interface FeedbackDialogProps {
   onOpenChange: (open: boolean) => void
   demand: KanbanDemand | null
   onConfirm: (feedback: string) => Promise<void>
+  title?: string
+  description?: string
+  targetAreaName?: string
 }
 
-export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: FeedbackDialogProps) {
+export function FeedbackDialog({
+  open,
+  onOpenChange,
+  demand,
+  onConfirm,
+  title = 'Devolver para Ajustes',
+  description = 'Informe o que precisa ser ajustado ou revisado.',
+  targetAreaName,
+}: FeedbackDialogProps) {
   const [feedback, setFeedback] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -42,13 +53,9 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
         <DialogHeader>
           <div className="flex items-center gap-2 text-rose-500">
             <AlertCircle className="w-5 h-5" />
-            <DialogTitle className="text-lg font-semibold text-zinc-900">
-              Devolver para Criação (Ajustes)
-            </DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-zinc-900">{title}</DialogTitle>
           </div>
-          <DialogDescription className="text-zinc-500 text-xs">
-            Informe ao criativo o que precisa ser ajustado ou revisado na peça.
-          </DialogDescription>
+          <DialogDescription className="text-zinc-500 text-xs">{description}</DialogDescription>
         </DialogHeader>
 
         {demand && (
@@ -56,7 +63,7 @@ export function FeedbackDialog({ open, onOpenChange, demand, onConfirm }: Feedba
             <p className="text-xs font-semibold text-zinc-800 line-clamp-1">{demand.title}</p>
             {demand.assigned_creative && (
               <p className="text-[11px] text-zinc-500">
-                Criativo:{' '}
+                Responsável:{' '}
                 <span className="text-orange-500 font-medium">
                   {demand.assigned_creative.full_name}
                 </span>
