@@ -316,14 +316,80 @@ export default function ProjetoDetalhePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="timeline" className="w-full">
+      <Tabs defaultValue="detalhes" className="w-full">
         <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="demandas">Demandas</TabsTrigger>
           <TabsTrigger value="anexos">Anexos</TabsTrigger>
-          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="detalhes" className="mt-6 space-y-6">
+          <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-6">Informações Gerais</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Cliente</div>
+                  <div className="font-medium">{project.client?.name}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Área Líder</div>
+                  <div className="font-medium">{leadArea || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Período</div>
+                  <div className="font-medium flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    {formatDateBR(project.start_date)} até {formatDateBR(project.end_date)}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Descrição / Escopo</div>
+                <div className="text-sm whitespace-pre-wrap">
+                  {project.description || 'Sem descrição'}
+                </div>
+
+                <div className="mt-6">
+                  <div className="text-sm text-gray-500 mb-2">Todas as Áreas Envolvidas</div>
+                  <div className="flex flex-wrap gap-2">
+                    {project.areas?.map((a: any) => (
+                      <Badge key={a.id} variant="secondary">
+                        {a.area?.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-6">Briefing do Projeto</h3>
+            {(() => {
+              const briefingEntries = getDynamicBriefingEntries(project.briefing_data)
+              if (briefingEntries.length === 0) {
+                return (
+                  <p className="text-sm text-gray-500">
+                    Nenhum dado de briefing preenchido para este projeto.
+                  </p>
+                )
+              }
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {briefingEntries.map((entry) => (
+                    <div key={entry.key}>
+                      <div className="text-sm text-gray-500 mb-1">{entry.label}</div>
+                      <div className="text-sm whitespace-pre-wrap break-words">{entry.value}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </div>
+        </TabsContent>
 
         <TabsContent
           value="timeline"
@@ -432,72 +498,6 @@ export default function ProjetoDetalhePage() {
           className="mt-6 border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm"
         >
           {project.id && <AttachmentsSection type="project" entityId={project.id} />}
-        </TabsContent>
-
-        <TabsContent value="detalhes" className="mt-6 space-y-6">
-          <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold mb-6">Informações Gerais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Cliente</div>
-                  <div className="font-medium">{project.client?.name}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Área Líder</div>
-                  <div className="font-medium">{leadArea || '-'}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Período</div>
-                  <div className="font-medium flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    {formatDateBR(project.start_date)} até {formatDateBR(project.end_date)}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Descrição / Escopo</div>
-                <div className="text-sm whitespace-pre-wrap">
-                  {project.description || 'Sem descrição'}
-                </div>
-
-                <div className="mt-6">
-                  <div className="text-sm text-gray-500 mb-2">Todas as Áreas Envolvidas</div>
-                  <div className="flex flex-wrap gap-2">
-                    {project.areas?.map((a: any) => (
-                      <Badge key={a.id} variant="secondary">
-                        {a.area?.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold mb-6">Briefing do Projeto</h3>
-            {(() => {
-              const briefingEntries = getDynamicBriefingEntries(project.briefing_data)
-              if (briefingEntries.length === 0) {
-                return (
-                  <p className="text-sm text-gray-500">
-                    Nenhum dado de briefing preenchido para este projeto.
-                  </p>
-                )
-              }
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {briefingEntries.map((entry) => (
-                    <div key={entry.key}>
-                      <div className="text-sm text-gray-500 mb-1">{entry.label}</div>
-                      <div className="text-sm whitespace-pre-wrap break-words">{entry.value}</div>
-                    </div>
-                  ))}
-                </div>
-              )
-            })()}
-          </div>
         </TabsContent>
 
         <TabsContent value="historico" className="mt-6">

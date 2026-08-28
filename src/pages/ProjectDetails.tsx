@@ -66,12 +66,48 @@ export default function ProjectDetails() {
         </Button>
       </div>
 
-      <Tabs defaultValue="timeline" className="w-full">
+      <Tabs defaultValue="details" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="details">Detalhes</TabsTrigger>
           <TabsTrigger value="timeline">Timeline (Áreas)</TabsTrigger>
           <TabsTrigger value="demands">Demandas ({project.demands?.length || 0})</TabsTrigger>
-          <TabsTrigger value="details">Detalhes</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações do Projeto</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <strong className="block text-sm text-gray-500">Descrição</strong>
+                <p>{project.description || 'Nenhuma'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                <div>
+                  <strong className="block text-sm text-gray-500">Data de Início</strong>
+                  <p>
+                    {project.start_date ? format(new Date(project.start_date), 'dd/MM/yyyy') : '-'}
+                  </p>
+                </div>
+                <div>
+                  <strong className="block text-sm text-gray-500">Data de Fim</strong>
+                  <p>{project.end_date ? format(new Date(project.end_date), 'dd/MM/yyyy') : '-'}</p>
+                </div>
+              </div>
+              <div className="border-t pt-4">
+                <strong className="block text-sm text-gray-500 mb-2">Áreas Envolvidas</strong>
+                <div className="flex gap-2">
+                  {project.project_areas?.map((pa: any) => (
+                    <Badge key={pa.area.id} variant={pa.is_lead ? 'default' : 'secondary'}>
+                      {pa.area.name} {pa.is_lead && '(Lead)'}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="timeline">
           <Card>
@@ -150,42 +186,6 @@ export default function ProjectDetails() {
               </Card>
             ))}
           </div>
-        </TabsContent>
-
-        <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Projeto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <strong className="block text-sm text-gray-500">Descrição</strong>
-                <p>{project.description || 'Nenhuma'}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                <div>
-                  <strong className="block text-sm text-gray-500">Data de Início</strong>
-                  <p>
-                    {project.start_date ? format(new Date(project.start_date), 'dd/MM/yyyy') : '-'}
-                  </p>
-                </div>
-                <div>
-                  <strong className="block text-sm text-gray-500">Data de Fim</strong>
-                  <p>{project.end_date ? format(new Date(project.end_date), 'dd/MM/yyyy') : '-'}</p>
-                </div>
-              </div>
-              <div className="border-t pt-4">
-                <strong className="block text-sm text-gray-500 mb-2">Áreas Envolvidas</strong>
-                <div className="flex gap-2">
-                  {project.project_areas?.map((pa: any) => (
-                    <Badge key={pa.area.id} variant={pa.is_lead ? 'default' : 'secondary'}>
-                      {pa.area.name} {pa.is_lead && '(Lead)'}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
