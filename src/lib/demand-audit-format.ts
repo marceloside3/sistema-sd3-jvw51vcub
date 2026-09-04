@@ -22,6 +22,11 @@ export const DEMAND_AUDIT_FIELD_LABELS: Record<string, string> = {
   item_added: 'Item Adicionado',
   item_removed: 'Item Removido',
   finance_request: 'Envio para Financeiro',
+  finance_due_date: 'Vencimento Financeiro',
+  finance_payment_method: 'Forma de Pagamento',
+  finance_is_urgent: 'Pagamento Urgente',
+  finance_justification: 'Justificativa de Urgência',
+  finance_boleto_attachment: 'Anexo de Boleto',
 }
 
 const CURRENCY_FIELDS = ['unit_price', 'unit_cost', 'extra_cost', 'total_cost']
@@ -50,6 +55,11 @@ export const FIELD_LABELS: Record<string, string> = {
   item_added: 'Item Adicionado',
   item_removed: 'Item Removido',
   finance_request: 'Envio para Financeiro',
+  finance_due_date: 'Vencimento Financeiro',
+  finance_payment_method: 'Forma de Pagamento',
+  finance_is_urgent: 'Pagamento Urgente',
+  finance_justification: 'Justificativa de Urgência',
+  finance_boleto_attachment: 'Anexo de Boleto',
 }
 
 const COST_STATUS_LABELS: Record<string, string> = {

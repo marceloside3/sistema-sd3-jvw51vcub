@@ -1,6 +1,19 @@
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/financial'
 
+export type PaymentMethod = 'transferencia' | 'pix' | 'boleto'
+
+export interface PaymentDetails {
+  bank?: string | null
+  agency?: string | null
+  account?: string | null
+  account_type?: string | null
+  pix_key?: string | null
+  operation?: string | null
+  supplier_name?: string | null
+  supplier_document?: string | null
+}
+
 export interface FinanceRequest {
   id: string
   demand_item_id: string
@@ -17,6 +30,10 @@ export interface FinanceRequest {
   due_date: string
   justification: string | null
   is_urgent: boolean
+  payment_method?: PaymentMethod | null
+  payment_details?: PaymentDetails | null
+  boleto_url?: string | null
+  boleto_file_name?: string | null
 }
 
 export async function getFinanceRequestsByDemand(demandId: string): Promise<FinanceRequest[]> {
@@ -27,6 +44,26 @@ export async function getFinanceRequestsByDemand(demandId: string): Promise<Fina
 
   if (error) throw error
   return (data || []) as FinanceRequest[]
+}
+
+export async function uploadBoletoAttachment(
+  demandId: string,
+  file: File,
+): Promise<{ storagePath: string; fileName: string }> {
+  const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
+  const timestamp = Date.now()
+  const storagePath = `${demandId}/boletos/${timestamp}_${sanitizedFileName}`
+
+  const { error } = await supabase.storage.from('demand-files').upload(storagePath, file, {
+    cacheControl: '3600',
+    upsert: false,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return { storagePath, fileName: file.name }
 }
 
 export async function createFinanceRequest(params: {
@@ -41,6 +78,10 @@ export async function createFinanceRequest(params: {
   due_date: string
   is_urgent: boolean
   justification?: string | null
+  payment_method: PaymentMethod
+  payment_details?: PaymentDetails | null
+  boleto_url?: string | null
+  boleto_file_name?: string | null
 }): Promise<FinanceRequest> {
   const { data, error } = await supabase
     .from('finance_requests')
@@ -58,7 +99,11 @@ export async function createFinanceRequest(params: {
         due_date: params.due_date,
         is_urgent: params.is_urgent,
         justification: params.justification || null,
-      },
+        payment_method: params.payment_method,
+        payment_details: params.payment_details || {},
+        boleto_url: params.boleto_url || null,
+        boleto_file_name: params.boleto_file_name || null,
+      } as any,
     ])
     .select()
     .single()
