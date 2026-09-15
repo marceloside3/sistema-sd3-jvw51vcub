@@ -4,6 +4,7 @@
     "invite-user": 72,
     "generate-meeting-ics": 72,
     "parse-lpu": 2,
-    "create-test-users": 48
+    "create-test-users": 48,
+    "kamino-suppliers": 1
   }
 }

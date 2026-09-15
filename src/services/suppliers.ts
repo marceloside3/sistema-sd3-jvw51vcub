@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 
 export interface Supplier {
   id: string
+  kamino_id: number | null
   document: string | null
   supplier_type: string | null
   name: string | null
@@ -26,6 +27,7 @@ export interface Supplier {
 }
 
 export interface SupplierInput {
+  kamino_id?: number | null
   document?: string | null
   supplier_type?: string | null
   name?: string | null
@@ -45,6 +47,67 @@ export interface SupplierInput {
   operation?: string | null
   pix_key?: string | null
   observations?: string | null
+}
+
+export interface KaminoSupplierSearchResult {
+  ID: number
+  Nome?: string | null
+  NomeFantasia?: string | null
+  NomeExibicao?: string | null
+  CPFCNPJ?: string | null
+  TipoEmpresa?: number | null
+  Email?: string | null
+  EmailPrincipal?: string | null
+  Telefone?: string | null
+  TelefonePrincipal?: string | null
+  Celular?: string | null
+  Logradouro?: string | null
+  Nro?: string | null
+  Complemento?: string | null
+  Bairro?: string | null
+  CEP?: string | null
+  Cidade?: string | null
+  UF?: string | null
+  ChavePix?: string | null
+  NomeBancoPix?: string | null
+}
+
+export interface KaminoSupplierSearchResponse {
+  data: KaminoSupplierSearchResult[]
+  page: number
+  pageSize: number
+  totalRows: number
+  totalPages: number
+}
+
+async function invokeKaminoSuppliers<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('kamino-suppliers', { body })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data as T
+}
+
+export async function searchKaminoSuppliers(
+  search: string,
+  page = 1,
+  pageSize = 25,
+): Promise<KaminoSupplierSearchResponse> {
+  return invokeKaminoSuppliers<KaminoSupplierSearchResponse>({
+    action: 'search',
+    search,
+    page,
+    pageSize,
+  })
+}
+
+export async function importKaminoSupplier(kaminoId: number): Promise<{
+  data: Supplier
+  alreadyImported: boolean
+}> {
+  return invokeKaminoSuppliers<{ data: Supplier; alreadyImported: boolean }>({
+    action: 'import',
+    kaminoId,
+  })
 }
 
 export async function searchSuppliers(search: string): Promise<Supplier[]> {

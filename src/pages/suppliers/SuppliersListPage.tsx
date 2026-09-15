@@ -30,8 +30,16 @@ import {
 } from '@/components/ui/pagination'
 import { toast } from '@/components/ui/use-toast'
 import { PageSkeleton } from '@/components/ui/page-skeleton'
+import { KaminoSupplierImport } from '@/components/suppliers/KaminoSupplierImport'
+import { useCurrentUser } from '@/hooks/use-current-user'
 
 export default function SuppliersListPage() {
+  const { data: currentUser } = useCurrentUser()
+  const canImportFromKamino =
+    currentUser?.profile?.is_admin === true ||
+    currentUser?.profile?.code === 'producao' ||
+    String(currentUser?.profile?.name || '').toLowerCase() === 'produção' ||
+    currentUser?.areas?.some((area) => area.code === 'producao' || area.name === 'Produção')
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -62,8 +70,8 @@ export default function SuppliersListPage() {
     return <PageSkeleton kpiCount={0} />
   }
 
-  const formatDoc = (doc: string, type: string) => {
-    const d = doc.replace(/\D/g, '')
+  const formatDoc = (doc: string | null, type: string | null) => {
+    const d = (doc || '').replace(/\D/g, '')
     if (type === 'PF') return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
     return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
   }
@@ -86,6 +94,8 @@ export default function SuppliersListPage() {
           </Button>
         </div>
       </div>
+
+      {canImportFromKamino && <KaminoSupplierImport />}
 
       <div className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-sm">
@@ -137,13 +147,17 @@ export default function SuppliersListPage() {
                 <TableCell className="font-semibold">{s.name}</TableCell>
                 <TableCell>
                   <Badge
-                    variant={s.type === 'PF' ? 'outline' : 'default'}
-                    className={s.type === 'PF' ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}
+                    variant={s.supplier_type === 'PF' ? 'outline' : 'default'}
+                    className={
+                      s.supplier_type === 'PF' ? 'bg-blue-50 text-blue-700 border-blue-200' : ''
+                    }
                   >
-                    {s.type === 'PF' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                    {s.supplier_type === 'PF' ? 'Pessoa Física' : 'Pessoa Jurídica'}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-sm">{formatDoc(s.document, s.type)}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {formatDoc(s.document, s.supplier_type)}
+                </TableCell>
                 <TableCell className="text-sm">{s.phone || '-'}</TableCell>
                 <TableCell className="text-sm">{s.email || '-'}</TableCell>
                 <TableCell className="text-sm">
