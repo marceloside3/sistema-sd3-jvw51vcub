@@ -24,10 +24,15 @@ export default function Login() {
     setError('')
     setIsLoading(true)
 
-    const { error: signInError } = await signIn(email, password)
+    try {
+      const { error: signInError } = await signIn(email, password)
 
-    if (signInError) {
-      setError('Credenciais inválidas')
+      if (signInError) {
+        setError(signInError.message || 'Credenciais inválidas')
+        setIsLoading(false)
+      }
+    } catch {
+      setError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.')
       setIsLoading(false)
     }
   }

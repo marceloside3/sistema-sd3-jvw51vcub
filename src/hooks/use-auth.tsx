@@ -52,21 +52,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      return { error: { message: 'Credenciais inválidas' } }
+      if (error) {
+        const errorMsg = error.message || ''
+        const isNetworkError =
+          errorMsg.toLowerCase().includes('failed to fetch') ||
+          errorMsg.toLowerCase().includes('network') ||
+          (error as any).status === 0 ||
+          ((error as any).status === undefined && errorMsg.includes('fetch'))
+
+        if (isNetworkError) {
+          return {
+            error: {
+              message:
+                'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
+            },
+          }
+        }
+
+        return { error: { message: error.message || 'Credenciais inválidas' } }
+      }
+
+      if (data.user) {
+        // Update last_login_at in public.users on successful sign in
+        try {
+          await supabase
+            .from('users')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', data.user.id)
+        } catch {
+          // Non-blocking: sign-in still succeeded even if last_login_at update fails
+        }
+      }
+
+      return { error: null }
+    } catch (err: any) {
+      const message = err?.message || ''
+      const isNetwork =
+        message.toLowerCase().includes('failed to fetch') ||
+        message.toLowerCase().includes('network') ||
+        err?.name === 'TypeError'
+
+      return {
+        error: {
+          message: isNetwork
+            ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+            : message || 'Erro ao realizar login. Tente novamente.',
+        },
+      }
     }
-
-    if (data.user) {
-      // Update last_login_at in public.users on successful sign in
-      await supabase
-        .from('users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.user.id)
-    }
-
-    return { error: null }
   }
 
   const signOut = async () => {
