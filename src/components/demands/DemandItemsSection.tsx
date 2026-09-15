@@ -119,6 +119,11 @@ export function DemandItemsSection({
   const { toast } = useToast()
   const { data: userCtx } = useCurrentUser()
   const canEdit = !isLocked || isAdmin || !!userCtx?.profile?.is_director
+  const isProductionUser = Boolean(
+    userCtx?.profile?.is_admin ||
+    userCtx?.profile?.code === 'producao' ||
+    String(userCtx?.profile?.name || '').toLowerCase() === 'produção',
+  )
   const [items, setItems] = useState<DemandItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<DemandItem | null>(null)
@@ -850,7 +855,8 @@ export function DemandItemsSection({
                                         </TooltipContent>
                                       </Tooltip>
 
-                                      {(item.supplier_id || item.supplier_name) &&
+                                      {isProductionUser &&
+                                      (item.supplier_id || item.supplier_name) &&
                                       (item.unit_cost !== null || item.total_cost !== null) ? (
                                         <Tooltip>
                                           <TooltipTrigger asChild>

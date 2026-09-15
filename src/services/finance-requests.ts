@@ -12,6 +12,7 @@ export interface PaymentDetails {
   operation?: string | null
   supplier_name?: string | null
   supplier_document?: string | null
+  dashboard_payment_id?: string | null
 }
 
 export interface FinanceRequest {
