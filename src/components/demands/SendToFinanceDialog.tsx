@@ -41,6 +41,7 @@ import {
   uploadBoletoAttachment,
   type PaymentMethod,
 } from '@/services/finance-requests'
+import { createDashboardFinancePayment } from '@/services/dashboard-finance'
 import { getSupplierById, type Supplier } from '@/services/suppliers'
 import { logDemandAuditBatch } from '@/services/demand-audit'
 import { useToast } from '@/hooks/use-toast'
@@ -212,6 +213,22 @@ export function SendToFinanceDialog({
         supplier_document: supplier?.document || null,
       }
 
+      // Primeiro cria o pagamento no Dashboard. O endpoint é idempotente por item,
+      // então uma nova tentativa não gera um segundo pagamento.
+      const dashboardPayment = await createDashboardFinancePayment({
+        demandId,
+        demandItemId: item.id,
+        projectCode: null,
+        dueDate,
+        paymentMethod,
+        paymentDetails,
+        isUrgent,
+        justification: isUrgent ? justification.trim() : null,
+        boletoFileName,
+        boletoStoragePath,
+      })
+
+      // Mantém o registro detalhado no Side3 depois da confirmação do Dashboard.
       const fr = await createFinanceRequest({
         demand_item_id: item.id,
         demand_id: demandId,
@@ -225,7 +242,10 @@ export function SendToFinanceDialog({
         is_urgent: isUrgent,
         justification: isUrgent ? justification.trim() : null,
         payment_method: paymentMethod,
-        payment_details: paymentDetails,
+        payment_details: {
+          ...paymentDetails,
+          dashboard_payment_id: dashboardPayment.paymentId,
+        },
         boleto_url: boletoStoragePath,
         boleto_file_name: boletoFileName,
       })
@@ -293,6 +313,14 @@ export function SendToFinanceDialog({
               },
             ]
           : []),
+        {
+          demand_id: demandId,
+          item_id: item.id,
+          user_id: userId,
+          field_name: 'dashboard_payment_id',
+          old_value: null,
+          new_value: dashboardPayment.paymentId,
+        },
       ])
 
       if (isUrgent) {
@@ -310,7 +338,7 @@ export function SendToFinanceDialog({
       resetForm()
       toast({
         title: 'Item enviado para o Financeiro',
-        description: `Forma de pagamento: ${paymentMethodLabels[paymentMethod]}`,
+        description: `Pagamento criado no Dashboard (${dashboardPayment.paymentId}). Forma: ${paymentMethodLabels[paymentMethod]}`,
       })
     } catch (err: any) {
       console.error('Erro ao enviar para o financeiro:', err)
