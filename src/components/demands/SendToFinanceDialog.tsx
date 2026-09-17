@@ -45,6 +45,10 @@ import {
 } from '@/services/finance-requests'
 import { createDashboardFinancePayment } from '@/services/dashboard-finance'
 import { getSupplierById, type Supplier } from '@/services/suppliers'
+import {
+  getKaminoFinanceOptions,
+  type KaminoFinanceOptions,
+} from '@/services/kamino-finance-options'
 import { logDemandAuditBatch } from '@/services/demand-audit'
 import { useToast } from '@/hooks/use-toast'
 
@@ -98,6 +102,9 @@ export function SendToFinanceDialog({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('')
   const [supplier, setSupplier] = useState<Supplier | null>(null)
   const [loadingSupplier, setLoadingSupplier] = useState(false)
+  const [financeOptions, setFinanceOptions] = useState<KaminoFinanceOptions | null>(null)
+  const [loadingFinanceOptions, setLoadingFinanceOptions] = useState(false)
+  const [financeOptionsError, setFinanceOptionsError] = useState<string | null>(null)
   const [boletoFile, setBoletoFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -131,6 +138,34 @@ export function SendToFinanceDialog({
       cancelled = true
     }
   }, [open, item?.supplier_id])
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setLoadingFinanceOptions(true)
+    setFinanceOptionsError(null)
+    getKaminoFinanceOptions()
+      .then((data) => {
+        if (!cancelled) setFinanceOptions(data)
+      })
+      .catch((error) => {
+        console.error('Erro ao carregar cadastros financeiros da Kamino:', error)
+        if (!cancelled) {
+          setFinanceOptions(null)
+          setFinanceOptionsError(
+            error instanceof Error
+              ? error.message
+              : 'Não foi possível carregar os cadastros da Kamino.',
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingFinanceOptions(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -497,37 +532,84 @@ export function SendToFinanceDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>IDContaClassificacao</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={idContaClassificacao}
-                  onChange={(e) => setIdContaClassificacao(e.target.value)}
-                  placeholder="Opcional"
-                  disabled={sending}
-                />
+                <Label>IDContaClassificacao (opcional)</Label>
+                <Select
+                  value={idContaClassificacao || undefined}
+                  onValueChange={(value) =>
+                    setIdContaClassificacao(value === '__none__' ? '' : value)
+                  }
+                  disabled={sending || loadingFinanceOptions}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        loadingFinanceOptions
+                          ? 'Carregando cadastros...'
+                          : 'Selecione a classificação'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Não informar</SelectItem>
+                    {(financeOptions?.classifications || []).map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.id} — {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>IDCentroCusto</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={idCentroCusto}
-                  onChange={(e) => setIdCentroCusto(e.target.value)}
-                  placeholder="Opcional"
-                  disabled={sending}
-                />
+                <Label>IDCentroCusto (opcional)</Label>
+                <Select
+                  value={idCentroCusto || undefined}
+                  onValueChange={(value) => setIdCentroCusto(value === '__none__' ? '' : value)}
+                  disabled={sending || loadingFinanceOptions}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        loadingFinanceOptions
+                          ? 'Carregando cadastros...'
+                          : 'Selecione o centro de custo'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Não informar</SelectItem>
+                    {(financeOptions?.costCenters || []).map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.id} — {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>IDUnidadeNegocio</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={idUnidadeNegocio}
-                  onChange={(e) => setIdUnidadeNegocio(e.target.value)}
-                  placeholder="Opcional"
-                  disabled={sending}
-                />
+                <Label>IDUnidadeNegocio (opcional)</Label>
+                <Select
+                  value={idUnidadeNegocio || undefined}
+                  onValueChange={(value) => setIdUnidadeNegocio(value === '__none__' ? '' : value)}
+                  disabled={sending || loadingFinanceOptions}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        loadingFinanceOptions
+                          ? 'Carregando cadastros...'
+                          : 'Selecione a unidade de negócio'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Não informar</SelectItem>
+                    {(financeOptions?.businessUnits || []).map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.id} — {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>NroNotaFiscal</Label>
@@ -572,8 +654,15 @@ export function SendToFinanceDialog({
             </div>
             <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
               IDTipo e IDPessoaFavorecido serão enviados junto com a solicitação e reutilizados pelo
-              Dashboard no envio para a Kamino.
+              Dashboard no envio para a Kamino. As listas de classificação, centro de custo e
+              unidade de negócio são carregadas diretamente dos cadastros ativos da Kamino.
             </div>
+            {financeOptionsError && (
+              <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{financeOptionsError} Feche e abra o formulário para tentar novamente.</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

@@ -81,20 +81,19 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Credenciais da Kamino não configuradas no Supabase.' }, 500)
     }
 
-    const callKaminoPeople = async (params: Record<string, string>) => {
-      const url = new URL(`${apiUrl}/api/pessoa/lista/paginada`)
+    const kaminoHeaders = {
+      accept: 'application/json',
+      App: appKey,
+      CN: companyKey,
+      IDUsr: userIdKey,
+      Usr: userKey,
+      Hash: hashKey,
+    }
+
+    const callKamino = async (path: string, params: Record<string, string>) => {
+      const url = new URL(`${apiUrl}${path}`)
       Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value))
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          accept: 'application/json',
-          App: appKey,
-          CN: companyKey,
-          IDUsr: userIdKey,
-          Usr: userKey,
-          Hash: hashKey,
-        },
-      })
+      const response = await fetch(url, { method: 'GET', headers: kaminoHeaders })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) {
         const message =
@@ -102,9 +101,77 @@ Deno.serve(async (req: Request) => {
         throw new Error(message)
       }
       if (result?.Sucesso === false) {
-        throw new Error(result?.Mensagem || 'A Kamino rejeitou a consulta de pessoas.')
+        throw new Error(result?.Mensagem || 'A Kamino rejeitou a consulta.')
       }
       return result
+    }
+
+    const callKaminoPeople = (params: Record<string, string>) =>
+      callKamino('/api/pessoa/lista/paginada', params)
+
+    const rowsFromKamino = (result: any): any[] => {
+      if (Array.isArray(result)) return result
+      for (const key of ['Dados', 'data', 'items', 'Itens', 'result']) {
+        if (Array.isArray(result?.[key])) return result[key]
+      }
+      if (
+        result &&
+        typeof result === 'object' &&
+        (result.ID !== undefined || result.IDPlanoConta !== undefined)
+      ) {
+        return [result]
+      }
+      return []
+    }
+
+    const normalizeFinanceOption = (
+      row: any,
+      type: 'classification' | 'cost-center' | 'business-unit',
+    ) => {
+      const id = String(
+        type === 'classification'
+          ? (row?.ID ?? row?.IDPlanoConta ?? row?.NumeroID ?? '')
+          : (row?.ID ?? ''),
+      ).trim()
+      const name = String(
+        type === 'cost-center'
+          ? row?.NomeExibicao || row?.Nome || ''
+          : row?.Nome || row?.NomeExibicao || row?.NomePessoa || '',
+      ).trim()
+      return { id, name }
+    }
+
+    if (action === 'finance-options') {
+      const [classificationResult, costCenterResult, businessUnitResult] = await Promise.all([
+        callKamino('/api/financeiro/planoconta/lista', {
+          ApenasAtivos: 'true',
+          IDTipoPlanoConta: '1',
+        }),
+        callKamino('/api/financeiro/centrocusto/lista', { ApenasAtivos: 'true' }),
+        callKamino('/api/financeiro/unidadenegocio/lista', { ApenasAtivos: 'true' }),
+      ])
+
+      const uniqueOptions = (
+        rows: any[],
+        type: 'classification' | 'cost-center' | 'business-unit',
+      ) => {
+        const seen = new Set<string>()
+        return rows
+          .map((row) => normalizeFinanceOption(row, type))
+          .filter((option) => option.id && option.name)
+          .filter((option) => {
+            if (seen.has(option.id)) return false
+            seen.add(option.id)
+            return true
+          })
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+      }
+
+      return jsonResponse({
+        classifications: uniqueOptions(rowsFromKamino(classificationResult), 'classification'),
+        costCenters: uniqueOptions(rowsFromKamino(costCenterResult), 'cost-center'),
+        businessUnits: uniqueOptions(rowsFromKamino(businessUnitResult), 'business-unit'),
+      })
     }
 
     if (action === 'search') {
