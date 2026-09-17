@@ -158,8 +158,6 @@ export function SendToFinanceDialog({
   const supplierDocument = (supplier?.document || '').replace(/\D/g, '')
   const automaticKaminoType =
     supplierDocument.length === 11 ? 494 : supplierDocument.length === 14 ? 495 : null
-  const automaticKaminoPersonId = supplier?.kamino_id || null
-
   const canConfirm = useMemo(() => {
     if (!dueDate || !item || !userId || !paymentMethod) return false
     if (!idTipo.trim() || !kaminoPersonId.trim()) return false
