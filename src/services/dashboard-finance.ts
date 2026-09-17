@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
-import type { PaymentDetails, PaymentMethod } from '@/services/finance-requests'
+import type {
+  KaminoFinanceFields,
+  PaymentDetails,
+  PaymentMethod,
+} from '@/services/finance-requests'
 
 export interface DashboardFinancePaymentResponse {
   success: boolean
@@ -24,6 +28,7 @@ export async function createDashboardFinancePayment(params: {
   boletoFileName?: string | null
   boletoStoragePath?: string | null
   financeRequestId?: string | null
+  kaminoFields?: KaminoFinanceFields | null
 }): Promise<DashboardFinancePaymentResponse> {
   const { data, error } = await supabase.functions.invoke('dashboard-finance', {
     body: {
@@ -40,6 +45,7 @@ export async function createDashboardFinancePayment(params: {
       boletoFileName: params.boletoFileName || null,
       boletoStoragePath: params.boletoStoragePath || null,
       financeRequestId: params.financeRequestId || null,
+      kaminoFields: params.kaminoFields || null,
     },
   })
 

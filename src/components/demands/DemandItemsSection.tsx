@@ -76,6 +76,8 @@ interface DemandItem {
 
 interface DemandItemsSectionProps {
   demandId: string
+  projectCode?: string | null
+  projectName?: string | null
   clientId: string | null
   isLocked?: boolean
   isAdmin?: boolean
@@ -109,6 +111,8 @@ function MarginIndicator({ pct }: { pct: number }) {
 
 export function DemandItemsSection({
   demandId,
+  projectCode = null,
+  projectName = null,
   clientId,
   isLocked = false,
   isAdmin = false,
@@ -1081,6 +1085,8 @@ export function DemandItemsSection({
           onOpenChange={setFinanceDialogOpen}
           item={financeTarget}
           demandId={demandId}
+          projectCode={projectCode}
+          projectName={projectName}
           userId={userCtx?.id || ''}
           onSent={(itemId) => {
             setFinanceRequestIds((prev) => new Set(prev).add(itemId))

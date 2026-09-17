@@ -649,6 +649,8 @@ export function DemandDetails({
         <section id="demand-items-main-section" className="space-y-4">
           <DemandItemsSection
             demandId={demand.id}
+            projectCode={demand.project?.project_code ?? null}
+            projectName={demand.project?.name ?? null}
             clientId={demand.project?.client_id ?? null}
             isLocked={!!demand.is_locked}
             isAdmin={!!userCtx?.profile?.is_admin}

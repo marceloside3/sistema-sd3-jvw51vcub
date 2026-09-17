@@ -3,6 +3,22 @@ import { formatCurrency } from '@/lib/financial'
 
 export type PaymentMethod = 'transferencia' | 'pix' | 'boleto'
 
+export interface KaminoFinanceFields {
+  Data?: string | null
+  Valor?: number | null
+  DataCompetencia?: string | null
+  IDTipo?: number | null
+  IDPessoaFavorecido?: number | null
+  IDContaClassificacao?: number | null
+  IDCentroCusto?: number | null
+  IDUnidadeNegocio?: string | null
+  Descricao?: string | null
+  Observacoes?: string | null
+  NroNotaFiscal?: number | null
+  NumeroBoleto?: string | null
+  Anexos?: unknown
+}
+
 export interface PaymentDetails {
   bank?: string | null
   agency?: string | null
@@ -13,6 +29,7 @@ export interface PaymentDetails {
   supplier_name?: string | null
   supplier_document?: string | null
   dashboard_payment_id?: string | null
+  kamino_fields?: KaminoFinanceFields | null
 }
 
 export interface FinanceRequest {
@@ -83,6 +100,7 @@ export async function createFinanceRequest(params: {
   payment_details?: PaymentDetails | null
   boleto_url?: string | null
   boleto_file_name?: string | null
+  kamino_fields?: KaminoFinanceFields | null
 }): Promise<FinanceRequest> {
   const { data, error } = await supabase
     .from('finance_requests')
@@ -101,7 +119,10 @@ export async function createFinanceRequest(params: {
         is_urgent: params.is_urgent,
         justification: params.justification || null,
         payment_method: params.payment_method,
-        payment_details: params.payment_details || {},
+        payment_details: {
+          ...(params.payment_details || {}),
+          kamino_fields: params.kamino_fields || null,
+        },
         boleto_url: params.boleto_url || null,
         boleto_file_name: params.boleto_file_name || null,
       } as any,

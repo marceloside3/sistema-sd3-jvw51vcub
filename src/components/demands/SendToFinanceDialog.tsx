@@ -14,6 +14,7 @@ import {
   X,
   FileCheck,
   AlertCircle,
+  Settings2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +40,7 @@ import {
   createFinanceRequest,
   notifyFinanceUsersOfUrgentRequest,
   uploadBoletoAttachment,
+  type KaminoFinanceFields,
   type PaymentMethod,
 } from '@/services/finance-requests'
 import { createDashboardFinancePayment } from '@/services/dashboard-finance'
@@ -59,6 +61,8 @@ interface SendToFinanceDialogProps {
     total_cost: number | null
   } | null
   demandId: string
+  projectCode?: string | null
+  projectName?: string | null
   userId: string
   onSent: (itemId: string, financeRequestId: string) => void
 }
@@ -66,17 +70,30 @@ interface SendToFinanceDialogProps {
 const ALLOWED_BOLETO_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg']
 const ALLOWED_BOLETO_EXTENSIONS = ['.pdf', '.jpg', '.jpeg']
 
+const todayInput = () => format(new Date(), 'yyyy-MM-dd')
+
 export function SendToFinanceDialog({
   open,
   onOpenChange,
   item,
   demandId,
+  projectCode,
+  projectName,
   userId,
   onSent,
 }: SendToFinanceDialogProps) {
   const { toast } = useToast()
   const [sending, setSending] = useState(false)
   const [dueDate, setDueDate] = useState('')
+  const [dataCompetencia, setDataCompetencia] = useState(todayInput())
+  const [idTipo, setIdTipo] = useState('')
+  const [kaminoPersonId, setKaminoPersonId] = useState('')
+  const [idContaClassificacao, setIdContaClassificacao] = useState('')
+  const [idCentroCusto, setIdCentroCusto] = useState('')
+  const [idUnidadeNegocio, setIdUnidadeNegocio] = useState('')
+  const [numeroNotaFiscal, setNumeroNotaFiscal] = useState('')
+  const [numeroBoleto, setNumeroBoleto] = useState('')
+  const [descricao, setDescricao] = useState('')
   const [justification, setJustification] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('')
   const [supplier, setSupplier] = useState<Supplier | null>(null)
@@ -85,57 +102,81 @@ export function SendToFinanceDialog({
   const [fileError, setFileError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Carregar dados completos do fornecedor quando abrir o modal ou mudar o item
   useEffect(() => {
     if (!open || !item?.supplier_id) {
       setSupplier(null)
       return
     }
-
     let cancelled = false
     setLoadingSupplier(true)
     getSupplierById(item.supplier_id)
       .then((data) => {
         if (!cancelled) {
           setSupplier(data)
+          setKaminoPersonId(data?.kamino_id ? String(data.kamino_id) : '')
+          const documentDigits = String(data?.document || '').replace(/\D/g, '')
+          setIdTipo(
+            documentDigits.length === 11 ? '494' : documentDigits.length === 14 ? '495' : '',
+          )
         }
       })
       .catch((err) => {
-        console.error('Erro ao carregar dados bancários do fornecedor:', err)
+        console.error('Erro ao carregar dados do fornecedor:', err)
         if (!cancelled) setSupplier(null)
       })
       .finally(() => {
         if (!cancelled) setLoadingSupplier(false)
       })
-
     return () => {
       cancelled = true
     }
   }, [open, item?.supplier_id])
+
+  useEffect(() => {
+    if (!open) return
+    setDataCompetencia(todayInput())
+    setIdTipo('')
+    setKaminoPersonId('')
+    setIdContaClassificacao('')
+    setIdCentroCusto('')
+    setIdUnidadeNegocio('')
+    setNumeroNotaFiscal('')
+    setNumeroBoleto('')
+    setDescricao(item ? `${item.item_name}${projectName ? ` — ${projectName}` : ''}` : '')
+  }, [open, item?.id, projectName])
 
   const isUrgent = useMemo(() => {
     if (!dueDate) return false
     return differenceInCalendarDays(new Date(dueDate), new Date()) < 30
   }, [dueDate])
 
-  // Verificação de preenchimento dos dados bancários do fornecedor
-  const hasTransferData = useMemo(() => {
-    if (!supplier) return false
-    return Boolean(supplier.bank?.trim() || supplier.agency?.trim() || supplier.account?.trim())
-  }, [supplier])
-
-  const hasPixData = useMemo(() => {
-    if (!supplier) return false
-    return Boolean(supplier.pix_key?.trim())
-  }, [supplier])
+  const hasTransferData = useMemo(
+    () => Boolean(supplier?.bank?.trim() || supplier?.agency?.trim() || supplier?.account?.trim()),
+    [supplier],
+  )
+  const hasPixData = useMemo(() => Boolean(supplier?.pix_key?.trim()), [supplier])
+  const supplierDocument = (supplier?.document || '').replace(/\D/g, '')
+  const automaticKaminoType =
+    supplierDocument.length === 11 ? 494 : supplierDocument.length === 14 ? 495 : null
+  const automaticKaminoPersonId = supplier?.kamino_id || null
 
   const canConfirm = useMemo(() => {
-    if (!dueDate || !item || !userId) return false
-    if (!paymentMethod) return false
+    if (!dueDate || !item || !userId || !paymentMethod) return false
+    if (!idTipo.trim() || !kaminoPersonId.trim()) return false
     if (isUrgent && justification.trim().length < 20) return false
     if (paymentMethod === 'boleto' && !boletoFile) return false
     return true
-  }, [dueDate, isUrgent, justification, item, userId, paymentMethod, boletoFile])
+  }, [
+    dueDate,
+    isUrgent,
+    justification,
+    item,
+    userId,
+    paymentMethod,
+    boletoFile,
+    idTipo,
+    kaminoPersonId,
+  ])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -144,31 +185,26 @@ export function SendToFinanceDialog({
       setFileError(null)
       return
     }
-
     const ext = '.' + file.name.split('.').pop()?.toLowerCase()
     const isExtensionValid = ALLOWED_BOLETO_EXTENSIONS.includes(ext)
     const isMimeValid = ALLOWED_BOLETO_TYPES.includes(file.type.toLowerCase()) || isExtensionValid
-
     if (!isExtensionValid && !isMimeValid) {
       setFileError('Apenas arquivos JPG ou PDF são permitidos.')
       setBoletoFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
       toast({
         title: 'Formato inválido',
-        description: 'Por favor anexe apenas arquivos no formato JPG ou PDF.',
+        description: 'Anexe somente arquivos PDF ou JPG.',
         variant: 'destructive',
       })
       return
     }
-
-    // Limite de 20MB para boletos
     if (file.size > 20 * 1024 * 1024) {
       setFileError('O arquivo deve ter no máximo 20MB.')
       setBoletoFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
-
     setFileError(null)
     setBoletoFile(file)
   }
@@ -179,12 +215,21 @@ export function SendToFinanceDialog({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const parseOptionalPositiveInt = (value: string, label: string): number | null | undefined => {
+    if (!value.trim()) return undefined
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error(`${label}, quando preenchido, deve ser um número inteiro positivo.`)
+    }
+    return parsed
+  }
+
   const handleConfirm = async () => {
     if (!item || !userId || !dueDate || !paymentMethod) return
     if (paymentMethod === 'boleto' && !boletoFile) {
       toast({
         title: 'Anexo obrigatório',
-        description: 'É necessário anexar o boleto (JPG ou PDF) para continuar.',
+        description: 'É necessário anexar o boleto para continuar.',
         variant: 'destructive',
       })
       return
@@ -194,14 +239,28 @@ export function SendToFinanceDialog({
     try {
       let boletoStoragePath: string | null = null
       let boletoFileName: string | null = null
-
       if (paymentMethod === 'boleto' && boletoFile) {
         const uploadResult = await uploadBoletoAttachment(demandId, boletoFile)
         boletoStoragePath = uploadResult.storagePath
         boletoFileName = uploadResult.fileName
       }
 
-      // Preparar detalhes bancários com base nos dados do fornecedor
+      const parsedIdTipo = parseOptionalPositiveInt(idTipo, 'IDTipo')
+      const parsedKaminoPersonId = parseOptionalPositiveInt(kaminoPersonId, 'IDPessoaFavorecido')
+      if (
+        parsedIdTipo === undefined ||
+        parsedIdTipo === null ||
+        parsedKaminoPersonId === undefined ||
+        parsedKaminoPersonId === null
+      ) {
+        throw new Error(
+          'IDTipo e IDPessoaFavorecido são obrigatórios para criar a solicitação na Kamino.',
+        )
+      }
+      const idConta = parseOptionalPositiveInt(idContaClassificacao, 'IDContaClassificacao')
+      const idCentro = parseOptionalPositiveInt(idCentroCusto, 'IDCentroCusto')
+      const idUnidade = parseOptionalPositiveInt(idUnidadeNegocio, 'IDUnidadeNegocio')
+      const nroNota = parseOptionalPositiveInt(numeroNotaFiscal, 'NroNotaFiscal')
       const paymentDetails = {
         bank: supplier?.bank || null,
         agency: supplier?.agency || null,
@@ -212,23 +271,40 @@ export function SendToFinanceDialog({
         supplier_name: supplier?.name || item.supplier_name || null,
         supplier_document: supplier?.document || null,
       }
+      const calculatedTotal = item.total_cost ?? (item.unit_cost ?? 0) * item.quantity
+      const kaminoFields: KaminoFinanceFields = {
+        Data: todayInput(),
+        Valor: calculatedTotal,
+        DataCompetencia: dataCompetencia || todayInput(),
+        IDTipo: parsedIdTipo,
+        IDPessoaFavorecido: parsedKaminoPersonId,
+        IDContaClassificacao: idConta ?? null,
+        IDCentroCusto: idCentro ?? null,
+        IDUnidadeNegocio: idUnidade ? String(idUnidade) : null,
+        Descricao: descricao.trim() || item.item_name,
+        Observacoes: projectCode || null,
+        NroNotaFiscal: nroNota ?? null,
+        NumeroBoleto: numeroBoleto.trim() || null,
+        Anexos: boletoStoragePath
+          ? [{ storagePath: boletoStoragePath, fileName: boletoFileName }]
+          : [],
+      }
 
-      // Primeiro cria o pagamento no Dashboard. O endpoint é idempotente por item,
-      // então uma nova tentativa não gera um segundo pagamento.
       const dashboardPayment = await createDashboardFinancePayment({
         demandId,
         demandItemId: item.id,
-        projectCode: null,
+        projectCode: projectCode || null,
+        projectName: projectName || null,
         dueDate,
         paymentMethod,
         paymentDetails,
+        kaminoFields,
         isUrgent,
         justification: isUrgent ? justification.trim() : null,
         boletoFileName,
         boletoStoragePath,
       })
 
-      // Mantém o registro detalhado no Side3 depois da confirmação do Dashboard.
       const fr = await createFinanceRequest({
         demand_item_id: item.id,
         demand_id: demandId,
@@ -245,7 +321,9 @@ export function SendToFinanceDialog({
         payment_details: {
           ...paymentDetails,
           dashboard_payment_id: dashboardPayment.paymentId,
+          kamino_fields: kaminoFields,
         },
+        kamino_fields: kaminoFields,
         boleto_url: boletoStoragePath,
         boleto_file_name: boletoFileName,
       })
@@ -255,7 +333,6 @@ export function SendToFinanceDialog({
         pix: 'Pix',
         boleto: 'Boleto Bancário',
       }
-
       await logDemandAuditBatch([
         {
           demand_id: demandId,
@@ -269,50 +346,10 @@ export function SendToFinanceDialog({
           demand_id: demandId,
           item_id: item.id,
           user_id: userId,
-          field_name: 'finance_due_date',
+          field_name: 'finance_kamino_fields',
           old_value: null,
-          new_value: dueDate,
+          new_value: JSON.stringify(kaminoFields),
         },
-        {
-          demand_id: demandId,
-          item_id: item.id,
-          user_id: userId,
-          field_name: 'finance_payment_method',
-          old_value: null,
-          new_value: paymentMethodLabels[paymentMethod],
-        },
-        {
-          demand_id: demandId,
-          item_id: item.id,
-          user_id: userId,
-          field_name: 'finance_is_urgent',
-          old_value: null,
-          new_value: String(isUrgent),
-        },
-        ...(isUrgent
-          ? [
-              {
-                demand_id: demandId,
-                item_id: item.id,
-                user_id: userId,
-                field_name: 'finance_justification',
-                old_value: null,
-                new_value: justification.trim(),
-              },
-            ]
-          : []),
-        ...(boletoFileName
-          ? [
-              {
-                demand_id: demandId,
-                item_id: item.id,
-                user_id: userId,
-                field_name: 'finance_boleto_attachment',
-                old_value: null,
-                new_value: boletoFileName,
-              },
-            ]
-          : []),
         {
           demand_id: demandId,
           item_id: item.id,
@@ -322,7 +359,6 @@ export function SendToFinanceDialog({
           new_value: dashboardPayment.paymentId,
         },
       ])
-
       if (isUrgent) {
         await notifyFinanceUsersOfUrgentRequest({
           demandId,
@@ -332,7 +368,6 @@ export function SendToFinanceDialog({
           dueDate,
         })
       }
-
       onSent(item.id, fr.id)
       onOpenChange(false)
       resetForm()
@@ -354,6 +389,15 @@ export function SendToFinanceDialog({
 
   const resetForm = () => {
     setDueDate('')
+    setDataCompetencia(todayInput())
+    setIdTipo('')
+    setKaminoPersonId('')
+    setIdContaClassificacao('')
+    setIdCentroCusto('')
+    setIdUnidadeNegocio('')
+    setNumeroNotaFiscal('')
+    setNumeroBoleto('')
+    setDescricao('')
     setJustification('')
     setPaymentMethod('')
     setBoletoFile(null)
@@ -362,35 +406,38 @@ export function SendToFinanceDialog({
   }
 
   const handleOpenChange = (openState: boolean) => {
-    if (!openState) {
-      resetForm()
-    }
+    if (!openState) resetForm()
     onOpenChange(openState)
   }
 
   if (!item) return null
-
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const todayStr = todayInput()
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold text-zinc-900">
             <CreditCard className="w-5 h-5 text-orange-500" />
-            Enviar para o Financeiro
+            Enviar item para o Financeiro
           </DialogTitle>
           <DialogDescription>
-            Confirme os detalhes do pagamento e fornecedor para envio ao Financeiro.
+            Preencha os dados da solicitação Kamino. Valor, Data, favorecido, tipo e código do
+            projeto são automáticos quando possível.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Card Resumo do Item */}
           <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3.5 space-y-2">
             <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-muted-foreground">Item:</span>
               <span className="font-semibold text-zinc-900 text-right">{item.item_name}</span>
+            </div>
+            <div className="flex justify-between text-xs sm:text-sm">
+              <span className="text-muted-foreground">Projeto:</span>
+              <span className="font-semibold text-zinc-900 text-right">
+                {projectCode || 'Não informado'}
+              </span>
             </div>
             <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-muted-foreground">Fornecedor:</span>
@@ -398,48 +445,156 @@ export function SendToFinanceDialog({
                 {item.supplier_name || 'Não informado'}
               </span>
             </div>
-            <div className="flex justify-between text-xs sm:text-sm">
-              <span className="text-muted-foreground">Quantidade:</span>
-              <span className="font-mono font-medium text-zinc-900">{item.quantity}</span>
-            </div>
-            <div className="flex justify-between text-xs sm:text-sm">
-              <span className="text-muted-foreground">Custo Unitário:</span>
-              <span className="font-mono font-medium text-zinc-900">
-                {formatCurrency(item.unit_cost)}
-              </span>
-            </div>
             <div className="flex justify-between text-xs sm:text-sm border-t border-zinc-200 pt-2">
-              <span className="font-bold text-zinc-900">Custo Total:</span>
+              <span className="font-bold text-zinc-900">Valor:</span>
               <span className="font-mono font-bold text-orange-600">
-                {formatCurrency(item.total_cost)}
+                {formatCurrency(item.total_cost ?? (item.unit_cost || 0) * item.quantity)}
               </span>
             </div>
           </div>
 
-          {/* Campo: Data de Vencimento */}
+          <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-3.5 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-orange-900">
+              <Settings2 className="w-4 h-4" />
+              Dados da solicitação Kamino
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>IDTipo *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={idTipo}
+                  onChange={(e) => setIdTipo(e.target.value)}
+                  placeholder={
+                    automaticKaminoType ? String(automaticKaminoType) : 'Código pré-cadastrado'
+                  }
+                  disabled={sending}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  494 para CPF e 495 para CNPJ, quando aplicável.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>IDPessoaFavorecido *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={kaminoPersonId}
+                  onChange={(e) => setKaminoPersonId(e.target.value)}
+                  placeholder="ID do fornecedor na Kamino"
+                  disabled={sending}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Preenchido pelo vínculo Kamino do fornecedor.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>DataCompetencia</Label>
+                <Input
+                  type="date"
+                  value={dataCompetencia}
+                  onChange={(e) => setDataCompetencia(e.target.value)}
+                  disabled={sending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>IDContaClassificacao</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={idContaClassificacao}
+                  onChange={(e) => setIdContaClassificacao(e.target.value)}
+                  placeholder="Opcional"
+                  disabled={sending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>IDCentroCusto</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={idCentroCusto}
+                  onChange={(e) => setIdCentroCusto(e.target.value)}
+                  placeholder="Opcional"
+                  disabled={sending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>IDUnidadeNegocio</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={idUnidadeNegocio}
+                  onChange={(e) => setIdUnidadeNegocio(e.target.value)}
+                  placeholder="Opcional"
+                  disabled={sending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>NroNotaFiscal</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={numeroNotaFiscal}
+                  onChange={(e) => setNumeroNotaFiscal(e.target.value)}
+                  placeholder="Opcional"
+                  disabled={sending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>NumeroBoleto</Label>
+                <Input
+                  value={numeroBoleto}
+                  onChange={(e) => setNumeroBoleto(e.target.value)}
+                  placeholder="Opcional"
+                  disabled={sending}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Descricao</Label>
+              <Input
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                disabled={sending}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Observacoes — código do projeto</Label>
+              <Textarea
+                value={projectCode || ''}
+                readOnly
+                disabled={sending}
+                className="bg-slate-100"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                O código do projeto será enviado automaticamente para a Kamino.
+              </p>
+            </div>
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+              IDTipo e IDPessoaFavorecido serão enviados junto com a solicitação e reutilizados pelo
+              Dashboard no envio para a Kamino.
+            </div>
+          </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="due-date" className="flex items-center gap-1.5 text-xs font-semibold">
+            <Label className="flex items-center gap-1.5 text-xs font-semibold">
               <CalendarDays className="w-3.5 h-3.5 text-orange-500" />
-              Data de Vencimento <span className="text-red-500">*</span>
+              Data de Vencimento *
             </Label>
             <Input
-              id="due-date"
               type="date"
               min={todayStr}
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="rounded-xl focus-visible:ring-orange-500"
             />
           </div>
 
-          {/* Campo: Forma de Pagamento */}
           <div className="space-y-1.5">
-            <Label
-              htmlFor="payment-method"
-              className="flex items-center gap-1.5 text-xs font-semibold"
-            >
+            <Label className="flex items-center gap-1.5 text-xs font-semibold">
               <CreditCard className="w-3.5 h-3.5 text-orange-500" />
-              Forma de Pagamento <span className="text-red-500">*</span>
+              Forma de Pagamento *
             </Label>
             <Select
               value={paymentMethod}
@@ -449,274 +604,117 @@ export function SendToFinanceDialog({
                 setFileError(null)
               }}
             >
-              <SelectTrigger id="payment-method" className="rounded-xl focus:ring-orange-500">
+              <SelectTrigger>
                 <SelectValue placeholder="Selecione a forma de pagamento" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="transferencia">
                   <div className="flex items-center gap-2">
                     <Building className="w-4 h-4 text-blue-600" />
-                    <span>Transferência Bancária (TED / DOC / TEF)</span>
+                    Transferência Bancária
                   </div>
                 </SelectItem>
                 <SelectItem value="pix">
                   <div className="flex items-center gap-2">
                     <QrCode className="w-4 h-4 text-emerald-600" />
-                    <span>Pix</span>
+                    Pix
                   </div>
                 </SelectItem>
                 <SelectItem value="boleto">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-orange-600" />
-                    <span>Boleto Bancário (Requer anexo PDF/JPG)</span>
+                    Boleto Bancário
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Seção Condicional: Transferência Bancária */}
           {paymentMethod === 'transferencia' && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-900">
-                  <Building className="w-4 h-4 text-blue-600" />
-                  <span>Dados Bancários do Fornecedor</span>
-                </div>
-                {loadingSupplier && <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />}
-              </div>
-
-              {!hasTransferData && !loadingSupplier ? (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="font-semibold">Cadastro bancário incompleto</p>
-                    <p className="text-[11px] leading-relaxed text-amber-700">
-                      O fornecedor selecionado não possui dados bancários cadastrados (banco,
-                      agência, conta). Recomendamos completar o cadastro do fornecedor para agilizar
-                      a liberação financeira.
-                    </p>
-                  </div>
-                </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs">
+              <p className="font-semibold text-blue-900">Dados bancários do fornecedor</p>
+              {loadingSupplier ? (
+                <Loader2 className="w-4 h-4 animate-spin mt-2" />
               ) : (
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Banco:</span>
-                    <span className="font-medium text-zinc-900">
-                      {supplier?.bank || 'Não informado'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Tipo de Conta:</span>
-                    <span className="font-medium text-zinc-900 capitalize">
-                      {supplier?.account_type || 'Corrente'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Agência:</span>
-                    <span className="font-mono font-medium text-zinc-900">
-                      {supplier?.agency || 'Não informada'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Conta:</span>
-                    <span className="font-mono font-medium text-zinc-900">
-                      {supplier?.account || 'Não informada'}
-                    </span>
-                  </div>
-                  {supplier?.operation && (
-                    <div>
-                      <span className="text-muted-foreground block text-[11px]">Operação:</span>
-                      <span className="font-mono font-medium text-zinc-900">
-                        {supplier.operation}
-                      </span>
-                    </div>
-                  )}
-                  {supplier?.document && (
-                    <div>
-                      <span className="text-muted-foreground block text-[11px]">CPF / CNPJ:</span>
-                      <span className="font-mono font-medium text-zinc-900">
-                        {supplier.document}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Seção Condicional: Pix */}
-          {paymentMethod === 'pix' && (
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
-                  <QrCode className="w-4 h-4 text-emerald-600" />
-                  <span>Chave Pix do Fornecedor</span>
-                </div>
-                {loadingSupplier && (
-                  <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
-                )}
-              </div>
-
-              {!hasPixData && !loadingSupplier ? (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="font-semibold">Chave Pix não cadastrada</p>
-                    <p className="text-[11px] leading-relaxed text-amber-700">
-                      O fornecedor não possui chave Pix informada no cadastro. Recomendamos
-                      cadastrar a chave no cadastro de fornecedores para evitar pendências no
-                      pagamento.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2 text-xs pt-1">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Chave Pix:</span>
-                    <span className="font-mono font-semibold text-emerald-950 text-sm select-all">
-                      {supplier?.pix_key}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-200/50">
-                    <div>
-                      <span className="text-muted-foreground block text-[11px]">Beneficiário:</span>
-                      <span className="font-medium text-zinc-900">
-                        {supplier?.name || item.supplier_name}
-                      </span>
-                    </div>
-                    {supplier?.document && (
-                      <div>
-                        <span className="text-muted-foreground block text-[11px]">Documento:</span>
-                        <span className="font-mono font-medium text-zinc-900">
-                          {supplier.document}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Seção Condicional: Boleto com Upload Obrigatório (apenas JPG ou PDF) */}
-          {paymentMethod === 'boleto' && (
-            <div className="rounded-xl border border-orange-200/80 bg-orange-50/40 p-3.5 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label
-                  htmlFor="boleto-upload"
-                  className="flex items-center gap-1.5 text-xs font-semibold text-orange-950"
-                >
-                  <FileText className="w-4 h-4 text-orange-600" />
-                  Anexar Boleto Bancário <span className="text-red-500">* (JPG ou PDF)</span>
-                </Label>
-                <span className="text-[10px] text-muted-foreground">Máx. 20MB</span>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                id="boleto-upload"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              {!boletoFile ? (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-                    fileError
-                      ? 'border-red-300 bg-red-50/50'
-                      : 'border-orange-300/80 bg-white hover:bg-orange-50/70 hover:border-orange-400'
-                  }`}
-                >
-                  <Upload className="w-6 h-6 mx-auto mb-1.5 text-orange-500" />
-                  <p className="text-xs font-semibold text-zinc-800">
-                    Clique para selecionar o arquivo do boleto
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Formatos aceitos: apenas <strong className="text-orange-700">PDF</strong> ou{' '}
-                    <strong className="text-orange-700">JPG</strong>
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-orange-200 text-xs">
-                  <div className="flex items-center gap-2 min-w-0 pr-2">
-                    <FileCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-zinc-900 truncate">{boletoFile.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {(boletoFile.size / 1024).toFixed(1)} KB • Arquivo pronto para envio
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRemoveFile}
-                    className="h-7 w-7 text-zinc-500 hover:text-red-600 hover:bg-red-50 shrink-0"
-                    title="Remover arquivo"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-
-              {fileError && (
-                <p className="text-xs text-red-600 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  {fileError}
+                <p className="mt-1 text-blue-800">
+                  {hasTransferData
+                    ? `${supplier?.bank || ''} ${supplier?.agency || ''} ${supplier?.account || ''}`
+                    : 'Cadastro bancário incompleto.'}
                 </p>
               )}
             </div>
           )}
 
-          {/* Alerta e Justificativa de Urgência (<30 dias) */}
+          {paymentMethod === 'pix' && (
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5 text-xs">
+              <p className="font-semibold text-emerald-900">Chave Pix do fornecedor</p>
+              <p className="mt-1 font-mono">
+                {loadingSupplier
+                  ? 'Carregando...'
+                  : hasPixData
+                    ? supplier?.pix_key
+                    : 'Chave Pix não cadastrada.'}
+              </p>
+            </div>
+          )}
+
+          {paymentMethod === 'boleto' && (
+            <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-3.5 space-y-3">
+              <Label>Anexar boleto (JPG ou PDF) *</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              {!boletoFile ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer"
+                >
+                  <Upload className="w-6 h-6 mx-auto text-orange-500" />
+                  <p className="text-xs font-semibold">Clique para selecionar o boleto</p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border">
+                  <span className="text-xs truncate">{boletoFile.name}</span>
+                  <Button type="button" variant="ghost" size="icon" onClick={handleRemoveFile}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              {fileError && <p className="text-xs text-red-600">{fileError}</p>}
+            </div>
+          )}
+
           {isUrgent && (
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-medium">
-                  Prazo inferior a 30 dias — justificativa obrigatória para o Financeiro
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-xs">
+                <AlertTriangle className="w-4 h-4" />
+                Prazo inferior a 30 dias — justificativa obrigatória
               </div>
-              <Label htmlFor="justification" className="text-xs font-semibold">
-                Justificativa <span className="text-red-500">*</span>
-                <span className="text-muted-foreground ml-1">
-                  ({justification.trim().length}/20 caracteres mínimos)
-                </span>
-              </Label>
+              <Label>Justificativa ({justification.trim().length}/20 caracteres mínimos)</Label>
               <Textarea
-                id="justification"
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
                 rows={3}
-                placeholder="Explique a urgência do pagamento deste item..."
-                className="rounded-xl focus-visible:ring-orange-500"
               />
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 pt-2">
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={sending}
-            className="rounded-xl border-zinc-200"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={sending}>
             Cancelar
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={sending || !canConfirm}
-            className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-xs font-medium"
+            className="bg-orange-500 hover:bg-orange-600 text-white"
           >
-            {sending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {!sending && <Send className="w-4 h-4 mr-2" />}
-            Confirmar Envio
+            {sending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}{' '}
+            {!sending && <Send className="w-4 h-4 mr-2" />} Confirmar Envio
           </Button>
         </DialogFooter>
       </DialogContent>
