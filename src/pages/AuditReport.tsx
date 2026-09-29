@@ -14,14 +14,22 @@ export default function AuditReport() {
 
   const G3_EVENT_META: Record<string, { label: string; color: string; icon: any }> = {
     g3_submitted: {
-      label: 'Paper submetido ao G3',
+      label: 'Submetido para Aprovação Diretoria',
       color: 'bg-blue-100 text-blue-800',
       icon: Send,
     },
-    g3_approved: { label: 'G3 aprovado', color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
-    g3_rejected: { label: 'G3 recusado', color: 'bg-red-100 text-red-800', icon: XCircle },
+    g3_approved: {
+      label: 'Aprovação Diretoria concluída',
+      color: 'bg-green-100 text-green-800',
+      icon: CheckCircle2,
+    },
+    g3_rejected: {
+      label: 'Aprovação Diretoria recusada',
+      color: 'bg-red-100 text-red-800',
+      icon: XCircle,
+    },
     g3_override: {
-      label: 'G3 override',
+      label: 'Override Aprovação Diretoria',
       color: 'bg-orange-100 text-orange-800',
       icon: AlertTriangle,
     },
@@ -180,16 +188,17 @@ export default function AuditReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-blue-500" />
-            Eventos do Gate G3
+            Eventos de Aprovação da Diretoria (G3)
           </CardTitle>
           <CardDescription>
-            Histórico de submissões, aprovações, recusas e overrides do Gate G3.
+            Histórico de submissões, aprovações, recusas e overrides do Gate G3 (Aprovação
+            Diretoria).
           </CardDescription>
         </CardHeader>
         <CardContent>
           {auditEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
-              Nenhum evento G3 encontrado.
+              Nenhum evento de Aprovação da Diretoria (G3) encontrado.
             </p>
           ) : (
             <div className="space-y-4">

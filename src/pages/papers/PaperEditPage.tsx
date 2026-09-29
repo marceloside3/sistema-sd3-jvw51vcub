@@ -195,7 +195,7 @@ export default function PaperEditPage() {
     try {
       await submitPaperToG3(currentPaper.id)
       toast({
-        title: 'Paper submetido ao G3',
+        title: 'Paper submetido para Aprovação da Diretoria',
         description: 'O Diretor de Planejamento foi notificado para revisão.',
       })
       loadData()
@@ -310,7 +310,7 @@ export default function PaperEditPage() {
           <TabsTrigger value="inputs">Informações Paper</TabsTrigger>
           <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
           <TabsTrigger value="reuniao">Reunião de Passagem</TabsTrigger>
-          <TabsTrigger value="g3">G3</TabsTrigger>
+          <TabsTrigger value="g3">Aprovação Diretoria</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gerais" className="mt-6 space-y-6">
@@ -442,7 +442,7 @@ export default function PaperEditPage() {
             <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium">Submeter ao Gate G3</h4>
+                  <h4 className="text-sm font-medium">Submeter para Aprovação da Diretoria (G3)</h4>
                   {missingFields.length > 0 ? (
                     <p className="text-xs text-red-500 mt-1">
                       Campos faltando: {missingFields.join(', ')}
@@ -463,7 +463,7 @@ export default function PaperEditPage() {
                   ) : (
                     <Send fill="currentColor" className="w-4 h-4 mr-2" />
                   )}
-                  Submeter ao G3
+                  Submeter para Aprovação Diretoria
                 </Button>
               </div>
             </div>
@@ -513,7 +513,7 @@ export default function PaperEditPage() {
             <>
               <div className="border rounded-lg bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Status do Gate G3</h3>
+                  <h3 className="text-lg font-semibold">Status — Aprovação Diretoria (G3)</h3>
                   <G3StatusBadge paper={currentPaper} approverName={approverName} />
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -544,13 +544,13 @@ export default function PaperEditPage() {
 
               {!canReview && currentPaper.status !== 'submitted' && (
                 <div className="p-8 text-center text-zinc-500 border border-dashed rounded-lg bg-zinc-50">
-                  O painel de revisão G3 aparece quando há um paper aguardando aprovação.
+                  O painel de Aprovação Diretoria aparece quando há um paper aguardando aprovação.
                 </div>
               )}
             </>
           ) : (
             <div className="p-8 text-center text-zinc-500 border border-dashed rounded-lg bg-zinc-50">
-              Crie um paper primeiro para acessar o Gate G3.
+              Crie um paper primeiro para acessar a Aprovação Diretoria (G3).
             </div>
           )}
         </TabsContent>
