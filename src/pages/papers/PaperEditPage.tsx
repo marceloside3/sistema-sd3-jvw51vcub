@@ -164,16 +164,18 @@ export default function PaperEditPage() {
     if (!currentPaper) return REQUIRED_FIELDS.map((f) => f.label)
     const missing: string[] = []
     for (const field of REQUIRED_FIELDS) {
-      if (field.isArray) {
-        const val = currentPaper[field.key]
-        if (!val || !Array.isArray(val) || val.length === 0) {
+      const val = currentPaper[field.key]
+      if (!val) {
+        missing.push(field.label)
+      } else if (typeof val === 'string') {
+        // Verificar se tem texto ou imagem HTML
+        const stripped = val.replace(/<[^>]+>/g, '').trim()
+        const hasImg = /<img[^>]+>/i.test(val)
+        if (!stripped && !hasImg) {
           missing.push(field.label)
         }
-      } else {
-        const val = currentPaper[field.key]
-        if (!val || val.trim() === '') {
-          missing.push(field.label)
-        }
+      } else if (Array.isArray(val) && val.length === 0) {
+        missing.push(field.label)
       }
     }
     return missing

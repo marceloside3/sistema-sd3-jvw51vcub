@@ -122,14 +122,18 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
 
       {paper.status === 'submitted' ? (
         <div className="space-y-4">
-          <div className="rounded-xl border border-zinc-200/60 p-4 bg-muted/30">
-            <h4 className="text-sm font-medium mb-3">Resumo dos 8 Inputs Estratégicos</h4>
-            <dl className="space-y-2 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Informações Paper:</dt>
-                <dd className="whitespace-pre-wrap">{paper.refined_objective || '—'}</dd>
-              </div>
-            </dl>
+          <div className="rounded-xl border border-zinc-200/60 p-5 bg-white shadow-sm space-y-3">
+            <h4 className="text-sm font-semibold text-zinc-900 border-b border-zinc-100 pb-2">
+              Conteúdo do Paper (Informações Paper)
+            </h4>
+            {paper.refined_objective ? (
+              <div
+                className="prose prose-zinc max-w-none text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: paper.refined_objective }}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Nenhum conteúdo informado.</p>
+            )}
           </div>
 
           {rejecting ? (

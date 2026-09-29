@@ -2,11 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import { Loader2, Save, CheckCircle2, CloudOff, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { AttachmentsSection } from '@/components/attachments/AttachmentsSection'
+import { PaperRichEditor } from '@/components/papers/PaperRichEditor'
 
 interface PaperInputsTabProps {
   project: any
@@ -57,11 +56,6 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
 
     if (!hasChanges && retrySignal === 0) {
       if (saveStatus !== 'idle' && saveStatus !== 'error') setSaveStatus('idle')
-      return
-    }
-
-    if (!hasChanges && saveStatus !== 'error') {
-      if (saveStatus !== 'idle') setSaveStatus('idle')
       return
     }
 
@@ -250,22 +244,18 @@ export function PaperInputsTab({ project, paper, readOnly, onReload }: PaperInpu
         </div>
 
         <div className="space-y-2">
-          <Label>Informações Paper</Label>
-          <Textarea
+          <Label className="text-sm font-medium text-zinc-700">
+            Documento do Paper (Texto & Imagens)
+          </Label>
+          <PaperRichEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            disabled={readOnly}
-            placeholder="Digite todas as informações estratégicas do paper..."
-            className="min-h-[300px]"
+            onChange={setContent}
+            readOnly={readOnly}
+            projectId={project?.id}
+            placeholder="Ambiente em branco do Paper. Escreva textos, títulos e listas, e insira imagens facilmente colando (Ctrl+V), arrastando ou pelo botão..."
           />
         </div>
       </div>
-
-      {project?.id && (
-        <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm">
-          <AttachmentsSection kind="project" entityId={project.id} />
-        </div>
-      )}
     </div>
   )
 }
