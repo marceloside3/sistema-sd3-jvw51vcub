@@ -29,7 +29,16 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash']
+// Modelos ordenados com foco em estabilidade e suporte atual
+// Prioriza gemini-2.5-flash (confirmado funcionando com chaves AQ.) e variantes atuais;
+// gemini-2.0-flash fica APENAS como última opção fallback.
+const CANDIDATE_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-pro',
+  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+]
 
 function buildSystemAndUserPrompt(payload: BriefingAnalysisPayload) {
   const areasList =
@@ -92,128 +101,245 @@ function cleanJsonText(raw: string): string {
   return cleaned
 }
 
-async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResult> {
-  let lastError: Error | null = null
+interface AttemptLog {
+  model: string
+  endpoint: string
+  authMethod: string
+  status: number | string
+  details?: string
+}
 
-  for (const model of GEMINI_MODELS) {
-    // Para chamadas nativas do Gemini:
-    // Chaves padrão AIza funcionam com x-goog-api-key ou ?key=.
-    // IMPORTANTE: Não envie ?key= e x-goog-api-key simultaneamente quando houver risco de conflito no gateway.
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    }
+async function callGemini(
+  apiKey: string,
+  prompt: string,
+): Promise<{ analysis: AnalysisResult; modelUsed: string }> {
+  const attempts: AttemptLog[] = []
+  const sanitizedKeySnippet = apiKey ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : '[vazio]'
+  const isAqKey = apiKey.startsWith('AQ.')
 
-    const requestBody = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.2,
+  console.log(
+    `[analyze-briefing] Iniciando análise de briefing com chave Gemini (formato ${isAqKey ? 'AQ.' : 'padrão'}, prefixo/sufixo: ${sanitizedKeySnippet})`,
+  )
+
+  // Prepara o corpo padrão da API nativa / express mode
+  const nativeRequestBody = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: prompt }],
       },
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.2,
+    },
+  }
+
+  // Prepara o corpo para o endpoint OpenAI-compatible caso seja testado
+  const openaiRequestBody = {
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.2,
+    response_format: { type: 'json_object' },
+  }
+
+  for (const model of CANDIDATE_MODELS) {
+    // Definimos os planos de requisição para cada modelo:
+    // 1. generativelanguage v1beta nativo com header x-goog-api-key (recomendado oficial Google)
+    // 2. generativelanguage v1beta nativo com query param ?key=
+    // 3. generativelanguage v1beta nativo com Authorization: Bearer
+    // 4. generativelanguage v1 (não v1beta) com x-goog-api-key
+    // 5. aiplatform express mode (Vertex AI Express Mode, padrão de chaves AQ.) com ?key=
+    // 6. aiplatform express mode com x-goog-api-key
+    // 7. generativelanguage v1beta OpenAI-compatible endpoint (/openai/chat/completions) com Authorization: Bearer
+    interface Strategy {
+      name: string
+      url: string
+      headers: Record<string, string>
+      body: unknown
+      isOpenAiShape?: boolean
     }
 
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 25000)
+    const strategies: Strategy[] = [
+      {
+        name: 'generativelanguage v1beta (x-goog-api-key)',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: nativeRequestBody,
+      },
+      {
+        name: 'generativelanguage v1beta (query ?key=)',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: nativeRequestBody,
+      },
+      {
+        name: 'generativelanguage v1beta (Authorization Bearer)',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: nativeRequestBody,
+      },
+      {
+        name: 'generativelanguage v1 (x-goog-api-key)',
+        url: `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: nativeRequestBody,
+      },
+      {
+        name: 'aiplatform express mode (query ?key=)',
+        url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: nativeRequestBody,
+      },
+      {
+        name: 'aiplatform express mode (x-goog-api-key)',
+        url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: nativeRequestBody,
+      },
+      {
+        name: 'generativelanguage openai-compatible (Bearer)',
+        url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: {
+          ...openaiRequestBody,
+          model,
+        },
+        isOpenAiShape: true,
+      },
+    ]
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      })
+    for (const strategy of strategies) {
+      const attemptEntry: AttemptLog = {
+        model,
+        endpoint: strategy.url.split('?')[0],
+        authMethod: strategy.name,
+        status: 'pendente',
+      }
 
-      clearTimeout(timeoutId)
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 12000)
 
-      const resJson = await response.json().catch(() => ({}))
+        const response = await fetch(strategy.url, {
+          method: 'POST',
+          headers: strategy.headers,
+          body: JSON.stringify(strategy.body),
+          signal: controller.signal,
+        })
 
-      if (!response.ok) {
-        const errorObj = resJson?.error || {}
-        const code = errorObj?.code || response.status
-        const message = errorObj?.message || `Erro ${response.status} na API do Gemini.`
-        const status = errorObj?.status || ''
+        clearTimeout(timeoutId)
 
-        // Trata erro 401 UNAUTHENTICATED (chave inválida, não aceita ou formato incompatível)
-        if (
-          code === 401 ||
-          status === 'UNAUTHENTICATED' ||
-          /ACCESS_TOKEN_TYPE_UNSUPPORTED|API_KEY_SERVICE_BLOCKED|invalid authentication credentials|OAuth 2 access token/i.test(
-            message,
+        attemptEntry.status = response.status
+
+        const resText = await response.text()
+        let resJson: any = null
+        try {
+          resJson = JSON.parse(resText)
+        } catch {
+          resJson = null
+        }
+
+        if (response.ok) {
+          console.log(
+            `[analyze-briefing] SUCESSO! Modelo: ${model} | Estratégia: ${strategy.name} | Status: ${response.status}`,
           )
-        ) {
-          if (apiKey.startsWith('AQ.')) {
-            throw new Error(
-              'A chave configurada (iniciada com "AQ.") foi rejeitada pelo Google com erro de autenticação. Para a API do Gemini, crie uma chave válida no Google AI Studio (acesse aistudio.google.com/app/apikey → "Create API key", formato padrão "AIza...") e salve nas configurações do sistema.',
-            )
+
+          let candidateText = ''
+          if (strategy.isOpenAiShape) {
+            candidateText = resJson?.choices?.[0]?.message?.content || ''
+          } else {
+            candidateText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || ''
           }
-          throw new Error(
-            'Credencial rejeitada pelo Google Gemini (401 UNAUTHENTICATED). Verifique se a API key está correta em aistudio.google.com/app/apikey.',
-          )
-        }
 
-        // Se a chave for inválida no formato 400
-        if (code === 400 && /API_KEY_INVALID|key not valid/i.test(message)) {
-          if (apiKey.startsWith('AQ.')) {
-            throw new Error(
-              'A chave configurada (iniciada com "AQ.") é inválida para a API do Google Gemini. Gere uma nova API key em aistudio.google.com/app/apikey e atualize as configurações do sistema.',
-            )
+          if (!candidateText) {
+            console.warn(`[analyze-briefing] Resposta vazia da API do Gemini no modelo ${model}.`)
+            attemptEntry.details = 'Resposta sem texto de candidato'
+            attempts.push(attemptEntry)
+            continue
           }
-          throw new Error(
-            'Chave de API do Google Gemini inválida ou expirada. Gere uma nova em aistudio.google.com/app/apikey.',
-          )
+
+          const parsed: AnalysisResult = JSON.parse(cleanJsonText(candidateText))
+          return { analysis: parsed, modelUsed: model }
         }
 
-        if (code === 403 || status === 'PERMISSION_DENIED') {
-          throw new Error(
-            'Acesso negado pela API do Google Gemini. Verifique se a Generative Language API está ativada no projeto Google Cloud e se as permissões/cotas estão corretas.',
-          )
-        }
-        if (code === 429 || status === 'RESOURCE_EXHAUSTED') {
-          throw new Error(
-            'Limite de requisições excedido na API do Google Gemini (quota). Tente novamente em instantes.',
-          )
-        }
+        // Falha HTTP (ex: 401, 403, 404, 429)
+        const errorMsg =
+          resJson?.error?.message ||
+          resJson?.message ||
+          `HTTP ${response.status} (${resText.slice(0, 160)})`
 
-        console.warn(`Tentativa com modelo ${model} falhou: [${code}] ${message}`)
-        lastError = new Error(message)
-        continue // tenta o próximo modelo
-      }
+        attemptEntry.details = errorMsg
+        attempts.push(attemptEntry)
 
-      const candidateText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        console.warn(
+          `[analyze-briefing] Tentativa falhou -> Modelo: ${model} | Auth/Endpoint: ${strategy.name} | Status: ${response.status} | Detalhes: ${errorMsg}`,
+        )
 
-      if (!candidateText) {
-        throw new Error('A API do Gemini retornou uma resposta vazia.')
-      }
+        // Se for 429 (quota excedida), podemos continuar tentando outro endpoint/modelo ou registrar
+      } catch (err: any) {
+        const isTimeout = err?.name === 'AbortError'
+        attemptEntry.status = isTimeout ? 'timeout' : 'network_error'
+        attemptEntry.details = isTimeout ? 'Timeout de 12s excedido' : err?.message || String(err)
+        attempts.push(attemptEntry)
 
-      const parsed: AnalysisResult = JSON.parse(cleanJsonText(candidateText))
-      return parsed
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        lastError = new Error('Tempo limite esgotado ao consultar a IA do Gemini (timeout de 25s).')
-      } else {
-        lastError = err instanceof Error ? err : new Error(String(err))
-      }
-      // Se já for erro específico de auth/quota, relança imediatamente sem tentar outros modelos
-      if (
-        lastError.message.includes('AQ.') ||
-        lastError.message.includes('aistudio.google.com') ||
-        lastError.message.includes('inválida') ||
-        lastError.message.includes('Acesso negado') ||
-        lastError.message.includes('Limite de requisições') ||
-        lastError.message.includes('Credencial rejeitada')
-      ) {
-        throw lastError
+        console.warn(
+          `[analyze-briefing] Erro de rede/timeout -> Modelo: ${model} | Estratégia: ${strategy.name} | Erro: ${attemptEntry.details}`,
+        )
       }
     }
   }
 
-  throw lastError || new Error('Não foi possível obter resposta dos modelos do Google Gemini.')
+  // Se todas as tentativas falharem, monta relatório honesto e amigável em português
+  const summaryLines = attempts
+    .map(
+      (a) =>
+        `• [${a.model}] ${a.authMethod} → status ${a.status} (${a.details?.slice(0, 80) || 'sem detalhes'})`,
+    )
+    .slice(0, 10)
+    .join('\n')
+
+  const lastAttempt = attempts[attempts.length - 1]
+  const lastStatus = lastAttempt ? `${lastAttempt.status}` : 'desconhecido'
+
+  console.error(
+    '[analyze-briefing] Todas as tentativas de conexão com a API do Google Gemini falharam:',
+    attempts,
+  )
+
+  const detailedMessage =
+    `Não foi possível concluir a análise com o Google Gemini após testar múltiplos modelos e métodos de autenticação.\n\n` +
+    `Último status retornado pelo Google: ${lastStatus}.\n` +
+    `Modelos testados: ${CANDIDATE_MODELS.join(', ')}.\n` +
+    `Resumo das tentativas:\n${summaryLines}\n\n` +
+    (isAqKey
+      ? `Observação sobre chaves "AQ.": Se sua chave for da Agent Platform / Vertex AI Express Mode, certifique-se de que a API Generative Language / Vertex AI está habilitada no console do Google Cloud e sem restrições impeditivas de IP ou serviço.`
+      : `Dica: Verifique se a chave de API em aistudio.google.com está ativa e com cotas disponíveis.`)
+
+  throw new Error(detailedMessage)
 }
 
 Deno.serve(async (req: Request) => {
@@ -269,9 +395,8 @@ Deno.serve(async (req: Request) => {
     const token = authHeader.replace(/^Bearer\s+/i, '')
 
     // Permite chamada com token de usuário autenticado OU com a própria chave service_role (usada para smoke test/manutenção)
-    let caller: any = null
     if (token === serviceRoleKey && serviceRoleKey.length > 0) {
-      caller = { id: 'service-role-admin', role: 'service_role' }
+      // Caller autorizado via service_role
     } else {
       const {
         data: { user },
@@ -281,7 +406,6 @@ Deno.serve(async (req: Request) => {
       if (authError || !user) {
         return jsonResponse({ error: 'Sessão inválida ou expirada. Faça login novamente.' }, 401)
       }
-      caller = user
     }
 
     const body: BriefingAnalysisPayload = await req.json().catch(() => ({}))
@@ -325,7 +449,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const prompt = buildSystemAndUserPrompt(enrichedPayload)
-    const analysis = await callGemini(geminiApiKey, prompt)
+    const { analysis, modelUsed } = await callGemini(geminiApiKey, prompt)
 
     return jsonResponse({
       success: true,
@@ -339,7 +463,7 @@ Deno.serve(async (req: Request) => {
         sugestoes: Array.isArray(analysis.sugestoes) ? analysis.sugestoes : [],
       },
       analyzedAt: new Date().toISOString(),
-      model: 'google-gemini',
+      model: modelUsed,
     })
   } catch (error) {
     console.error('Erro na análise de briefing via Gemini:', error)

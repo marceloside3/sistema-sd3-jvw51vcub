@@ -200,9 +200,11 @@ export function AiAnalysisModal({
           <div className="py-8 space-y-4">
             <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl text-sm flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-rose-600" />
-              <div className="space-y-1">
+              <div className="space-y-1 overflow-hidden">
                 <p className="font-semibold">Não foi possível concluir a análise do briefing</p>
-                <p className="text-xs text-rose-700">{error}</p>
+                <div className="text-xs text-rose-700 whitespace-pre-line leading-relaxed max-h-60 overflow-y-auto pr-1">
+                  {error}
+                </div>
               </div>
             </div>
             <div className="flex justify-end">

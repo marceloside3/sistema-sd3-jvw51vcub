@@ -55,11 +55,18 @@ export async function analyzeProjectBriefing(
     // supabase.functions.invoke encapsula erros HTTP no campo error
     let message = error.message || 'Falha na comunicação com a IA de briefing.'
     try {
-      // Se a Edge Function retornou json { error: "..." }
       if (typeof (error as any)?.context?.json === 'function') {
         const bodyJson = await (error as any).context.json()
         if (bodyJson?.error) {
           message = bodyJson.error
+        }
+      } else if (typeof (error as any)?.context?.text === 'function') {
+        const bodyText = await (error as any).context.text()
+        try {
+          const parsed = JSON.parse(bodyText)
+          if (parsed?.error) message = parsed.error
+        } catch {
+          if (bodyText) message = bodyText
         }
       }
     } catch {
