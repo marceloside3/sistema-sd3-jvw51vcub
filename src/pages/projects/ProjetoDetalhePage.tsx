@@ -259,7 +259,16 @@ export default function ProjetoDetalhePage() {
               </Badge>
             )}
             {canAnalyzeBriefing && (
-              <AiAnalysisModal>
+              <AiAnalysisModal
+                projectId={project.id}
+                projectName={project.name}
+                clientName={project.client?.name}
+                description={project.description}
+                startDate={project.start_date}
+                endDate={project.end_date}
+                areas={project.areas?.map((a: any) => a.area?.name).filter(Boolean)}
+                briefingData={project.briefing_data as Record<string, unknown>}
+              >
                 <Button
                   size="sm"
                   variant="outline"
