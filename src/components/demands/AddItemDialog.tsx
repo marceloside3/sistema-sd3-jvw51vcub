@@ -15,7 +15,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
-import { fetchAllLpuItems, findMatchingLpuItem, LpuItem } from '@/services/lpu'
+import { AlertCircle } from 'lucide-react'
+import { fetchAllLpuItems, findMatchingLpuItem, validateLpuQuantity, LpuItem } from '@/services/lpu'
 import { addDemandItem } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditBatch } from '@/services/demand-audit'
@@ -81,7 +82,13 @@ export function AddItemDialog({
   }, [open])
 
   const parsedQty = Math.max(1, parseNumber(quantity) || 1)
-  const matchedLpu = itemName ? findMatchingLpuItem(lpuItems, itemName, parsedQty) : null
+  const isItemFromLpuCatalog = itemName
+    ? lpuItems.some((item) => item.item_name.toLowerCase() === itemName.toLowerCase())
+    : false
+  const lpuValidation = isItemFromLpuCatalog
+    ? validateLpuQuantity(lpuItems, itemName, parsedQty)
+    : null
+  const matchedLpu = lpuValidation?.matchedItem || null
   const isLpu = !!matchedLpu
   const effectiveUnitPrice = isLpu ? matchedLpu.unit_value : parseNumber(unitPrice)
   const estimatedSubtotal = parsedQty * (effectiveUnitPrice || 0)
@@ -91,6 +98,15 @@ export function AddItemDialog({
       toast({
         title: 'Nome do item obrigatório',
         description: 'Informe o nome do item ou selecione uma opção da LPU.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (isItemFromLpuCatalog && lpuValidation && !lpuValidation.isValid) {
+      toast({
+        title: 'Quantidade fora da faixa da LPU',
+        description: lpuValidation.errorMessage || 'Quantidade inválida para o range deste item.',
         variant: 'destructive',
       })
       return
@@ -269,10 +285,16 @@ export function AddItemDialog({
                 <DollarSign className="w-3.5 h-3.5 text-primary" />
                 2. Quantidades e Valor de Venda
               </span>
-              {isLpu ? (
-                <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px]">
-                  Preço fixado pela LPU
-                </Badge>
+              {isItemFromLpuCatalog ? (
+                isLpu ? (
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px]">
+                    Preço fixado pela LPU {matchedLpu?.range ? `(${matchedLpu.range})` : ''}
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-[10px]">
+                    Fora da faixa da LPU
+                  </Badge>
+                )
               ) : (
                 <Badge variant="outline" className="text-[10px]">
                   Item Personalizado
@@ -298,6 +320,17 @@ export function AddItemDialog({
                 <span className="text-[10px] text-muted-foreground">
                   Unidades ou peças estimadas
                 </span>
+                {isItemFromLpuCatalog && lpuValidation && !lpuValidation.isValid && (
+                  <div className="flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs mt-1">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{lpuValidation.errorMessage}</span>
+                  </div>
+                )}
+                {isItemFromLpuCatalog && matchedLpu?.range && (
+                  <span className="text-[10px] text-emerald-700 font-medium block">
+                    Faixa aplicada: {matchedLpu.range}
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -382,7 +415,12 @@ export function AddItemDialog({
                 type="button"
                 variant="secondary"
                 onClick={() => handleSave(true)}
-                disabled={saving || !canEdit || !itemName.trim()}
+                disabled={
+                  saving ||
+                  !canEdit ||
+                  !itemName.trim() ||
+                  (isItemFromLpuCatalog && !!lpuValidation && !lpuValidation.isValid)
+                }
                 className="w-full sm:w-auto text-xs"
                 title="Salva este item e já prepara o formulário para cadastrar o próximo"
               >
@@ -393,7 +431,12 @@ export function AddItemDialog({
 
             <Button
               onClick={() => handleSave(false)}
-              disabled={saving || !canEdit || !itemName.trim()}
+              disabled={
+                saving ||
+                !canEdit ||
+                !itemName.trim() ||
+                (isItemFromLpuCatalog && !!lpuValidation && !lpuValidation.isValid)
+              }
               className="w-full sm:w-auto text-xs bg-primary"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}

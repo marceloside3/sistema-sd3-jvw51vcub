@@ -9,6 +9,7 @@ import {
   Pencil,
   Coins,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,7 +38,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { getProjects } from '@/services/projects'
 import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
-import { fetchAllLpuItems, LpuItem, findMatchingLpuItem } from '@/services/lpu'
+import { fetchAllLpuItems, LpuItem, findMatchingLpuItem, validateLpuQuantity } from '@/services/lpu'
 import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
 import { NovaDemandaSkeleton } from '@/components/demands/NovaDemandaSkeleton'
 
@@ -297,7 +298,10 @@ export default function NovaDemandaPage() {
     const isFromLpu = lpuItems.some(
       (item) => item.item_name.toLowerCase() === itemName.toLowerCase(),
     )
-    const matched = findMatchingLpuItem(lpuItems, itemName, itemForm.quantity || 1)
+    const qty = itemForm.quantity || 1
+    const validation = isFromLpu ? validateLpuQuantity(lpuItems, itemName, qty) : null
+    const matched = validation?.matchedItem || null
+
     setItemForm({
       ...emptyItem,
       item_name: itemName,
@@ -306,10 +310,18 @@ export default function NovaDemandaPage() {
       unit_price: matched ? matched.unit_value : null,
       is_custom: !isFromLpu,
       lpu_range: matched?.range || null,
-      quantity: itemForm.quantity || 1,
+      quantity: qty,
       deadline: itemForm.deadline,
       delivery_location: itemForm.delivery_location,
     })
+
+    if (isFromLpu && validation && !validation.isValid && validation.errorMessage) {
+      toast({
+        title: 'Quantidade fora da faixa da LPU',
+        description: validation.errorMessage,
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleTipoCriacaoChange = (tipo: 'peca_digital' | 'peca_impressa' | '3d') => {
@@ -330,11 +342,16 @@ export default function NovaDemandaPage() {
     setItemForm((prev) => {
       const updated = { ...prev, quantity: newQuantity }
       if (!prev.is_custom && prev.item_name) {
-        const matched = findMatchingLpuItem(lpuItems, prev.item_name, newQuantity)
+        const validation = validateLpuQuantity(lpuItems, prev.item_name, newQuantity)
+        const matched = validation.matchedItem
         if (matched) {
           updated.unit_price = matched.unit_value
           updated.lpu_item_id = matched.id
           updated.lpu_range = matched.range
+        } else {
+          updated.unit_price = null
+          updated.lpu_item_id = null
+          updated.lpu_range = null
         }
       }
       return updated
@@ -359,6 +376,19 @@ export default function NovaDemandaPage() {
       })
       return
     }
+
+    if (itemMode === 'lpu' && !itemForm.is_custom) {
+      const validation = validateLpuQuantity(lpuItems, itemForm.item_name, itemForm.quantity)
+      if (!validation.isValid) {
+        toast({
+          title: 'Quantidade fora da faixa da LPU',
+          description: validation.errorMessage || 'Quantidade inválida para o range deste item.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     setDemandItems([...demandItems, { ...itemForm }])
     setItemForm({ ...emptyItem, is_custom: itemMode === 'manual' })
   }
@@ -533,6 +563,11 @@ export default function NovaDemandaPage() {
   }
 
   const hasLpu = lpuItems.length > 0
+
+  const currentLpuValidation =
+    itemMode === 'lpu' && !itemForm.is_custom && itemForm.item_name
+      ? validateLpuQuantity(lpuItems, itemForm.item_name, itemForm.quantity)
+      : null
 
   if (initialLoading) {
     return <NovaDemandaSkeleton />
@@ -958,6 +993,13 @@ export default function NovaDemandaPage() {
                     onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
                   />
                 </div>
+
+                {currentLpuValidation && !currentLpuValidation.isValid && (
+                  <div className="col-span-2 flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span className="font-medium">{currentLpuValidation.errorMessage}</span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Prazo do Item</Label>
                   <Input
