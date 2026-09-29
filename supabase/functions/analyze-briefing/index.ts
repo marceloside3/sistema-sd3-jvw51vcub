@@ -29,8 +29,17 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
-const MODEL = 'gemini-3.8-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
+const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'] as const
+
+class GeminiApiError extends Error {
+  readonly statusCode: number
+
+  constructor(statusCode: number, message: string) {
+    super(message)
+    this.name = 'GeminiApiError'
+    this.statusCode = statusCode
+  }
+}
 
 function buildPrompt(payload: BriefingAnalysisPayload): string {
   const areas =
@@ -119,31 +128,36 @@ function getGoogleErrorDetails(error: any): { code?: string; reason?: string; me
   }
 }
 
-async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResult> {
+async function callGemini(apiKey: string, prompt: string, model: string): Promise<AnalysisResult> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 30000)
+  const timeout = setTimeout(() => controller.abort(), 20000)
 
   try {
-    const response = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text: 'Analise briefings de trade marketing e responda no formato JSON solicitado.',
+              },
+            ],
+          },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
+        }),
+        signal: controller.signal,
       },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            { text: 'Analise briefings de trade marketing e responda no formato JSON solicitado.' },
-          ],
-        },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      }),
-      signal: controller.signal,
-    })
+    )
 
     const responseText = await response.text()
     let responseJson: any
@@ -170,7 +184,10 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
       ]
         .filter(Boolean)
         .join(' ')
-      throw new Error(diagnostic || 'Falha na autenticação com o Google Gemini.')
+      throw new GeminiApiError(
+        response.status,
+        diagnostic || 'Falha na autenticação com o Google Gemini.',
+      )
     }
 
     const candidateText = responseJson?.candidates?.[0]?.content?.parts
@@ -191,6 +208,60 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
   } finally {
     clearTimeout(timeout)
   }
+}
+
+async function callGeminiWithFallback(
+  apiKey: string,
+  prompt: string,
+): Promise<{ analysis: AnalysisResult; modelUsed: string }> {
+  const unavailableModels: string[] = []
+  let lastErrorMessage = ''
+
+  for (let index = 0; index < CANDIDATE_MODELS.length; index += 1) {
+    const model = CANDIDATE_MODELS[index]
+    const maxAttemptsForModel = index === 0 ? 2 : 1
+
+    for (let attempt = 0; attempt < maxAttemptsForModel; attempt += 1) {
+      try {
+        const analysis = await callGemini(apiKey, prompt, model)
+        return { analysis, modelUsed: model }
+      } catch (error: any) {
+        // Fail over only for temporary capacity errors. Auth, quota, and request errors remain visible.
+        if (!(error instanceof GeminiApiError) || error.statusCode !== 503) {
+          throw error
+        }
+
+        lastErrorMessage = typeof error.message === 'string' ? error.message.slice(0, 400) : ''
+        const retrySameModel = attempt + 1 < maxAttemptsForModel
+        if (retrySameModel) {
+          console.warn('[analyze-briefing] Gemini capacity unavailable; retrying model', {
+            model,
+            httpStatus: error.statusCode,
+            attempt: attempt + 1,
+          })
+          await new Promise((resolve) => setTimeout(resolve, 750))
+          continue
+        }
+
+        unavailableModels.push(model)
+        const nextModel = CANDIDATE_MODELS[index + 1]
+        console.warn('[analyze-briefing] Gemini capacity unavailable; trying fallback', {
+          model,
+          httpStatus: error.statusCode,
+          nextModel: nextModel || null,
+        })
+      }
+    }
+
+    if (CANDIDATE_MODELS[index + 1]) {
+      await new Promise((resolve) => setTimeout(resolve, 500 * (index + 1)))
+    }
+  }
+
+  throw new GeminiApiError(
+    503,
+    `Google Gemini está temporariamente sem capacidade nos modelos ${unavailableModels.join(', ')}. Tente novamente em alguns instantes. ${lastErrorMessage}`,
+  )
 }
 
 Deno.serve(async (req: Request) => {
@@ -269,7 +340,10 @@ Deno.serve(async (req: Request) => {
       briefingData: (projectData.briefing_data as Record<string, unknown>) || body.briefingData,
     }
 
-    const analysis = await callGemini(apiKey, buildPrompt(enrichedPayload))
+    const { analysis, modelUsed } = await callGeminiWithFallback(
+      apiKey,
+      buildPrompt(enrichedPayload),
+    )
 
     return jsonResponse({
       success: true,
@@ -283,7 +357,7 @@ Deno.serve(async (req: Request) => {
         sugestoes: Array.isArray(analysis.sugestoes) ? analysis.sugestoes : [],
       },
       analyzedAt: new Date().toISOString(),
-      model: MODEL,
+      model: modelUsed,
     })
   } catch (error: any) {
     console.error('[analyze-briefing] Request failed', {
