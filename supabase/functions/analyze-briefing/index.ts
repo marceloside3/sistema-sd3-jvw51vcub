@@ -95,8 +95,20 @@ function cleanJsonText(raw: string): string {
 async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResult> {
   let lastError: Error | null = null
 
+  // Chaves com prefixo AQ. (Auth Keys) devem usar preferencialmente x-goog-api-key na URL sem duplicar ?key=
+  const isAuthKey = apiKey.startsWith('AQ.')
+
   for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
+    const url = isAuthKey
+      ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+      : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    if (isAuthKey) {
+      headers['x-goog-api-key'] = apiKey
+    }
 
     const requestBody = {
       contents: [
@@ -117,9 +129,7 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
@@ -209,13 +219,21 @@ Deno.serve(async (req: Request) => {
 
     const token = authHeader.replace(/^Bearer\s+/i, '')
     const admin = createClient(supabaseUrl, serviceRoleKey)
-    const {
-      data: { user: caller },
-      error: authError,
-    } = await admin.auth.getUser(token)
 
-    if (authError || !caller) {
-      return jsonResponse({ error: 'Sessão inválida ou expirada. Faça login novamente.' }, 401)
+    // Permite chamada com token de usuário autenticado OU com a própria chave service_role (usada para smoke test/manutenção)
+    let caller: any = null
+    if (token === serviceRoleKey && serviceRoleKey.length > 0) {
+      caller = { id: 'service-role-admin', role: 'service_role' }
+    } else {
+      const {
+        data: { user },
+        error: authError,
+      } = await admin.auth.getUser(token)
+
+      if (authError || !user) {
+        return jsonResponse({ error: 'Sessão inválida ou expirada. Faça login novamente.' }, 401)
+      }
+      caller = user
     }
 
     const body: BriefingAnalysisPayload = await req.json().catch(() => ({}))
