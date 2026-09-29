@@ -22,6 +22,7 @@ import {
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useAuth } from '@/hooks/use-auth'
 import { useCurrentUser } from '@/hooks/use-current-user'
+import { canAccessSuppliers } from '@/lib/suppliers-permissions'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import iconUrl from '@/assets/icone3-6f0c6.png'
@@ -54,6 +55,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
     data?.profile?.is_admin ||
     data?.areas?.some((a) => a.code === 'planejamento') ||
     data?.profile?.code === 'planejamento'
+  const canSeeFornecedores = canAccessSuppliers(data)
 
   return (
     <>
@@ -115,14 +117,16 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
               <CheckSquare fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
               Minhas Demandas
             </Link>
-            <Link
-              to="/fornecedores"
-              onClick={() => setIsOpen(false)}
-              className={navLinkClass(location.pathname.startsWith('/fornecedores'))}
-            >
-              <Truck fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
-              Fornecedores
-            </Link>
+            {canSeeFornecedores && (
+              <Link
+                to="/fornecedores"
+                onClick={() => setIsOpen(false)}
+                className={navLinkClass(location.pathname.startsWith('/fornecedores'))}
+              >
+                <Truck fill="currentColor" className="w-4 h-4 mr-3 shrink-0" />
+                Fornecedores
+              </Link>
+            )}
 
             {canSeeCriacao && (
               <Link

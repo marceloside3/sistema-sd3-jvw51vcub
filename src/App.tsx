@@ -25,6 +25,7 @@ import AuditReport from './pages/AuditReport'
 import HubDashboardPage from './pages/hub/HubDashboardPage'
 import { HubGuard } from './components/auth/HubGuard'
 import { AdminGuard } from './components/auth/AdminGuard'
+import { SuppliersGuard } from './components/auth/SuppliersGuard'
 import UsersPage from './pages/admin/UsersPage'
 import AreasPage from './pages/admin/AreasPage'
 import ProfilesPage from './pages/admin/ProfilesPage'
@@ -70,9 +71,30 @@ const App = () => (
               <Route path="/minhas-demandas" element={<MyDemandsPage />} />
               <Route path="/notificacoes" element={<NotificationsPage />} />
 
-              <Route path="/fornecedores" element={<SuppliersListPage />} />
-              <Route path="/fornecedores/novo" element={<SupplierFormPage />} />
-              <Route path="/fornecedores/:id" element={<SupplierFormPage />} />
+              <Route
+                path="/fornecedores"
+                element={
+                  <SuppliersGuard>
+                    <SuppliersListPage />
+                  </SuppliersGuard>
+                }
+              />
+              <Route
+                path="/fornecedores/novo"
+                element={
+                  <SuppliersGuard>
+                    <SupplierFormPage />
+                  </SuppliersGuard>
+                }
+              />
+              <Route
+                path="/fornecedores/:id"
+                element={
+                  <SuppliersGuard>
+                    <SupplierFormPage />
+                  </SuppliersGuard>
+                }
+              />
 
               <Route path="/criacao" element={<KanbanPage />} />
               <Route path="/planejamento" element={<PlanejamentoKanbanPage />} />
