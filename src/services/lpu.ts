@@ -11,14 +11,59 @@ export interface LpuItem {
   updated_at: string
 }
 
-export async function getLpuItems(clientId: string): Promise<LpuItem[]> {
-  const { data, error } = await supabase
+const LPU_PAGE_SIZE = 1000
+
+/**
+ * Busca todos os itens de LPU de um cliente com paginação automática (.range)
+ * em lotes de 1.000 para superar o limite padrão de linhas do PostgREST.
+ */
+export async function fetchAllLpuItems(clientId: string): Promise<LpuItem[]> {
+  const allItems: LpuItem[] = []
+  let from = 0
+
+  while (true) {
+    const to = from + LPU_PAGE_SIZE - 1
+    const { data, error } = await supabase
+      .from('client_lpu_items')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('item_name', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
+
+    if (error) throw error
+    if (!data || data.length === 0) break
+
+    allItems.push(...(data as LpuItem[]))
+
+    if (data.length < LPU_PAGE_SIZE) {
+      break
+    }
+
+    from += LPU_PAGE_SIZE
+  }
+
+  return allItems
+}
+
+/**
+ * Retorna a contagem total exata de itens da LPU no banco de dados para um cliente.
+ */
+export async function countLpuItems(clientId: string): Promise<number> {
+  const { count, error } = await supabase
     .from('client_lpu_items')
-    .select('*')
+    .select('*', { count: 'exact', head: true })
     .eq('client_id', clientId)
-    .order('item_name', { ascending: true })
+
   if (error) throw error
-  return data || []
+  return count || 0
+}
+
+/**
+ * Alias mantido para retrocompatibilidade; usa fetchAllLpuItems por padrão.
+ */
+export async function getLpuItems(clientId: string): Promise<LpuItem[]> {
+  return fetchAllLpuItems(clientId)
 }
 
 export async function deleteAllLpuItems(clientId: string): Promise<void> {

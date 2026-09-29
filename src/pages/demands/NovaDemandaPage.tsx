@@ -37,7 +37,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { getProjects } from '@/services/projects'
 import { PendingFilesPicker } from '@/components/attachments/PendingFilesPicker'
 import { uploadAttachment } from '@/services/attachments'
-import { getLpuItems, LpuItem, findMatchingLpuItem } from '@/services/lpu'
+import { fetchAllLpuItems, LpuItem, findMatchingLpuItem } from '@/services/lpu'
 import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
 import { NovaDemandaSkeleton } from '@/components/demands/NovaDemandaSkeleton'
 
@@ -275,7 +275,7 @@ export default function NovaDemandaPage() {
     const clientId = selectedProject?.client?.id || selectedProject?.client_id || fetchedClientId
     if (isProducaoArea && clientId) {
       setLpuLoaded(false)
-      getLpuItems(clientId)
+      fetchAllLpuItems(clientId)
         .then((items) => {
           setLpuItems(items)
           setLpuLoaded(true)

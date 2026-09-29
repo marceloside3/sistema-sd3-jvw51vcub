@@ -16,7 +16,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { supabase } from '@/lib/supabase/client'
-import { getLpuItems, deleteAllLpuItems, LpuItem } from '@/services/lpu'
+import { fetchAllLpuItems, deleteAllLpuItems, countLpuItems, LpuItem } from '@/services/lpu'
 import { updateClient } from '@/services/clients'
 
 interface LpuUploadSectionProps {
@@ -40,7 +40,7 @@ export function LpuUploadSection({
   const loadItems = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await getLpuItems(clientId)
+      const data = await fetchAllLpuItems(clientId)
       setItems(data)
     } catch {
       setItems([])
@@ -82,8 +82,17 @@ export function LpuUploadSection({
 
       await updateClient(clientId, { has_lpu: true })
       onLpuUploaded?.()
-      await loadItems()
-      toast({ title: 'LPU importada com sucesso' })
+      const freshItems = await fetchAllLpuItems(clientId)
+      setItems(freshItems)
+
+      const savedCount =
+        freshItems.length > 0 ? freshItems.length : (data?.count ?? (await countLpuItems(clientId)))
+
+      const formattedCount = Number(savedCount).toLocaleString('pt-BR')
+      toast({
+        title: 'LPU importada com sucesso',
+        description: `LPU importada: ${formattedCount} ${savedCount === 1 ? 'item' : 'itens'}`,
+      })
     } catch (err: any) {
       toast({
         title: 'Erro ao importar LPU',

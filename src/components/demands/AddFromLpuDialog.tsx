@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { getLpuItems, LpuItem } from '@/services/lpu'
+import { fetchAllLpuItems, LpuItem } from '@/services/lpu'
 import { addDemandItem } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { logDemandAuditBatch } from '@/services/demand-audit'
@@ -43,7 +43,7 @@ export function AddFromLpuDialog({
   useEffect(() => {
     if (open && clientId) {
       setLoading(true)
-      getLpuItems(clientId)
+      fetchAllLpuItems(clientId)
         .then(setLpuItems)
         .catch(() => setLpuItems([]))
         .finally(() => setLoading(false))
