@@ -77,7 +77,7 @@ function AppSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: b
             <img
               src={iconUrl}
               alt="SD3"
-              className="w-[30%] max-w-[80px] h-auto object-contain transition-transform duration-300 ease-smooth"
+              className="w-[24%] max-w-[64px] h-auto object-contain transition-transform duration-300 ease-smooth"
             />
           </div>
           <Button
@@ -254,7 +254,7 @@ function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <img
             src={iconUrl}
             alt="SD3"
-            className="w-[30%] max-w-[60px] h-auto object-contain transition-transform duration-300 ease-smooth"
+            className="w-[24%] max-w-[48px] h-auto object-contain transition-transform duration-300 ease-smooth"
           />
         </div>
       </div>
