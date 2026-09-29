@@ -29,317 +29,168 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
-// Modelos ordenados com foco em estabilidade e suporte atual
-// Prioriza gemini-2.5-flash (confirmado funcionando com chaves AQ.) e variantes atuais;
-// gemini-2.0-flash fica APENAS como última opção fallback.
-const CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-pro',
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
-]
+const MODEL = 'gemini-3.8-flash'
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 
-function buildSystemAndUserPrompt(payload: BriefingAnalysisPayload) {
-  const areasList =
+function buildPrompt(payload: BriefingAnalysisPayload): string {
+  const areas =
     Array.isArray(payload.areas) && payload.areas.length > 0
       ? payload.areas.join(', ')
       : 'Não informadas'
 
-  const briefingEntries =
+  const briefing =
     payload.briefingData && typeof payload.briefingData === 'object'
       ? Object.entries(payload.briefingData)
-          .map(([k, v]) => `- ${k}: ${String(v ?? '').trim() || '[EM BRANCO]'}`)
+          .map(([key, value]) => `- ${key}: ${String(value ?? '').trim() || '[EM BRANCO]'}`)
           .join('\n')
       : 'Nenhum campo de briefing detalhado fornecido.'
 
-  const prompt = `Você é um diretor sênior de operações e planejamento de uma grande agência de publicidade e produção criativa (Sistema Side3).
-Sua missão é analisar criteriosamente o briefing de um projeto publicitário enviado pelas equipes e identificar forças, lacunas, inconsistências e riscos operacionais/criativos.
+  return `Você é um diretor sênior de operações e planejamento de uma agência especializada em trade marketing, ativações, ponto de venda e execução em campo (Sistema Side3). Analise o briefing abaixo e produza um diagnóstico claro, fundamentado e acionável.
 
-DADOS DO PROJETO:
-- Nome do Projeto: ${payload.projectName || 'Não informado'}
+DADOS DO PROJETO
+- Nome: ${payload.projectName || 'Não informado'}
 - Cliente: ${payload.clientName || 'Não informado'}
 - Período: ${payload.startDate || 'Não informado'} até ${payload.endDate || 'Não informado'}
-- Áreas envolvidas: ${areasList}
-- Descrição / Escopo geral: ${payload.description || 'Não informada'}
+- Áreas envolvidas: ${areas}
+- Descrição/escopo: ${payload.description || 'Não informado'}
 
-CAMPOS ESPECÍFICOS DO BRIEFING:
-${briefingEntries}
+BRIEFING
+${briefing}
 
-DIRETRIZES DE AVALIAÇÃO:
-1. Resumo executivo (1 a 2 frases avaliando a prontidão do briefing).
-2. Sentimento geral: "positivo" (briefing completo e claro), "neutro" (adequado com pequenos ajustes), "atencao" (faltam dados importantes ou prazos apertados) ou "critico" (inviável iniciar sem novas informações).
-3. Pontos positivos: itens bem explicados, metas claras, referências sólidas, etc.
-4. Campos faltantes: informações cruciais ausentes para as áreas envolvidas (ex: diretrizes de marca, links de referências, especificações de formato, target detalhado, aprovações, orçamentos).
-5. Inconsistências: prazos incompatíveis com escopo, canais sem assets definidos, objetivos conflitantes.
-6. Riscos: riscos de SLA, estouro de orçamento, refações criativas ou gargalos de produção.
-7. Sugestões de melhoria: recomendações práticas e acionáveis para complementar o briefing e garantir o sucesso do projeto.
+AVALIE
+- Prontidão, clareza e coerência do briefing.
+- Informações faltantes relevantes para as áreas envolvidas.
+- Conflitos de escopo, datas, entregáveis ou responsabilidades.
+- Riscos operacionais, de prazo/SLA, orçamento ou retrabalho.
+- Melhorias práticas para completar o briefing e reduzir riscos.
 
-FORMATO OBRIGATÓRIO DE RESPOSTA:
-Responda EXCLUSIVAMENTE em formato JSON válido com as seguintes chaves em português (sem markdown extra fora do JSON):
+Não invente informações. Diferencie fato informado de inferência. Use sentimento_geral como classificação da prontidão do briefing: positivo, neutro, atencao ou critico.
+
+Responda exclusivamente com JSON válido, sem Markdown, no formato:
 {
-  "resumo": "Texto resumido em português",
-  "sentimento_geral": "positivo" | "neutro" | "atencao" | "critico",
-  "pontos_positivos": ["item 1", "item 2"],
-  "campos_faltantes": ["item 1", "item 2"],
-  "inconsistencias": ["item 1", "item 2"],
-  "riscos": ["item 1", "item 2"],
-  "sugestoes": ["item 1", "item 2"]
+  "resumo": "Uma ou duas frases",
+  "sentimento_geral": "neutro",
+  "pontos_positivos": ["..."],
+  "campos_faltantes": ["..."],
+  "inconsistencias": ["..."],
+  "riscos": ["..."],
+  "sugestoes": ["..."]
 }`
-
-  return prompt
 }
 
-function cleanJsonText(raw: string): string {
-  let cleaned = raw.trim()
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned
+function parseCandidateText(raw: string): AnalysisResult {
+  let text = raw.trim()
+  if (text.startsWith('```')) {
+    text = text
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```$/, '')
       .trim()
   }
-  return cleaned
-}
 
-interface AttemptLog {
-  model: string
-  endpoint: string
-  authMethod: string
-  status: number | string
-  details?: string
-}
-
-async function callGemini(
-  apiKey: string,
-  prompt: string,
-): Promise<{ analysis: AnalysisResult; modelUsed: string }> {
-  const attempts: AttemptLog[] = []
-  const sanitizedKeySnippet = apiKey ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : '[vazio]'
-  const isAqKey = apiKey.startsWith('AQ.')
-
-  console.log(
-    `[analyze-briefing] Iniciando análise de briefing com chave Gemini (formato ${isAqKey ? 'AQ.' : 'padrão'}, prefixo/sufixo: ${sanitizedKeySnippet})`,
-  )
-
-  // Prepara o corpo padrão da API nativa / express mode
-  const nativeRequestBody = {
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: prompt }],
-      },
-    ],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      temperature: 0.2,
-    },
+  const parsed = JSON.parse(text) as AnalysisResult
+  const allowedSentiments = new Set(['positivo', 'neutro', 'atencao', 'critico'])
+  if (parsed.sentimento_geral && !allowedSentiments.has(parsed.sentimento_geral)) {
+    parsed.sentimento_geral = 'neutro'
   }
 
-  // Prepara o corpo para o endpoint OpenAI-compatible caso seja testado
-  const openaiRequestBody = {
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    temperature: 0.2,
-    response_format: { type: 'json_object' },
-  }
-
-  for (const model of CANDIDATE_MODELS) {
-    // Definimos os planos de requisição para cada modelo:
-    // 1. generativelanguage v1beta nativo com header x-goog-api-key (recomendado oficial Google)
-    // 2. generativelanguage v1beta nativo com query param ?key=
-    // 3. generativelanguage v1beta nativo com Authorization: Bearer
-    // 4. generativelanguage v1 (não v1beta) com x-goog-api-key
-    // 5. aiplatform express mode (Vertex AI Express Mode, padrão de chaves AQ.) com ?key=
-    // 6. aiplatform express mode com x-goog-api-key
-    // 7. generativelanguage v1beta OpenAI-compatible endpoint (/openai/chat/completions) com Authorization: Bearer
-    interface Strategy {
-      name: string
-      url: string
-      headers: Record<string, string>
-      body: unknown
-      isOpenAiShape?: boolean
-    }
-
-    const strategies: Strategy[] = [
-      {
-        name: 'generativelanguage v1beta (x-goog-api-key)',
-        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: nativeRequestBody,
-      },
-      {
-        name: 'generativelanguage v1beta (query ?key=)',
-        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: nativeRequestBody,
-      },
-      {
-        name: 'generativelanguage v1beta (Authorization Bearer)',
-        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: nativeRequestBody,
-      },
-      {
-        name: 'generativelanguage v1 (x-goog-api-key)',
-        url: `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: nativeRequestBody,
-      },
-      {
-        name: 'aiplatform express mode (query ?key=)',
-        url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: nativeRequestBody,
-      },
-      {
-        name: 'aiplatform express mode (x-goog-api-key)',
-        url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: nativeRequestBody,
-      },
-      {
-        name: 'generativelanguage openai-compatible (Bearer)',
-        url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: {
-          ...openaiRequestBody,
-          model,
-        },
-        isOpenAiShape: true,
-      },
-    ]
-
-    for (const strategy of strategies) {
-      const attemptEntry: AttemptLog = {
-        model,
-        endpoint: strategy.url.split('?')[0],
-        authMethod: strategy.name,
-        status: 'pendente',
-      }
-
-      try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 12000)
-
-        const response = await fetch(strategy.url, {
-          method: 'POST',
-          headers: strategy.headers,
-          body: JSON.stringify(strategy.body),
-          signal: controller.signal,
-        })
-
-        clearTimeout(timeoutId)
-
-        attemptEntry.status = response.status
-
-        const resText = await response.text()
-        let resJson: any = null
-        try {
-          resJson = JSON.parse(resText)
-        } catch {
-          resJson = null
-        }
-
-        if (response.ok) {
-          console.log(
-            `[analyze-briefing] SUCESSO! Modelo: ${model} | Estratégia: ${strategy.name} | Status: ${response.status}`,
-          )
-
-          let candidateText = ''
-          if (strategy.isOpenAiShape) {
-            candidateText = resJson?.choices?.[0]?.message?.content || ''
-          } else {
-            candidateText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-          }
-
-          if (!candidateText) {
-            console.warn(`[analyze-briefing] Resposta vazia da API do Gemini no modelo ${model}.`)
-            attemptEntry.details = 'Resposta sem texto de candidato'
-            attempts.push(attemptEntry)
-            continue
-          }
-
-          const parsed: AnalysisResult = JSON.parse(cleanJsonText(candidateText))
-          return { analysis: parsed, modelUsed: model }
-        }
-
-        // Falha HTTP (ex: 401, 403, 404, 429)
-        const errorMsg =
-          resJson?.error?.message ||
-          resJson?.message ||
-          `HTTP ${response.status} (${resText.slice(0, 160)})`
-
-        attemptEntry.details = errorMsg
-        attempts.push(attemptEntry)
-
-        console.warn(
-          `[analyze-briefing] Tentativa falhou -> Modelo: ${model} | Auth/Endpoint: ${strategy.name} | Status: ${response.status} | Detalhes: ${errorMsg}`,
-        )
-
-        // Se for 429 (quota excedida), podemos continuar tentando outro endpoint/modelo ou registrar
-      } catch (err: any) {
-        const isTimeout = err?.name === 'AbortError'
-        attemptEntry.status = isTimeout ? 'timeout' : 'network_error'
-        attemptEntry.details = isTimeout ? 'Timeout de 12s excedido' : err?.message || String(err)
-        attempts.push(attemptEntry)
-
-        console.warn(
-          `[analyze-briefing] Erro de rede/timeout -> Modelo: ${model} | Estratégia: ${strategy.name} | Erro: ${attemptEntry.details}`,
-        )
-      }
+  for (const key of [
+    'pontos_positivos',
+    'campos_faltantes',
+    'inconsistencias',
+    'riscos',
+    'sugestoes',
+  ] as const) {
+    if (parsed[key] !== undefined && !Array.isArray(parsed[key])) {
+      throw new Error(`Formato de resposta inválido: ${key} precisa ser uma lista.`)
     }
   }
 
-  // Se todas as tentativas falharem, monta relatório honesto e amigável em português
-  const summaryLines = attempts
-    .map(
-      (a) =>
-        `• [${a.model}] ${a.authMethod} → status ${a.status} (${a.details?.slice(0, 80) || 'sem detalhes'})`,
-    )
-    .slice(0, 10)
-    .join('\n')
+  return parsed
+}
 
-  const lastAttempt = attempts[attempts.length - 1]
-  const lastStatus = lastAttempt ? `${lastAttempt.status}` : 'desconhecido'
+function getGoogleErrorDetails(error: any): { code?: string; reason?: string; message?: string } {
+  const details = Array.isArray(error?.details) ? error.details : []
+  const errorInfo = details.find((item: any) => item?.reason || item?.metadata?.service)
+  const status = typeof error?.status === 'string' ? error.status : undefined
+  return {
+    code: status,
+    reason: typeof errorInfo?.reason === 'string' ? errorInfo.reason : undefined,
+    message: typeof error?.message === 'string' ? error.message : undefined,
+  }
+}
 
-  console.error(
-    '[analyze-briefing] Todas as tentativas de conexão com a API do Google Gemini falharam:',
-    attempts,
-  )
+async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResult> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30000)
 
-  const detailedMessage =
-    `Não foi possível concluir a análise com o Google Gemini após testar múltiplos modelos e métodos de autenticação.\n\n` +
-    `Último status retornado pelo Google: ${lastStatus}.\n` +
-    `Modelos testados: ${CANDIDATE_MODELS.join(', ')}.\n` +
-    `Resumo das tentativas:\n${summaryLines}\n\n` +
-    (isAqKey
-      ? `Observação sobre chaves "AQ.": Se sua chave for da Agent Platform / Vertex AI Express Mode, certifique-se de que a API Generative Language / Vertex AI está habilitada no console do Google Cloud e sem restrições impeditivas de IP ou serviço.`
-      : `Dica: Verifique se a chave de API em aistudio.google.com está ativa e com cotas disponíveis.`)
+  try {
+    const response = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            { text: 'Analise briefings de trade marketing e responda no formato JSON solicitado.' },
+          ],
+        },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+        },
+      }),
+      signal: controller.signal,
+    })
 
-  throw new Error(detailedMessage)
+    const responseText = await response.text()
+    let responseJson: any
+    try {
+      responseJson = JSON.parse(responseText)
+    } catch {
+      responseJson = null
+    }
+
+    if (!response.ok) {
+      const details = getGoogleErrorDetails(responseJson?.error)
+      // Log only metadata. Never log the API key, prompt, or briefing content.
+      console.error('[analyze-briefing] Gemini request failed', {
+        httpStatus: response.status,
+        code: details.code,
+        reason: details.reason,
+      })
+
+      const diagnostic = [
+        `Google Gemini respondeu HTTP ${response.status}.`,
+        details.code ? `Código: ${details.code}.` : '',
+        details.reason ? `Motivo: ${details.reason}.` : '',
+        details.message ? `Detalhe: ${details.message}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+      throw new Error(diagnostic || 'Falha na autenticação com o Google Gemini.')
+    }
+
+    const candidateText = responseJson?.candidates?.[0]?.content?.parts
+      ?.map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
+      .filter(Boolean)
+      .join('\n')
+
+    if (!candidateText) {
+      throw new Error('O Gemini retornou uma resposta vazia. Tente novamente.')
+    }
+
+    return parseCandidateText(candidateText)
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('A solicitação ao Google Gemini excedeu o tempo limite. Tente novamente.')
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -349,107 +200,77 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const admin = createClient(supabaseUrl, serviceRoleKey)
-
-    let geminiApiKey =
-      Deno.env.get('GEMINI_API_KEY')?.trim() ||
-      Deno.env.get('GOOGLE_GEMINI_API_KEY')?.trim() ||
-      Deno.env.get('GOOGLE_API_KEY')?.trim() ||
-      ''
-
-    // Fallback de contingência caso os segredos de ambiente Deno não tenham sincronizado:
-    // busca a chave na tabela system_config do banco de dados (acessada com service_role)
-    if (!geminiApiKey && admin) {
-      try {
-        const { data: dbSecret } = await admin
-          .from('system_config')
-          .select('key, value')
-          .in('key', ['GEMINI_API_KEY', 'GOOGLE_GEMINI_API_KEY', 'GOOGLE_API_KEY'])
-          .order('key')
-          .limit(1)
-          .maybeSingle()
-
-        if (dbSecret?.value) {
-          geminiApiKey = String(dbSecret.value).trim()
-        }
-      } catch (dbErr) {
-        console.warn('Falha ao consultar fallback em system_config:', dbErr)
-      }
+    if (!supabaseUrl || !serviceRoleKey) {
+      return jsonResponse({ error: 'Configuração do Supabase incompleta na Edge Function.' }, 500)
     }
 
-    if (!geminiApiKey) {
+    const apiKey = Deno.env.get('GEMINI_API_KEY')?.trim() || ''
+    if (!apiKey) {
       return jsonResponse(
-        {
-          error:
-            'Chave do Google Gemini (GEMINI_API_KEY) não configurada no backend. Contate o suporte ou configure o segredo GEMINI_API_KEY.',
-        },
+        { error: 'Secret GEMINI_API_KEY ausente nos secrets de produção do Supabase.' },
         500,
       )
     }
 
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return jsonResponse({ error: 'Cabeçalho de autorização ausente.' }, 401)
-    }
+    if (!authHeader) return jsonResponse({ error: 'Cabeçalho de autorização ausente.' }, 401)
 
     const token = authHeader.replace(/^Bearer\s+/i, '')
-
-    // Permite chamada com token de usuário autenticado OU com a própria chave service_role (usada para smoke test/manutenção)
-    if (token === serviceRoleKey && serviceRoleKey.length > 0) {
-      // Caller autorizado via service_role
-    } else {
-      const {
-        data: { user },
-        error: authError,
-      } = await admin.auth.getUser(token)
-
-      if (authError || !user) {
-        return jsonResponse({ error: 'Sessão inválida ou expirada. Faça login novamente.' }, 401)
-      }
+    const admin = createClient(supabaseUrl, serviceRoleKey)
+    const {
+      data: { user },
+      error: authError,
+    } = await admin.auth.getUser(token)
+    if (authError || !user) {
+      return jsonResponse({ error: 'Sessão inválida ou expirada. Faça login novamente.' }, 401)
     }
 
     const body: BriefingAnalysisPayload = await req.json().catch(() => ({}))
-
-    // Se veio um projectId mas sem dados completos, busca direto no banco para garantir
-    let enrichedPayload = { ...body }
-    if (body.projectId) {
-      const { data: projectData } = await admin
-        .from('projects')
-        .select(`
-          id,
-          name,
-          description,
-          start_date,
-          end_date,
-          briefing_data,
-          client:clients(name),
-          areas:project_areas(area:areas(name))
-        `)
-        .eq('id', body.projectId)
-        .maybeSingle()
-
-      if (projectData) {
-        const clientName = (projectData as any)?.client?.name || enrichedPayload.clientName
-        const areaNames = Array.isArray((projectData as any)?.areas)
-          ? (projectData as any).areas.map((a: any) => a?.area?.name).filter(Boolean)
-          : enrichedPayload.areas || []
-
-        enrichedPayload = {
-          projectId: projectData.id,
-          projectName: projectData.name || enrichedPayload.projectName,
-          clientName: clientName || enrichedPayload.clientName,
-          description: projectData.description || enrichedPayload.description,
-          startDate: projectData.start_date || enrichedPayload.startDate,
-          endDate: projectData.end_date || enrichedPayload.endDate,
-          areas: areaNames.length > 0 ? areaNames : enrichedPayload.areas,
-          briefingData:
-            (projectData.briefing_data as Record<string, unknown>) || enrichedPayload.briefingData,
-        }
-      }
+    if (!body.projectId) {
+      return jsonResponse({ error: 'ID do projeto é obrigatório para analisar o briefing.' }, 400)
     }
 
-    const prompt = buildSystemAndUserPrompt(enrichedPayload)
-    const { analysis, modelUsed } = await callGemini(geminiApiKey, prompt)
+    // The user token is used for the project read so the project's RLS remains enforced.
+    const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data: projectData, error: projectError } = await userClient
+      .from('projects')
+      .select(
+        'id, name, description, start_date, end_date, briefing_data, client:clients(name), areas:project_areas(area:areas(name))',
+      )
+      .eq('id', body.projectId)
+      .maybeSingle()
+
+    if (projectError) {
+      console.error('[analyze-briefing] Project read failed', { code: projectError.code })
+      return jsonResponse(
+        {
+          error:
+            'Não foi possível ler o projeto para análise. Verifique seu acesso e tente novamente.',
+        },
+        403,
+      )
+    }
+    if (!projectData)
+      return jsonResponse({ error: 'Projeto não encontrado ou sem permissão de acesso.' }, 404)
+
+    const areaNames = Array.isArray((projectData as any).areas)
+      ? (projectData as any).areas.map((item: any) => item?.area?.name).filter(Boolean)
+      : []
+    const enrichedPayload: BriefingAnalysisPayload = {
+      projectId: projectData.id,
+      projectName: projectData.name || body.projectName,
+      clientName: (projectData as any)?.client?.name || body.clientName,
+      description: projectData.description || body.description,
+      startDate: projectData.start_date || body.startDate,
+      endDate: projectData.end_date || body.endDate,
+      areas: areaNames.length ? areaNames : body.areas,
+      briefingData: (projectData.briefing_data as Record<string, unknown>) || body.briefingData,
+    }
+
+    const analysis = await callGemini(apiKey, buildPrompt(enrichedPayload))
 
     return jsonResponse({
       success: true,
@@ -463,18 +284,20 @@ Deno.serve(async (req: Request) => {
         sugestoes: Array.isArray(analysis.sugestoes) ? analysis.sugestoes : [],
       },
       analyzedAt: new Date().toISOString(),
-      model: modelUsed,
+      model: MODEL,
     })
-  } catch (error) {
-    console.error('Erro na análise de briefing via Gemini:', error)
+  } catch (error: any) {
+    console.error('[analyze-briefing] Request failed', {
+      message: typeof error?.message === 'string' ? error.message : 'Unknown error',
+    })
     return jsonResponse(
       {
         error:
-          error instanceof Error
+          typeof error?.message === 'string'
             ? error.message
-            : 'Erro inesperado ao processar análise com Google Gemini.',
+            : 'Erro inesperado ao processar a análise do briefing.',
       },
-      500,
+      502,
     )
   }
 })
