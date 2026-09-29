@@ -149,7 +149,7 @@ export default function ProjetoDetalhePage() {
 
   const userAreaCodes = (userCtx?.areas || []).map((a) => a.code?.toLowerCase() || '')
   const isPlanningArea = userAreaCodes.includes('planejamento')
-  const isAllowedToDistribute = isAdmin || isDirector || isPlanningArea
+  const isAllowedToDistribute = isAdmin || isDirector || isPlanningArea || isCreator
 
   const projectAreaCodes = (project.areas || []).map((a: any) => a.area?.code?.toLowerCase() || '')
   const hasPlanningArea = projectAreaCodes.includes('planejamento')
