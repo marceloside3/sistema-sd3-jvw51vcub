@@ -60,7 +60,7 @@ export const MACRO_AREAS = [
 export const GOVERNANCE_GATES = [
   { id: 1, name: 'G1: Briefing Validado' },
   { id: 2, name: 'G2: Estratégia Aprovada' },
-  { id: 3, name: 'G3: Criação Aprovada' },
+  { id: 3, name: 'G3: Aprovação Diretoria' },
   { id: 4, name: 'G4: Mídia Planejada' },
   { id: 5, name: 'G5: Cliente Aprovou' },
   { id: 6, name: 'G6: Produção Concluída' },

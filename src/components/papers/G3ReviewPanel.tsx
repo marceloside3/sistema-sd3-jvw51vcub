@@ -34,7 +34,7 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
     setSubmitting(true)
     try {
       await reviewPaperG3(paper.id, 'approved')
-      toast({ title: 'Sucesso', description: 'Paper aprovado no G3.' })
+      toast({ title: 'Sucesso', description: 'Paper aprovado na Aprovação Diretoria.' })
       onReload()
     } catch (err: any) {
       toast({
@@ -86,7 +86,10 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
     setSubmitting(true)
     try {
       await overridePaperG3(paper.id, overrideReason)
-      toast({ title: 'Override aplicado', description: 'O G3 foi sobrescrito com sucesso.' })
+      toast({
+        title: 'Override aplicado',
+        description: 'A Aprovação Diretoria foi sobrescrita com sucesso.',
+      })
       setOverrideOpen(false)
       setOverrideReason('')
       onReload()
@@ -106,7 +109,7 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
   return (
     <div className="border border-zinc-200/60 rounded-2xl bg-white p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Revisão G3 — Diretor de Planejamento</h3>
+        <h3 className="text-lg font-semibold">Aprovação Diretoria — Diretor de Planejamento</h3>
         {isAdmin && paper.status !== 'approved' && paper.status !== 'override' && (
           <Button
             variant="destructive"
@@ -204,11 +207,11 @@ export function G3ReviewPanel({ paper, isAdmin, onReload }: G3ReviewPanelProps) 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Override do G3
+              Override — Aprovação Diretoria
             </DialogTitle>
             <DialogDescription>
-              Como Super Admin, você pode sobrescrever o Gate G3. Esta ação será registrada no log
-              de auditoria.
+              Como Super Admin, você pode sobrescrever a Aprovação Diretoria (G3). Esta ação será
+              registrada no log de auditoria.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
