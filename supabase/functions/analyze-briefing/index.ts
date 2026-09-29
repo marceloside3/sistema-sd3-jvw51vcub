@@ -207,7 +207,7 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return jsonResponse({ error: 'Cabeçalho de autorização ausente.' }, 401)
 
-    const token = authHeader.replace(/^Bearer\\s+/i, '')
+    const token = authHeader.replace(/^Bearer\s+/i, '')
     const admin = createClient(supabaseUrl, serviceRoleKey)
     const {
       data: { user },
