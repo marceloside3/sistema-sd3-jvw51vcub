@@ -204,18 +204,10 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Configuração do Supabase incompleta na Edge Function.' }, 500)
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY')?.trim() || ''
-    if (!apiKey) {
-      return jsonResponse(
-        { error: 'Secret GEMINI_API_KEY ausente nos secrets de produção do Supabase.' },
-        500,
-      )
-    }
-
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return jsonResponse({ error: 'Cabeçalho de autorização ausente.' }, 401)
 
-    const token = authHeader.replace(/^Bearer\s+/i, '')
+    const token = authHeader.replace(/^Bearer\\s+/i, '')
     const admin = createClient(supabaseUrl, serviceRoleKey)
     const {
       data: { user },
@@ -225,6 +217,13 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Sessão inválida ou expirada. Faça login novamente.' }, 401)
     }
 
+    const apiKey = Deno.env.get('GEMINI_API_KEY')?.trim() || ''
+    if (!apiKey) {
+      return jsonResponse(
+        { error: 'Secret GEMINI_API_KEY ausente nos secrets de produção do Supabase.' },
+        500,
+      )
+    }
     const body: BriefingAnalysisPayload = await req.json().catch(() => ({}))
     if (!body.projectId) {
       return jsonResponse({ error: 'ID do projeto é obrigatório para analisar o briefing.' }, 400)
