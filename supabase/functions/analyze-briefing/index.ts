@@ -96,7 +96,8 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
   let lastError: Error | null = null
 
   for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    // Para chaves AQ. ou AIza, generativelanguage aceita x-goog-api-key e ?key= na URL
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-goog-api-key': apiKey,
@@ -193,11 +194,33 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const geminiApiKey =
+    const admin = createClient(supabaseUrl, serviceRoleKey)
+
+    let geminiApiKey =
       Deno.env.get('GEMINI_API_KEY')?.trim() ||
       Deno.env.get('GOOGLE_GEMINI_API_KEY')?.trim() ||
       Deno.env.get('GOOGLE_API_KEY')?.trim() ||
       ''
+
+    // Fallback de contingência caso os segredos de ambiente Deno não tenham sincronizado:
+    // busca a chave na tabela system_config do banco de dados (acessada com service_role)
+    if (!geminiApiKey && admin) {
+      try {
+        const { data: dbSecret } = await admin
+          .from('system_config')
+          .select('key, value')
+          .in('key', ['GEMINI_API_KEY', 'GOOGLE_GEMINI_API_KEY', 'GOOGLE_API_KEY'])
+          .order('key')
+          .limit(1)
+          .maybeSingle()
+
+        if (dbSecret?.value) {
+          geminiApiKey = String(dbSecret.value).trim()
+        }
+      } catch (dbErr) {
+        console.warn('Falha ao consultar fallback em system_config:', dbErr)
+      }
+    }
 
     if (!geminiApiKey) {
       return jsonResponse(
@@ -215,7 +238,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, '')
-    const admin = createClient(supabaseUrl, serviceRoleKey)
 
     // Permite chamada com token de usuário autenticado OU com a própria chave service_role (usada para smoke test/manutenção)
     let caller: any = null
