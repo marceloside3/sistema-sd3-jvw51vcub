@@ -285,7 +285,7 @@ export default function ProjetoDetalhePage() {
                   <Button size="sm" variant="secondary" className="h-7 text-xs" asChild>
                     <Link to={`/projetos/${project.id}/paper`}>
                       <FileText className="w-3 h-3 mr-1" />
-                      Abrir Paper
+                      {canCreatePaper ? 'Editar Paper' : 'Visualizar Paper'}
                     </Link>
                   </Button>
                 </>

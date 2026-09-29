@@ -145,8 +145,6 @@ export default function PaperEditPage() {
   const isLatest = papers.length === 0 || papers[0].id === currentPaper?.id
   const isAdmin = currentUserData?.profile?.is_admin ?? false
 
-  const isPaperOwner = currentUserData?.id === currentPaper?.created_by
-
   const isPlanningArea = useMemo(() => {
     if (!currentUserData) return false
     return currentUserData.areas?.some((a) => a.code?.toLowerCase() === 'planejamento') ?? false
@@ -159,7 +157,8 @@ export default function PaperEditPage() {
     return isDirector && isPlanningArea
   }, [currentUserData, isPlanningArea, isDirector])
 
-  const canEditPaper = isPaperOwner || isPlanningArea || isAdmin || isDirector
+  // Apenas equipe de Planejamento, administradores e diretores podem editar o Paper
+  const canEditPaper = isPlanningArea || isAdmin || isDirector
 
   const missingFields = useMemo(() => {
     if (!currentPaper) return REQUIRED_FIELDS.map((f) => f.label)
@@ -284,6 +283,24 @@ export default function PaperEditPage() {
           </div>
         )}
       </div>
+
+      {!canEditPaper && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">Modo Somente Leitura:</span>
+            <span>
+              Você não tem permissão para editar o Paper — apenas visualização. Apenas a equipe de
+              Planejamento, diretores e administradores podem editá-lo.
+            </span>
+          </div>
+          <Badge
+            variant="outline"
+            className="border-amber-300 text-amber-700 bg-amber-100/60 uppercase text-[10px]"
+          >
+            Visualização
+          </Badge>
+        </div>
+      )}
 
       <Tabs defaultValue="inputs" className="w-full">
         <TabsList className="grid w-full grid-cols-5 max-w-3xl">
@@ -414,7 +431,9 @@ export default function PaperEditPage() {
           <PaperInputsTab
             paper={currentPaper}
             project={project}
-            readOnly={currentPaper ? !isLatest || currentPaper.status !== 'draft' : false}
+            readOnly={
+              !canEditPaper || (currentPaper ? !isLatest || currentPaper.status !== 'draft' : false)
+            }
             onReload={refreshPapers}
           />
           {currentPaper && isLatest && currentPaper.status === 'draft' && canEditPaper && (
@@ -478,7 +497,7 @@ export default function PaperEditPage() {
         <TabsContent value="benchmarks" className="mt-6">
           <BenchmarksTab
             paper={currentPaper}
-            readOnly={!isLatest || currentPaper?.status !== 'draft'}
+            readOnly={!canEditPaper || !isLatest || currentPaper?.status !== 'draft'}
             onReload={refreshPapers}
           />
         </TabsContent>

@@ -1,11 +1,11 @@
 {
   "_versions": {
-    "validate-password": 81,
-    "invite-user": 81,
-    "generate-meeting-ics": 81,
+    "validate-password": 82,
+    "invite-user": 82,
+    "generate-meeting-ics": 82,
     "parse-lpu": 5,
-    "create-test-users": 57,
-    "kamino-suppliers": 13,
+    "create-test-users": 58,
+    "kamino-suppliers": 14,
     "dashboard-finance": 1
   }
 }
