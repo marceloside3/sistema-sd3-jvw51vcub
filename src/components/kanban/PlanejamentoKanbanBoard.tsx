@@ -88,8 +88,12 @@ export function PlanejamentoKanbanBoard({
       result[s.id] = []
     })
 
+    const briefingStage = stages.find((s) => s.position === 1)
+
     demands.forEach((demand) => {
-      const stage = stages.find((s) => s.id === demand.kanban_stage_id)
+      // Se não tiver estágio definido ou o estágio não for encontrado,
+      // aloca por padrão na coluna Briefing (posição 1)
+      const stage = stages.find((s) => s.id === demand.kanban_stage_id) || briefingStage
       if (!stage) return
 
       // Filter: Search

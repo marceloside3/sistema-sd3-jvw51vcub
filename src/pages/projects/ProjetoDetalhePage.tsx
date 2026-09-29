@@ -159,6 +159,22 @@ export default function ProjetoDetalhePage() {
     !!project.distributed_at && hasPlanningArea && (isAdmin || isDirector || isPlanningArea)
   const currentPaper = papers[0]
 
+  // Regra de visibilidade do Paper de Planejamento nas listagens de demandas do projeto:
+  // Segue a mesma restrição do RLS da migration 20260929213000:
+  // Administradores, Diretores, membros da equipe de Planejamento, autor da demanda ou responsável.
+  const visibleDemands = demands.filter((d) => {
+    const isPaperDemand =
+      d.title?.startsWith('Paper de Planejamento —') ||
+      d.to_area?.code?.toLowerCase() === 'planejamento'
+
+    if (!isPaperDemand) return true
+
+    // Demanda do Paper de Planejamento:
+    if (isAdmin || isDirector || isPlanningArea) return true
+    if (userCtx?.id && (d.from_user_id === userCtx.id || d.to_user_id === userCtx.id)) return true
+    return false
+  })
+
   const canDistribute =
     isAllowedToDistribute &&
     project.briefing_completed_at &&
@@ -406,32 +422,49 @@ export default function ProjetoDetalhePage() {
         >
           <h3 className="text-lg font-semibold mb-4">Cronograma de Demandas</h3>
           <div className="space-y-4">
-            {demands.length === 0 ? (
+            {visibleDemands.length === 0 ? (
               <p className="text-sm text-gray-500">
                 Nenhuma demanda registrada para montar a timeline.
               </p>
             ) : (
               <div className="relative border-l-2 border-gray-200 ml-4 space-y-6 py-4">
-                {demands.map((d) => (
-                  <div key={d.id} className="relative pl-6">
-                    <div className="absolute w-3 h-3 bg-blue-600 rounded-full -left-[7px] top-1.5 border-2 border-white"></div>
-                    <div className="bg-gray-50 p-3 rounded border text-sm max-w-lg shadow-sm">
-                      <div className="font-semibold text-gray-900">{d.title}</div>
-                      <div className="flex items-center text-xs text-gray-500 mt-2 gap-3">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />{' '}
-                          {d.due_date ? formatDateBR(d.due_date) : 'Sem data'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" /> {d.to_area?.name}
-                        </span>
-                        <Badge variant="outline" className="text-[10px] bg-white">
-                          {d.status}
-                        </Badge>
+                {visibleDemands.map((d) => {
+                  const isPaperDemand = d.title?.startsWith('Paper de Planejamento —')
+                  return (
+                    <div key={d.id} className="relative pl-6">
+                      <div
+                        className={`absolute w-3 h-3 rounded-full -left-[7px] top-1.5 border-2 border-white ${
+                          isPaperDemand ? 'bg-orange-500 ring-2 ring-orange-200' : 'bg-blue-600'
+                        }`}
+                      ></div>
+                      <div className="bg-gray-50 p-3 rounded border text-sm max-w-lg shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold text-gray-900">{d.title}</div>
+                          {isPaperDemand && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] bg-orange-50 text-orange-700 border-orange-200"
+                            >
+                              Paper
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500 mt-2 gap-3">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />{' '}
+                            {d.due_date ? formatDateBR(d.due_date) : 'Sem data'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" /> {d.to_area?.name}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] bg-white">
+                            {d.status}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -457,45 +490,74 @@ export default function ProjetoDetalhePage() {
                   <TableHead>Prioridade</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Prazo</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {demands.length === 0 ? (
+                {visibleDemands.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-6 text-gray-500">
                       Nenhuma demanda encontrada.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  demands.map((d) => (
-                    <TableRow key={d.id}>
-                      <TableCell>
-                        <Link
-                          to={`/demandas/${d.id}`}
-                          className="font-medium text-blue-600 hover:underline"
-                        >
-                          {d.title}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{d.to_area?.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            d.priority === 'urgent'
-                              ? 'border-red-600 text-red-600'
-                              : d.priority === 'high'
-                                ? 'border-orange-500 text-orange-500'
-                                : 'border-gray-300'
-                          }
-                        >
-                          {d.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{d.status}</TableCell>
-                      <TableCell>{formatDateBR(d.due_date)}</TableCell>
-                    </TableRow>
-                  ))
+                  visibleDemands.map((d) => {
+                    const isPaperDemand = d.title?.startsWith('Paper de Planejamento —')
+                    return (
+                      <TableRow key={d.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/demandas/${d.id}`}
+                              className="font-medium text-blue-600 hover:underline"
+                            >
+                              {d.title}
+                            </Link>
+                            {isPaperDemand && (
+                              <Badge
+                                variant="outline"
+                                className="bg-orange-50 text-orange-700 border-orange-200 text-[10px]"
+                              >
+                                Paper
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{d.to_area?.name}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              d.priority === 'urgent'
+                                ? 'border-red-600 text-red-600'
+                                : d.priority === 'high'
+                                  ? 'border-orange-500 text-orange-500'
+                                  : 'border-gray-300'
+                            }
+                          >
+                            {d.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{d.status}</TableCell>
+                        <TableCell>{formatDateBR(d.due_date)}</TableCell>
+                        <TableCell className="text-right">
+                          {isPaperDemand && project.id ? (
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            >
+                              <Link to={`/projetos/${project.id}/paper`}>
+                                <FileText className="w-3 h-3 mr-1" />
+                                Ver Paper
+                              </Link>
+                            </Button>
+                          ) : null}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
