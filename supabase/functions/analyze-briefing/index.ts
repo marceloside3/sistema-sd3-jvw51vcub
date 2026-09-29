@@ -96,8 +96,10 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
   let lastError: Error | null = null
 
   for (const model of GEMINI_MODELS) {
-    // Para chaves AQ. ou AIza, generativelanguage aceita x-goog-api-key e ?key= na URL
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
+    // Para chamadas nativas do Gemini:
+    // Chaves padrão AIza funcionam com x-goog-api-key ou ?key=.
+    // IMPORTANTE: Não envie ?key= e x-goog-api-key simultaneamente quando houver risco de conflito no gateway.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-goog-api-key': apiKey,
@@ -137,15 +139,39 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
         const message = errorObj?.message || `Erro ${response.status} na API do Gemini.`
         const status = errorObj?.status || ''
 
-        // Se a chave for inválida ou permissão negada, não adianta tentar outros modelos
-        if (code === 400 && /API_KEY_INVALID|key not valid/i.test(message)) {
+        // Trata erro 401 UNAUTHENTICATED (chave inválida, não aceita ou formato incompatível)
+        if (
+          code === 401 ||
+          status === 'UNAUTHENTICATED' ||
+          /ACCESS_TOKEN_TYPE_UNSUPPORTED|API_KEY_SERVICE_BLOCKED|invalid authentication credentials|OAuth 2 access token/i.test(
+            message,
+          )
+        ) {
+          if (apiKey.startsWith('AQ.')) {
+            throw new Error(
+              'A chave configurada (iniciada com "AQ.") foi rejeitada pelo Google com erro de autenticação. Para a API do Gemini, crie uma chave válida no Google AI Studio (acesse aistudio.google.com/app/apikey → "Create API key", formato padrão "AIza...") e salve nas configurações do sistema.',
+            )
+          }
           throw new Error(
-            'Chave de API do Google Gemini inválida ou expirada. Verifique as credenciais.',
+            'Credencial rejeitada pelo Google Gemini (401 UNAUTHENTICATED). Verifique se a API key está correta em aistudio.google.com/app/apikey.',
           )
         }
+
+        // Se a chave for inválida no formato 400
+        if (code === 400 && /API_KEY_INVALID|key not valid/i.test(message)) {
+          if (apiKey.startsWith('AQ.')) {
+            throw new Error(
+              'A chave configurada (iniciada com "AQ.") é inválida para a API do Google Gemini. Gere uma nova API key em aistudio.google.com/app/apikey e atualize as configurações do sistema.',
+            )
+          }
+          throw new Error(
+            'Chave de API do Google Gemini inválida ou expirada. Gere uma nova em aistudio.google.com/app/apikey.',
+          )
+        }
+
         if (code === 403 || status === 'PERMISSION_DENIED') {
           throw new Error(
-            'Acesso negado pela API do Google Gemini. Verifique a chave e permissões de cota.',
+            'Acesso negado pela API do Google Gemini. Verifique se a Generative Language API está ativada no projeto Google Cloud e se as permissões/cotas estão corretas.',
           )
         }
         if (code === 429 || status === 'RESOURCE_EXHAUSTED') {
@@ -173,11 +199,14 @@ async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResul
       } else {
         lastError = err instanceof Error ? err : new Error(String(err))
       }
-      // Se já for erro específico de auth/quota, relança imediatamente
+      // Se já for erro específico de auth/quota, relança imediatamente sem tentar outros modelos
       if (
+        lastError.message.includes('AQ.') ||
+        lastError.message.includes('aistudio.google.com') ||
         lastError.message.includes('inválida') ||
         lastError.message.includes('Acesso negado') ||
-        lastError.message.includes('Limite de requisições')
+        lastError.message.includes('Limite de requisições') ||
+        lastError.message.includes('Credencial rejeitada')
       ) {
         throw lastError
       }
