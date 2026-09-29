@@ -1,5 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface BriefingAnalysisPayload {
@@ -95,19 +95,11 @@ function cleanJsonText(raw: string): string {
 async function callGemini(apiKey: string, prompt: string): Promise<AnalysisResult> {
   let lastError: Error | null = null
 
-  // Chaves com prefixo AQ. (Auth Keys) devem usar preferencialmente x-goog-api-key na URL sem duplicar ?key=
-  const isAuthKey = apiKey.startsWith('AQ.')
-
   for (const model of GEMINI_MODELS) {
-    const url = isAuthKey
-      ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-      : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
-
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-    }
-    if (isAuthKey) {
-      headers['x-goog-api-key'] = apiKey
+      'x-goog-api-key': apiKey,
     }
 
     const requestBody = {
@@ -201,12 +193,17 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')?.trim() || ''
+    const geminiApiKey =
+      Deno.env.get('GEMINI_API_KEY')?.trim() ||
+      Deno.env.get('GOOGLE_GEMINI_API_KEY')?.trim() ||
+      Deno.env.get('GOOGLE_API_KEY')?.trim() ||
+      ''
 
     if (!geminiApiKey) {
       return jsonResponse(
         {
-          error: 'Chave do Google Gemini (GEMINI_API_KEY) não configurada no backend.',
+          error:
+            'Chave do Google Gemini (GEMINI_API_KEY) não configurada no backend. Contate o suporte ou configure o segredo GEMINI_API_KEY.',
         },
         500,
       )

@@ -115,10 +115,20 @@ export function AiAnalysisModal({
       setLastAnalyzedAt(new Date())
     } catch (err: any) {
       console.error('Falha ao analisar briefing:', err)
-      setError(
-        err?.message ||
-          'Não foi possível concluir a análise com o Google Gemini. Tente novamente mais tarde.',
-      )
+      const rawMessage = err?.message || ''
+      if (
+        rawMessage.includes('não configurada no backend') ||
+        rawMessage.includes('GEMINI_API_KEY')
+      ) {
+        setError(
+          'A chave de integração com o Google Gemini não foi encontrada no servidor. Solicite ao administrador a configuração da GEMINI_API_KEY no painel de segredos.',
+        )
+      } else {
+        setError(
+          rawMessage ||
+            'Não foi possível concluir a análise com o Google Gemini. Tente novamente mais tarde.',
+        )
+      }
     } finally {
       setLoading(false)
     }
