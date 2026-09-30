@@ -601,6 +601,80 @@ Deno.serve(async (req: Request) => {
       })
     }
 
+    if (body.action === 'search_images') {
+      const paperId = typeof body.paperId === 'string' ? body.paperId : ''
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(paperId))
+        return jsonResponse({ error: 'Paper inválido ou ausente.' }, 400)
+      const [paperResult, latestResult, userResult, areasResult] = await Promise.all([
+        userClient
+          .from('project_papers')
+          .select(
+            'id, project_id, status, version, refined_objective, personas, key_message, channels_priority, kpis, premises_restrictions',
+          )
+          .eq('id', paperId)
+          .eq('project_id', projectId)
+          .maybeSingle(),
+        userClient
+          .from('project_papers')
+          .select('id')
+          .eq('project_id', projectId)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        userClient
+          .from('users')
+          .select('profile:profiles(is_admin, is_director)')
+          .eq('id', user.id)
+          .maybeSingle(),
+        userClient.from('area_responsibles').select('area:areas(code)').eq('user_id', user.id),
+      ])
+      const paper = paperResult.data as any
+      const latest = latestResult.data as any
+      if (
+        paperResult.error ||
+        !paper ||
+        latestResult.error ||
+        latest?.id !== paperId ||
+        paper.status !== 'draft'
+      )
+        return jsonResponse(
+          { error: 'A busca de imagens exige o Paper mais recente em rascunho.' },
+          403,
+        )
+      if (userResult.error || areasResult.error)
+        return jsonResponse(
+          { error: 'Não foi possível validar sua permissão para editar o Paper.' },
+          403,
+        )
+      const profile: any = (userResult.data as any)?.profile
+      const isAdmin = Array.isArray(profile)
+        ? profile.some((item) => item?.is_admin)
+        : Boolean(profile?.is_admin)
+      const isDirector = Array.isArray(profile)
+        ? profile.some((item) => item?.is_director)
+        : Boolean(profile?.is_director)
+      const isPlanning = (areasResult.data || []).some((item: any) => {
+        const area = Array.isArray(item?.area) ? item.area[0] : item?.area
+        return typeof area?.code === 'string' && area.code.toLowerCase() === 'planejamento'
+      })
+      if (!isAdmin && !isDirector && !isPlanning)
+        return jsonResponse(
+          {
+            error:
+              'Apenas Planejamento, Diretores ou Administradores podem buscar imagens no Paper.',
+          },
+          403,
+        )
+      const imageSearch = await callImageSearch(apiKey, project, paper as PaperRow)
+      return jsonResponse({
+        success: true,
+        data: {
+          imageReferences: imageSearch.images,
+          imageSearchSuggestionHtml: imageSearch.searchSuggestionHtml,
+        },
+      })
+    }
+
     const paperId = typeof body.paperId === 'string' ? body.paperId : ''
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(paperId))
       return jsonResponse({ error: 'Paper inválido ou ausente.' }, 400)
@@ -681,20 +755,7 @@ Deno.serve(async (req: Request) => {
       })
 
     const paper = paperData as unknown as PaperRow
-    const [researchResult, imageResult] = await Promise.allSettled([
-      callGroundedResearch(apiKey, buildResearchPrompt(project, paper)),
-      callImageSearch(apiKey, project, paper),
-    ])
-    if (researchResult.status === 'rejected') throw researchResult.reason
-    const research = researchResult.value
-    const imageSearch =
-      imageResult.status === 'fulfilled'
-        ? imageResult.value
-        : { images: [], searchSuggestionHtml: '' }
-    if (imageResult.status === 'rejected')
-      console.warn('[paper-benchmarks] Image Search unavailable', {
-        message: String(imageResult.reason?.message || '').slice(0, 250),
-      })
+    const research = await callGroundedResearch(apiKey, buildResearchPrompt(project, paper))
 
     return jsonResponse({
       success: true,
@@ -702,8 +763,8 @@ Deno.serve(async (req: Request) => {
         groundedText: research.text,
         sources: research.sources,
         searchSuggestionHtml: research.searchSuggestionHtml,
-        imageReferences: imageSearch.images,
-        imageSearchSuggestionHtml: imageSearch.searchSuggestionHtml,
+        imageReferences: [],
+        imageSearchSuggestionHtml: '',
         internalMatches: findInternalCompletedProjects(project, completedRows || []),
         analyzedAt: new Date().toISOString(),
         model: research.modelUsed,

@@ -87,11 +87,11 @@ function normalizeSources(value: unknown): SourceLink[] {
   }
   return result
 }
-function validateResult(value: unknown): BenchmarkResult {
-  if (!value || typeof value !== 'object')
-    throw new Error('Resposta inválida da pesquisa de benchmarks.')
+function validateImageSearch(
+  value: unknown,
+): Pick<BenchmarkResult, 'imageReferences' | 'imageSearchSuggestionHtml'> {
+  if (!value || typeof value !== 'object') throw new Error('Resposta inválida da busca de imagens.')
   const source = value as Record<string, any>
-  const searchSuggestionHtml = safeText(source.searchSuggestionHtml, 50000)
   const imageSearchSuggestionHtml = safeText(source.imageSearchSuggestionHtml, 50000)
   const imageReferences: GroundedImage[] =
     imageSearchSuggestionHtml && Array.isArray(source.imageReferences)
@@ -103,6 +103,14 @@ function validateResult(value: unknown): BenchmarkResult {
           return [{ title, imageUrl, sourceUrl, domain: safeText(item?.domain, 120) }]
         })
       : []
+  return { imageReferences, imageSearchSuggestionHtml }
+}
+function validateResult(value: unknown): BenchmarkResult {
+  if (!value || typeof value !== 'object')
+    throw new Error('Resposta inválida da pesquisa de benchmarks.')
+  const source = value as Record<string, any>
+  const searchSuggestionHtml = safeText(source.searchSuggestionHtml, 50000)
+  const { imageReferences, imageSearchSuggestionHtml } = validateImageSearch(source)
   const internalMatches: InternalMatch[] = Array.isArray(source.internalMatches)
     ? source.internalMatches
         .slice(0, 4)
@@ -163,8 +171,10 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
   const [result, setResult] = useState<BenchmarkResult | null>(null)
   const [visualDirection, setVisualDirection] = useState('')
   const [generatedConcept, setGeneratedConcept] = useState<GeneratedConcept | null>(null)
-  const [busy, setBusy] = useState<'analyze' | 'save' | 'image' | null>(null)
+  const [busy, setBusy] = useState<'analyze' | 'imageSearch' | 'save' | 'image' | null>(null)
   const [conceptImagesGenerated, setConceptImagesGenerated] = useState(0)
+  const [imageSearchRequested, setImageSearchRequested] = useState(false)
+  const [imageSearchError, setImageSearchError] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [paperState, setPaperState] = useState(paper)
   const isReadOnly = Boolean(
@@ -176,6 +186,8 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
     setResult(null)
     setGeneratedConcept(null)
     setVisualDirection('')
+    setImageSearchRequested(false)
+    setImageSearchError('')
     setErrorMessage('')
     setConceptImagesGenerated(0)
   }, [project?.id, paper?.id])
@@ -186,6 +198,8 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
     setErrorMessage('')
     setResult(null)
     setGeneratedConcept(null)
+    setImageSearchRequested(false)
+    setImageSearchError('')
     setConceptImagesGenerated(0)
     try {
       const { data: sessionResult } = await supabase.auth.getSession(),
@@ -216,6 +230,49 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
       toast({
         title: 'Falha na análise',
         description: error.message || 'Não foi possível pesquisar o benchmark.',
+        variant: 'destructive',
+      })
+    } finally {
+      setBusy(null)
+    }
+  }, [project?.id, paperState?.id, isReadOnly, toast])
+
+  const runImageSearch = useCallback(async () => {
+    if (!project?.id || !paperState?.id || isReadOnly) return
+    setBusy('imageSearch')
+    setImageSearchError('')
+    try {
+      const { data: sessionResult } = await supabase.auth.getSession(),
+        token = sessionResult.session?.access_token
+      if (!token) throw new Error('Sessão não encontrada. Faça login novamente.')
+      const { data, error } = await supabase.functions.invoke('analyze-paper-benchmarks', {
+        body: { action: 'search_images', projectId: project.id, paperId: paperState.id },
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (error) {
+        let message = error.message || 'Falha na busca de imagens.'
+        try {
+          const body =
+            typeof (error as any).context?.json === 'function'
+              ? await (error as any).context.json()
+              : null
+          if (body?.error) message = body.error
+        } catch {
+          /* keep SDK message */
+        }
+        throw new Error(message)
+      }
+      if (!data?.success || !data?.data)
+        throw new Error(data?.error || 'Resposta inesperada da busca de imagens.')
+      const imageSearch = validateImageSearch(data.data)
+      setResult((previous) => (previous ? { ...previous, ...imageSearch } : previous))
+      setImageSearchRequested(true)
+    } catch (error: any) {
+      const message = error.message || 'Não foi possível buscar imagens.'
+      setImageSearchError(message)
+      toast({
+        title: 'Busca de imagens não concluída',
+        description: message,
         variant: 'destructive',
       })
     } finally {
@@ -495,8 +552,8 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
               Benchmarks com IA e pesquisa fundamentada
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-zinc-600">
-              Analisa o briefing, pesquisa cases com fontes, traz imagens com atribuição, sugere
-              caminhos criativos e canais e encontra projetos concluídos que você pode acessar.
+              Analisa o briefing e pesquisa cases com fontes em uma chamada. A busca de imagens com
+              atribuição é opcional e fica em ação separada para reduzir o consumo de quota.
             </p>
           </div>
         </div>
@@ -575,8 +632,9 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
               <Sparkles className="h-7 w-7" />
             </div>
             <p className="max-w-xl text-sm text-muted-foreground">
-              Execute a pesquisa para obter cases públicos verificáveis, imagens atribuídas,
-              projetos Side3 semelhantes e recomendações criativas/canais.
+              Execute a pesquisa textual para obter cases públicos verificáveis, projetos Side3
+              semelhantes e recomendações criativas/canais. A busca de imagens é opcional e fica
+              disponível separadamente depois da análise.
             </p>
           </CardContent>
         </Card>
@@ -609,58 +667,88 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
             </Button>
           )}
 
-          {/* Google Image Search results link directly to the containing source page and keep that query's chip with them. */}
+          {/* Google Image Search is a separate, user-triggered request to conserve API quota. */}
           <section
             className="space-y-3 rounded-2xl border bg-white p-4"
             aria-label="Resultados de Google Image Search"
           >
-            <div>
-              <h3 className="text-lg font-semibold">Imagens de referência encontradas</h3>
-              <p className="text-sm text-muted-foreground">
-                Imagens indexadas pelo Google; não são geradas. Cada imagem leva diretamente à sua
-                página de origem para atribuição.
-              </p>
-            </div>
-            {result.imageReferences.length ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {result.imageReferences.map((image, index) => (
-                  <Card key={`${image.imageUrl}-${index}`} className="overflow-hidden">
-                    <a
-                      href={image.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={`Abrir fonte: ${image.title}`}
-                    >
-                      <img
-                        src={image.imageUrl}
-                        alt={image.title}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="aspect-[4/3] w-full bg-zinc-100 object-cover"
-                      />
-                    </a>
-                    <CardContent className="space-y-2 p-4">
-                      <p className="text-sm font-medium">{image.title}</p>
-                      <a
-                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline"
-                        href={image.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Origem e atribuição — {image.domain} <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </CardContent>
-                  </Card>
-                ))}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Imagens de referência</h3>
+                <p className="text-sm text-muted-foreground">
+                  Busca opcional. Imagens indexadas pelo Google, não geradas; cada imagem leva à
+                  página de origem para atribuição.
+                </p>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma imagem com atribuição foi retornada.
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={runImageSearch}
+                disabled={busy !== null || isReadOnly || imageSearchRequested}
+                className="shrink-0"
+              >
+                {busy === 'imageSearch' ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                )}
+                {busy === 'imageSearch'
+                  ? 'Buscando imagens…'
+                  : imageSearchRequested
+                    ? 'Busca concluída'
+                    : 'Buscar imagens (opcional)'}
+              </Button>
+            </div>
+            {imageSearchError && (
+              <p className="text-sm text-red-700" role="alert">
+                {imageSearchError}
               </p>
             )}
-            {searchChip(
-              result.imageSearchSuggestionHtml,
-              'Sugestões de Pesquisa Google correspondentes às imagens',
+            {(imageSearchRequested || result.imageSearchSuggestionHtml) && (
+              <>
+                {result.imageReferences.length ? (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {result.imageReferences.map((image, index) => (
+                      <Card key={`${image.imageUrl}-${index}`} className="overflow-hidden">
+                        <a
+                          href={image.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`Abrir fonte: ${image.title}`}
+                        >
+                          <img
+                            src={image.imageUrl}
+                            alt={image.title}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            className="aspect-[4/3] w-full bg-zinc-100 object-cover"
+                          />
+                        </a>
+                        <CardContent className="space-y-2 p-4">
+                          <p className="text-sm font-medium">{image.title}</p>
+                          <a
+                            className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline"
+                            href={image.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Origem e atribuição — {image.domain}{' '}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma imagem com atribuição foi retornada.
+                  </p>
+                )}
+                {searchChip(
+                  result.imageSearchSuggestionHtml,
+                  'Sugestões de Pesquisa Google correspondentes às imagens',
+                )}
+              </>
             )}
           </section>
 
