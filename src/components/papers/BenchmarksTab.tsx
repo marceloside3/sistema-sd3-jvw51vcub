@@ -604,13 +604,9 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
             )}
           </section>
           {result.sources.length > 0 && (
-            <section className="space-y-2 rounded-xl border bg-white p-4">
-              <h3 className="text-sm font-semibold">Fontes citadas no resultado</h3>
-              {renderSources(result.sources)}
-              <Button size="sm" variant="outline" disabled={busy !== null} onClick={copyGroundedText}>
-                Copiar texto desta pesquisa
-              </Button>
-            </section>
+            <Button size="sm" variant="outline" disabled={busy !== null} onClick={copyGroundedText}>
+              Copiar texto desta pesquisa para a área de transferência
+            </Button>
           )}
 
           {/* Google Image Search results link directly to the containing source page and keep that query's chip with them. */}
