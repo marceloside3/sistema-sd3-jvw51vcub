@@ -175,7 +175,7 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
     setPaperState(paper)
     setResult(null)
     setGeneratedConcept(null)
-    setImagePrompt('')
+    setVisualDirection('')
     setErrorMessage('')
     setConceptImagesGenerated(0)
   }, [project?.id, paper?.id])
@@ -597,28 +597,7 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
             <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-800">
               {result.groundedText}
             </pre>
-            {result.sources.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Fontes relacionadas nesta resposta
-                </p>
-                <ul className="space-y-1">
-                  {result.sources.map((source) => (
-                    <li key={source.url}>
-                      <a
-                        href={source.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        {source.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+
             {searchChip(
               result.searchSuggestionHtml,
               'Sugestões de Pesquisa Google correspondentes à análise de texto',
@@ -628,12 +607,7 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
             <section className="space-y-2 rounded-xl border bg-white p-4">
               <h3 className="text-sm font-semibold">Fontes citadas no resultado</h3>
               {renderSources(result.sources)}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy !== null}
-                onClick={copyGroundedText}
-              >
+              <Button size="sm" variant="outline" disabled={busy !== null} onClick={copyGroundedText}>
                 Copiar texto desta pesquisa
               </Button>
             </section>
