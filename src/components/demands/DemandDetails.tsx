@@ -54,7 +54,6 @@ import { DemandAuditHistory } from '@/components/demands/DemandAuditHistory'
 import { DemandAuditHistoryDialog } from '@/components/demands/DemandAuditHistoryDialog'
 import { logDemandAuditEntry } from '@/services/demand-audit'
 import { useDemandAuditFilters } from '@/hooks/use-demand-audit-filters'
-import { DetailSkeleton } from '@/components/ui/page-skeleton'
 import { Input } from '@/components/ui/input'
 import { updateDemand } from '@/services/demands'
 
