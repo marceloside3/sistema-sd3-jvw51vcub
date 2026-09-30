@@ -61,7 +61,7 @@ const MAX_CONCEPT_IMAGES_PER_RESEARCH = 2
 const MAX_RESULT_BYTES = 180_000
 
 function safeText(value: unknown, maxLength = 1200): string {
-  return typeof value === 'string' ? value.replace(/\u0000/g, '').slice(0, maxLength) : ''
+  return typeof value === 'string' ? value.slice(0, maxLength) : ''
 }
 function safeHttpsUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null
