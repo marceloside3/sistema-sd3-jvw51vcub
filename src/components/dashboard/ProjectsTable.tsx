@@ -10,24 +10,15 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/stores/use-app-store'
-import { MACRO_AREAS, GOVERNANCE_GATES, SlaStatus, ProjectStatus } from '@/lib/types'
+import { MACRO_AREAS, GOVERNANCE_GATES, SlaStatus } from '@/lib/types'
 import { Eye } from 'lucide-react'
 import { formatDateBR } from '@/lib/utils'
-
-const statusMap: Record<
-  ProjectStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-> = {
-  briefing: { label: 'Em Briefing', variant: 'secondary' },
-  execution: { label: 'Execução', variant: 'default' },
-  waiting_gate: { label: 'Aguardando Gate', variant: 'destructive' },
-  finalized: { label: 'Finalizado', variant: 'outline' },
-}
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const slaMap: Record<SlaStatus, { label: string; color: string }> = {
-  ok: { label: 'No Prazo', color: 'bg-green-500' },
+  ok: { label: 'No Prazo', color: 'bg-emerald-500' },
   warning: { label: 'Atenção', color: 'bg-amber-500' },
-  late: { label: 'Atrasado', color: 'bg-red-500' },
+  late: { label: 'Atrasado', color: 'bg-rose-500' },
 }
 
 export function ProjectsTable() {
@@ -66,9 +57,7 @@ export function ProjectsTable() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={statusMap[project.status].variant}>
-                    {statusMap[project.status].label}
-                  </Badge>
+                  <StatusBadge category="project" status={project.status} size="sm" />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

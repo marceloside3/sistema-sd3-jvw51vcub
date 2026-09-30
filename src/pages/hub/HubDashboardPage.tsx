@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatDateBR } from '@/lib/utils'
-import { getProjectStatusBadge, PROJECT_STATUS_LABELS } from '@/lib/constants/project-status'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { PROJECT_STATUS_LABELS } from '@/lib/constants/project-status'
 import { useSlaConfig } from '@/hooks/use-sla-config'
 import { calculateSla } from '@/lib/sla'
 import { HubKpiCards, type HubKpiCardKey } from '@/components/hub/HubKpiCards'
@@ -270,7 +271,9 @@ export default function HubDashboardPage() {
                     <TableCell className="text-muted-foreground">
                       {p.clients?.name || '-'}
                     </TableCell>
-                    <TableCell>{getProjectStatusBadge(p.status)}</TableCell>
+                    <TableCell>
+                      <StatusBadge category="project" status={p.status} size="sm" />
+                    </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
                       {formatDateBR(p.end_date)}
                     </TableCell>

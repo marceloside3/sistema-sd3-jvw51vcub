@@ -15,7 +15,7 @@ import {
 import { getProjects } from '@/services/projects'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { formatDateBR } from '@/lib/utils'
-import { getProjectStatusBadge } from '@/lib/constants/project-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { PageSkeleton } from '@/components/ui/page-skeleton'
 import { ProjectStatusDropdown } from '@/components/projects/ProjectStatusDropdown'
 
@@ -190,7 +190,9 @@ function ProjectRowFragment({ project: p, canExpand, isOpen, onToggle }: Project
           </Link>
         </TableCell>
         <TableCell>{p.client?.name}</TableCell>
-        <TableCell>{getProjectStatusBadge(p.status)}</TableCell>
+        <TableCell>
+          <StatusBadge category="project" status={p.status} size="sm" />
+        </TableCell>
         <TableCell>{p.start_date ? formatDateBR(p.start_date) : '-'}</TableCell>
         <TableCell>
           {p.data_entrega_final ? (

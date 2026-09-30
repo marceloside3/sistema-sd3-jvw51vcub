@@ -2,26 +2,15 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Inbox, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
+import { Inbox, AlertTriangle } from 'lucide-react'
 import type { DashboardDemand } from '@/hooks/use-dashboard-data'
 import { formatDateBR, isAfterFinalDelivery } from '@/lib/utils'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { getStatusMeta } from '@/lib/constants/status-catalog'
 
 interface RecentDemandsProps {
   demands: DashboardDemand[]
   loading: boolean
-}
-
-const statusConfig: Record<string, { label: string; icon: typeof Inbox; color: string }> = {
-  pending: { label: 'Pendente', icon: Clock, color: 'text-orange-500' },
-  in_progress: { label: 'Em Andamento', icon: AlertCircle, color: 'text-blue-500' },
-  completed: { label: 'Concluída', icon: CheckCircle2, color: 'text-green-500' },
-  cancelled: { label: 'Cancelada', icon: AlertCircle, color: 'text-zinc-400' },
-}
-
-const priorityConfig: Record<string, string> = {
-  high: 'bg-red-100 text-red-700 border-red-200',
-  normal: 'bg-zinc-100 text-zinc-600 border-zinc-200',
-  low: 'bg-blue-100 text-blue-700 border-blue-200',
 }
 
 export function RecentDemands({ demands, loading }: RecentDemandsProps) {
@@ -51,8 +40,8 @@ export function RecentDemands({ demands, loading }: RecentDemandsProps) {
         ) : (
           <ul className="space-y-1">
             {demands.map((demand) => {
-              const config = statusConfig[demand.status] || statusConfig.pending
-              const StatusIcon = config.icon
+              const meta = getStatusMeta('demand', demand.status)
+              const StatusIcon = meta.icon || Inbox
               return (
                 <li key={demand.id}>
                   <Link
@@ -60,7 +49,7 @@ export function RecentDemands({ demands, loading }: RecentDemandsProps) {
                     className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-50 transition-colors duration-200 group"
                   >
                     <div className="p-2 bg-zinc-50 rounded-lg group-hover:bg-white transition-colors">
-                      <StatusIcon className={config.color} />
+                      <StatusIcon className="h-4 w-4 text-zinc-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-zinc-900 truncate">{demand.title}</p>
@@ -89,16 +78,10 @@ export function RecentDemands({ demands, loading }: RecentDemandsProps) {
                         )}
                       </div>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={`text-xs border ${priorityConfig[demand.priority] || priorityConfig.normal}`}
-                    >
-                      {demand.priority === 'high'
-                        ? 'Alta'
-                        : demand.priority === 'low'
-                          ? 'Baixa'
-                          : 'Normal'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <StatusBadge category="demand" status={demand.status} size="sm" />
+                      <StatusBadge category="demand_priority" status={demand.priority} size="sm" />
+                    </div>
                   </Link>
                 </li>
               )

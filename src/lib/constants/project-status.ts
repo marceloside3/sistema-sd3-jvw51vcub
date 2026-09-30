@@ -9,39 +9,47 @@ export type ProjectStatus =
   | 'completed'
   | 'cancelled'
 
-export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+import { PROJECT_STATUS_CATALOG, getStatusMeta } from './status-catalog'
+import { StatusBadge } from '@/components/ui/status-badge'
+
+export const PROJECT_STATUS_LABELS: Record<string, string> = {
   active: 'Ativo',
   in_progress: 'Em Andamento',
   draft: 'Rascunho',
+  briefing: 'Em Briefing',
+  execution: 'Em Execução',
+  waiting_gate: 'Aguardando Gate',
+  overdue: 'Atrasado',
   paused: 'Pausado',
   completed: 'Concluído',
+  finalized: 'Finalizado',
   cancelled: 'Cancelado',
 }
 
 export const PROJECT_STATUS_VARIANTS: Record<
-  ProjectStatus,
+  string,
   { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }
 > = {
-  active: { variant: 'default', className: 'bg-green-600 hover:bg-green-700' },
-  in_progress: { variant: 'default', className: 'bg-blue-500 hover:bg-blue-600' },
-  draft: { variant: 'secondary' },
-  paused: { variant: 'outline', className: 'text-yellow-600 border-yellow-600' },
-  completed: { variant: 'default', className: 'bg-blue-600 hover:bg-blue-700' },
-  cancelled: { variant: 'destructive' },
+  active: { variant: 'outline', className: PROJECT_STATUS_CATALOG.active.className },
+  in_progress: { variant: 'outline', className: PROJECT_STATUS_CATALOG.in_progress.className },
+  draft: { variant: 'outline', className: PROJECT_STATUS_CATALOG.draft.className },
+  briefing: { variant: 'outline', className: PROJECT_STATUS_CATALOG.briefing.className },
+  execution: { variant: 'outline', className: PROJECT_STATUS_CATALOG.execution.className },
+  waiting_gate: { variant: 'outline', className: PROJECT_STATUS_CATALOG.waiting_gate.className },
+  overdue: { variant: 'outline', className: PROJECT_STATUS_CATALOG.overdue.className },
+  paused: { variant: 'outline', className: PROJECT_STATUS_CATALOG.paused.className },
+  completed: { variant: 'outline', className: PROJECT_STATUS_CATALOG.completed.className },
+  finalized: { variant: 'outline', className: PROJECT_STATUS_CATALOG.finalized.className },
+  cancelled: { variant: 'outline', className: PROJECT_STATUS_CATALOG.cancelled.className },
 }
 
 export function getProjectStatusLabel(status: string): string {
-  return PROJECT_STATUS_LABELS[status as ProjectStatus] || status
+  return PROJECT_STATUS_LABELS[status] || getStatusMeta('project', status).label
 }
 
 export function getProjectStatusBadge(status: string) {
-  const config = PROJECT_STATUS_VARIANTS[status as ProjectStatus]
-  if (!config) {
-    return React.createElement(Badge, null, status)
-  }
-  return React.createElement(
-    Badge,
-    { variant: config.variant, className: config.className },
-    PROJECT_STATUS_LABELS[status as ProjectStatus],
-  )
+  return React.createElement(StatusBadge, {
+    category: 'project',
+    status,
+  })
 }

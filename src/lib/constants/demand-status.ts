@@ -1,40 +1,94 @@
+import {
+  DEMAND_PRIORITY_CATALOG,
+  DEMAND_STATUS_CATALOG,
+  BUDGET_STATUS_CATALOG,
+  PAYMENT_STATUS_CATALOG,
+} from './status-catalog'
+
 export const DEMAND_PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
-  urgent: { label: 'Urgente', className: 'bg-red-100 text-red-700 border-red-200' },
-  high: { label: 'Alta', className: 'bg-orange-100 text-orange-700 border-orange-200' },
-  normal: { label: 'Normal', className: 'bg-zinc-100 text-zinc-600 border-zinc-200' },
-  low: { label: 'Baixa', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  urgent: {
+    label: DEMAND_PRIORITY_CATALOG.urgent.label,
+    className: DEMAND_PRIORITY_CATALOG.urgent.className,
+  },
+  high: {
+    label: DEMAND_PRIORITY_CATALOG.high.label,
+    className: DEMAND_PRIORITY_CATALOG.high.className,
+  },
+  normal: {
+    label: DEMAND_PRIORITY_CATALOG.normal.label,
+    className: DEMAND_PRIORITY_CATALOG.normal.className,
+  },
+  low: {
+    label: DEMAND_PRIORITY_CATALOG.low.label,
+    className: DEMAND_PRIORITY_CATALOG.low.className,
+  },
 }
 
 export const DEMAND_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 border-orange-200' },
-  in_progress: { label: 'Em Andamento', className: 'bg-blue-100 text-blue-700 border-blue-200' },
-  review: { label: 'Em Revisão', className: 'bg-purple-100 text-purple-700 border-purple-200' },
-  done: { label: 'Concluída', className: 'bg-green-100 text-green-700 border-green-200' },
-  cancelled: { label: 'Cancelada', className: 'bg-zinc-100 text-zinc-400 border-zinc-200' },
+  pending: {
+    label: DEMAND_STATUS_CATALOG.pending.label,
+    className: DEMAND_STATUS_CATALOG.pending.className,
+  },
+  in_progress: {
+    label: DEMAND_STATUS_CATALOG.in_progress.label,
+    className: DEMAND_STATUS_CATALOG.in_progress.className,
+  },
+  review: {
+    label: DEMAND_STATUS_CATALOG.review.label,
+    className: DEMAND_STATUS_CATALOG.review.className,
+  },
+  done: {
+    label: DEMAND_STATUS_CATALOG.done.label,
+    className: DEMAND_STATUS_CATALOG.done.className,
+  },
+  completed: {
+    label: DEMAND_STATUS_CATALOG.completed.label,
+    className: DEMAND_STATUS_CATALOG.completed.className,
+  },
+  cancelled: {
+    label: DEMAND_STATUS_CATALOG.cancelled.label,
+    className: DEMAND_STATUS_CATALOG.cancelled.className,
+  },
+  rejected: {
+    label: DEMAND_STATUS_CATALOG.rejected.label,
+    className: DEMAND_STATUS_CATALOG.rejected.className,
+  },
 }
 
 export const BUDGET_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   pending: {
-    label: 'Aguardando Orçamento',
-    className: 'bg-zinc-100 text-zinc-600 border-zinc-200',
+    label: BUDGET_STATUS_CATALOG.pending.label,
+    className: BUDGET_STATUS_CATALOG.pending.className,
   },
-  sent: { label: 'Enviado para Aprovação', className: 'bg-blue-100 text-blue-700 border-blue-200' },
-  approved: { label: 'Aprovado', className: 'bg-green-100 text-green-700 border-green-200' },
-  rejected: { label: 'Reprovado', className: 'bg-red-100 text-red-700 border-red-200' },
+  sent: {
+    label: BUDGET_STATUS_CATALOG.sent.label,
+    className: BUDGET_STATUS_CATALOG.sent.className,
+  },
+  approved: {
+    label: BUDGET_STATUS_CATALOG.approved.label,
+    className: BUDGET_STATUS_CATALOG.approved.className,
+  },
+  rejected: {
+    label: BUDGET_STATUS_CATALOG.rejected.label,
+    className: BUDGET_STATUS_CATALOG.rejected.className,
+  },
   adjustments_requested: {
-    label: 'Ajustes Solicitados',
-    className: 'bg-orange-100 text-orange-700 border-orange-200',
+    label: BUDGET_STATUS_CATALOG.adjustments_requested.label,
+    className: BUDGET_STATUS_CATALOG.adjustments_requested.className,
   },
 }
 
 export const PAYMENT_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  none: { label: 'Não Iniciado', className: 'bg-zinc-100 text-zinc-500 border-zinc-200' },
+  none: {
+    label: PAYMENT_STATUS_CATALOG.none.label,
+    className: PAYMENT_STATUS_CATALOG.none.className,
+  },
   requested: {
-    label: 'Pagamento Solicitado',
-    className: 'bg-purple-100 text-purple-700 border-purple-200',
+    label: PAYMENT_STATUS_CATALOG.requested.label,
+    className: PAYMENT_STATUS_CATALOG.requested.className,
   },
   processed: {
-    label: 'Pagamento Processado',
-    className: 'bg-green-100 text-green-700 border-green-200',
+    label: PAYMENT_STATUS_CATALOG.processed.label,
+    className: PAYMENT_STATUS_CATALOG.processed.className,
   },
 }

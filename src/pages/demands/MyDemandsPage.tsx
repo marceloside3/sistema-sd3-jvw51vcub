@@ -25,7 +25,7 @@ import { formatDateBR, isAfterFinalDelivery, cn } from '@/lib/utils'
 import { getAllUserDemands, checkAndNotifyDeadlineAlerts } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { DemandKpiCards, type KpiCardKey } from '@/components/demands/DemandKpiCards'
-import { DEMAND_PRIORITY_CONFIG, DEMAND_STATUS_CONFIG } from '@/lib/constants/demand-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { PageSkeleton } from '@/components/ui/page-skeleton'
 
 type TabKey = 'received' | 'sent' | 'completed'
@@ -339,51 +339,40 @@ export default function MyDemandsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredDemands.map((d) => {
-                const pCfg = DEMAND_PRIORITY_CONFIG[d.priority] || DEMAND_PRIORITY_CONFIG.normal
-                const sCfg = DEMAND_STATUS_CONFIG[d.status] || {
-                  label: d.status,
-                  className: 'bg-zinc-100 text-zinc-600 border-zinc-200',
-                }
-                return (
-                  <TableRow
-                    key={d.id}
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => navigate(`/demandas/${d.id}`)}
-                  >
-                    <TableCell className="font-medium text-blue-600">{d.title}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <span className="font-medium">{d.project?.project_code || '-'}</span>
-                      <span className="block text-xs text-gray-400">{d.project?.name}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={pCfg.className}>
-                        {pCfg.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-mono text-xs">
-                        <span>{formatDateBR(d.due_date)}</span>
-                        {isAfterFinalDelivery(d.due_date, d.project?.data_entrega_final) && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] py-0 px-1.5 bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-normal font-sans"
-                            title={`⚠️ Atenção: Prazo ultrapassa a entrega final do projeto (${formatDateBR(d.project?.data_entrega_final)})`}
-                          >
-                            <AlertTriangle className="w-3 h-3" />
-                            Pós-entrega
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={sCfg.className}>
-                        {sCfg.label}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
+              filteredDemands.map((d) => (
+                <TableRow
+                  key={d.id}
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => navigate(`/demandas/${d.id}`)}
+                >
+                  <TableCell className="font-medium text-blue-600">{d.title}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <span className="font-medium">{d.project?.project_code || '-'}</span>
+                    <span className="block text-xs text-gray-400">{d.project?.name}</span>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge category="demand_priority" status={d.priority} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 font-mono text-xs">
+                      <span>{formatDateBR(d.due_date)}</span>
+                      {isAfterFinalDelivery(d.due_date, d.project?.data_entrega_final) && (
+                        <Badge
+                          variant="destructive"
+                          className="text-[10px] py-0 px-1.5 bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-normal font-sans"
+                          title={`⚠️ Atenção: Prazo ultrapassa a entrega final do projeto (${formatDateBR(d.project?.data_entrega_final)})`}
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          Pós-entrega
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge category="demand" status={d.status} size="sm" />
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

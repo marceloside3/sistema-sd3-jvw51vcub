@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Flag, AlertTriangle, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getProjectDetails } from '@/services/projects'
@@ -51,9 +52,7 @@ export default function ProjectDetails() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{project.name}</h1>
-              <Badge variant="outline" className="uppercase">
-                {project.status}
-              </Badge>
+              <StatusBadge category="project" status={project.status} />
             </div>
             <p className="text-sm font-mono text-muted-foreground mt-1">
               {project.project_code} • Cliente: {project.client?.name}
@@ -174,9 +173,7 @@ export default function ProjectDetails() {
                           >
                             <p className="font-medium text-sm text-gray-900">{d.title}</p>
                             <div className="flex justify-between items-center mt-2 gap-4">
-                              <Badge variant="secondary" className="text-[10px]">
-                                {d.status}
-                              </Badge>
+                              <StatusBadge category="demand" status={d.status} size="sm" />
                               <span className="text-[10px] text-gray-400 font-mono flex items-center gap-1">
                                 {d.due_date ? format(new Date(d.due_date), 'dd/MM') : 'S/ Data'}
                                 {isAfterFinalDelivery(d.due_date, project.data_entrega_final) && (
@@ -217,12 +214,7 @@ export default function ProjectDetails() {
                       <Badge variant="outline" className="text-xs">
                         {d.to_area?.name}
                       </Badge>
-                      <Badge
-                        className="text-xs"
-                        variant={d.priority === 'urgent' ? 'destructive' : 'secondary'}
-                      >
-                        {d.priority}
-                      </Badge>
+                      <StatusBadge category="demand_priority" status={d.priority} size="sm" />
                       {isAfterFinalDelivery(d.due_date, project.data_entrega_final) && (
                         <Badge
                           variant="destructive"
@@ -235,9 +227,9 @@ export default function ProjectDetails() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <Badge variant="outline" className="mb-2 uppercase">
-                      {d.status}
-                    </Badge>
+                    <div className="mb-2">
+                      <StatusBadge category="demand" status={d.status} size="sm" />
+                    </div>
                     {d.due_date && (
                       <p className="text-xs text-muted-foreground block font-mono">
                         Prazo: {formatDateBR(d.due_date)}

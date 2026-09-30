@@ -25,6 +25,8 @@ import { getProjectDemands } from '@/services/demands'
 import { getProjectPapers } from '@/services/papers'
 import { formatDateBR } from '@/lib/utils'
 import { getDynamicBriefingEntries } from '@/lib/briefing-fields'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { PROJECT_STATUS_LABELS } from '@/lib/constants/project-status'
 import {
   Table,
   TableBody,
@@ -44,13 +46,7 @@ import { useCurrentUser } from '@/hooks/use-current-user'
 import { useToast } from '@/components/ui/use-toast'
 import { DetailSkeleton } from '@/components/ui/page-skeleton'
 
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Ativo',
-  in_progress: 'Em Andamento',
-  overdue: 'Atrasado',
-  completed: 'Concluído',
-  cancelled: 'Cancelado',
-}
+const STATUS_LABELS: Record<string, string> = PROJECT_STATUS_LABELS
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   active: ['in_progress', 'completed', 'cancelled'],
@@ -220,28 +216,26 @@ export default function ProjetoDetalhePage() {
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold">{project.name}</h1>
             {showStatusSelect ? (
-              <Select value={project.status} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[160px] h-8 bg-transparent font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={project.status}>
-                    {STATUS_LABELS[project.status] || project.status}
-                  </SelectItem>
-                  {availableTransitions.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {STATUS_LABELS[t] || t}
+              <div className="flex items-center gap-2">
+                <StatusBadge category="project" status={project.status} />
+                <Select value={project.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="w-[140px] h-8 bg-transparent font-medium text-xs">
+                    <SelectValue placeholder="Alterar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={project.status}>
+                      {STATUS_LABELS[project.status] || project.status}
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {availableTransitions.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {STATUS_LABELS[t] || t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : (
-              <Badge
-                variant={project.status === 'active' ? 'default' : 'secondary'}
-                className="uppercase"
-              >
-                {STATUS_LABELS[project.status] || project.status}
-              </Badge>
+              <StatusBadge category="project" status={project.status} />
             )}
             {canEditProject && (
               <Button variant="outline" size="sm" className="ml-2" asChild>
@@ -512,9 +506,7 @@ export default function ProjetoDetalhePage() {
                           <span className="flex items-center gap-1">
                             <User className="w-3 h-3" /> {d.to_area?.name}
                           </span>
-                          <Badge variant="outline" className="text-[10px] bg-white">
-                            {d.status}
-                          </Badge>
+                          <StatusBadge category="demand" status={d.status} size="sm" />
                         </div>
                       </div>
                     </div>
@@ -580,20 +572,11 @@ export default function ProjetoDetalhePage() {
                         </TableCell>
                         <TableCell>{d.to_area?.name}</TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              d.priority === 'urgent'
-                                ? 'border-red-600 text-red-600'
-                                : d.priority === 'high'
-                                  ? 'border-orange-500 text-orange-500'
-                                  : 'border-gray-300'
-                            }
-                          >
-                            {d.priority}
-                          </Badge>
+                          <StatusBadge category="demand_priority" status={d.priority} size="sm" />
                         </TableCell>
-                        <TableCell>{d.status}</TableCell>
+                        <TableCell>
+                          <StatusBadge category="demand" status={d.status} size="sm" />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-xs">{formatDateBR(d.due_date)}</span>
