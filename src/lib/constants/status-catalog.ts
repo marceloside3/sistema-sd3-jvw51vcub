@@ -18,10 +18,15 @@ export type StatusCategory =
   | 'demand'
   | 'demand_priority'
   | 'budget'
+  | 'budget_status'
   | 'payment'
+  | 'payment_status'
   | 'cost'
+  | 'cost_status'
   | 'g2'
+  | 'g2_status'
   | 'g3'
+  | 'g3_status'
   | 'active_boolean'
   | 'entity_active'
 
@@ -366,18 +371,23 @@ export function getStatusMeta(
       catalog = DEMAND_PRIORITY_CATALOG
       break
     case 'budget':
+    case 'budget_status':
       catalog = BUDGET_STATUS_CATALOG
       break
     case 'payment':
+    case 'payment_status':
       catalog = PAYMENT_STATUS_CATALOG
       break
     case 'cost':
+    case 'cost_status':
       catalog = COST_STATUS_CATALOG
       break
     case 'g2':
+    case 'g2_status':
       catalog = G2_STATUS_CATALOG
       break
     case 'g3':
+    case 'g3_status':
       catalog = G3_STATUS_CATALOG
       break
     case 'active_boolean':

@@ -1,56 +1,48 @@
-import { Clock, CheckCircle2, XCircle, AlertTriangle, Send } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDateBR } from '@/lib/utils'
 
 interface G3StatusBadgeProps {
   paper: any
   approverName?: string
+  className?: string
+  size?: 'sm' | 'md'
 }
 
-export function G3StatusBadge({ paper, approverName }: G3StatusBadgeProps) {
-  if (!paper) return null
+export function G3StatusBadge({ paper, approverName, className, size = 'md' }: G3StatusBadgeProps) {
+  if (!paper || !paper.status) return null
+
+  let customLabel: string | undefined
 
   switch (paper.status) {
     case 'draft':
-      return (
-        <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
-          <Send fill="currentColor" className="w-3 h-3 mr-1" /> Rascunho
-        </Badge>
-      )
-
+      customLabel = 'Rascunho'
+      break
     case 'submitted':
-      return (
-        <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
-          <Clock fill="currentColor" className="w-3 h-3 mr-1 text-gray-500" /> Aguardando aprovação
-          do Diretor de Planejamento
-        </Badge>
-      )
-
+      customLabel = 'Aguardando aprovação da Diretoria'
+      break
     case 'approved':
-      return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-          <CheckCircle2 fill="currentColor" className="w-3 h-3 mr-1" />
-          Aprovado em {paper.approved_at ? formatDateBR(paper.approved_at) : '—'}
-          {approverName ? ` por ${approverName}` : ''}
-        </Badge>
-      )
-
+      customLabel = `Aprovado em ${paper.approved_at ? formatDateBR(paper.approved_at) : '—'}${
+        approverName ? ` por ${approverName}` : ''
+      }`
+      break
     case 'rejected':
-      return (
-        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-          <XCircle fill="currentColor" className="w-3 h-3 mr-1" /> Recusado pelo Diretor
-        </Badge>
-      )
-
+      customLabel = 'Recusado pela Diretoria'
+      break
     case 'override':
-      return (
-        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-          <AlertTriangle fill="currentColor" className="w-3 h-3 mr-1" /> Override aplicado
-          {paper.override_at ? ` em ${formatDateBR(paper.override_at)}` : ''}
-        </Badge>
-      )
-
+      customLabel = `Override aplicado${paper.override_at ? ` em ${formatDateBR(paper.override_at)}` : ''}`
+      break
     default:
-      return null
+      customLabel = undefined
+      break
   }
+
+  return (
+    <StatusBadge
+      category="g3"
+      status={paper.status}
+      label={customLabel}
+      className={className}
+      size={size}
+    />
+  )
 }
