@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { formatDateBR, cn } from '@/lib/utils'
+import { formatDateBR, isAfterFinalDelivery, cn } from '@/lib/utils'
 import { getAllUserDemands, checkAndNotifyDeadlineAlerts } from '@/services/demands'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { DemandKpiCards, type KpiCardKey } from '@/components/demands/DemandKpiCards'
@@ -362,7 +362,19 @@ export default function MyDemandsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {formatDateBR(d.due_date)}
+                      <div className="flex items-center gap-1.5 font-mono text-xs">
+                        <span>{formatDateBR(d.due_date)}</span>
+                        {isAfterFinalDelivery(d.due_date, d.project?.data_entrega_final) && (
+                          <Badge
+                            variant="destructive"
+                            className="text-[10px] py-0 px-1.5 bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-normal font-sans"
+                            title={`⚠️ Atenção: Prazo ultrapassa a entrega final do projeto (${formatDateBR(d.project?.data_entrega_final)})`}
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                            Pós-entrega
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={sCfg.className}>

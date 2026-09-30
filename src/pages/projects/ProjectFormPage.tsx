@@ -67,6 +67,7 @@ export default function ProjectFormPage() {
     description: '',
     start_date: '',
     end_date: '',
+    data_entrega_final: '',
     status: 'active',
     origin_type: 'manual',
     selectedAreas: [] as string[],
@@ -100,6 +101,9 @@ export default function ProjectFormPage() {
               description: proj.description || '',
               start_date: proj.start_date ? proj.start_date.split('T')[0] : '',
               end_date: proj.end_date ? proj.end_date.split('T')[0] : '',
+              data_entrega_final: proj.data_entrega_final
+                ? proj.data_entrega_final.split('T')[0]
+                : '',
               status: proj.status || 'active',
               origin_type: proj.origin_type || 'manual',
               selectedAreas: projectAreas.map((a: any) => a.area_id) || [],
@@ -146,6 +150,24 @@ export default function ProjectFormPage() {
     }
     if (step === 2 && !formData.name)
       return toast({ title: 'Preencha o nome do projeto', variant: 'destructive' })
+    if (step === 2 && !formData.data_entrega_final)
+      return toast({
+        title: 'Data de Entrega Final obrigatória',
+        description: 'Informe a Data de Entrega Final do Projeto.',
+        variant: 'destructive',
+      })
+    if (
+      step === 2 &&
+      formData.start_date &&
+      formData.data_entrega_final &&
+      formData.data_entrega_final < formData.start_date
+    ) {
+      return toast({
+        title: 'Data de Entrega Final inválida',
+        description: 'A data de entrega final não pode ser anterior ao início do job.',
+        variant: 'destructive',
+      })
+    }
     if (step === 2 && !formData.end_date)
       return toast({ title: 'Preencha a data de fim prevista', variant: 'destructive' })
     if (step === 3) {
@@ -190,6 +212,7 @@ export default function ProjectFormPage() {
           description: formData.description,
           start_date: formData.start_date || null,
           end_date: formData.end_date,
+          data_entrega_final: formData.data_entrega_final || null,
           client_id: formData.client_id,
           status: formData.status,
           origin_type: formData.origin_type,
@@ -221,6 +244,7 @@ export default function ProjectFormPage() {
             description: formData.description,
             start_date: formData.start_date || new Date().toISOString().split('T')[0],
             end_date: formData.end_date,
+            data_entrega_final: formData.data_entrega_final,
             client_id: formData.client_id,
             status: formData.status,
             origin_type: formData.origin_type,
@@ -414,26 +438,59 @@ export default function ProjectFormPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Data de Início</Label>
-                  <Input
-                    type="date"
-                    disabled={isProjectCompleted}
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>
-                    Data de Fim Prevista <span className="text-red-500">*</span>
+              <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold text-orange-950 flex items-center gap-1.5">
+                    🎯 Data de Entrega Final do Projeto <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    type="date"
-                    disabled={isProjectCompleted}
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  />
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-white border-orange-300 text-orange-800"
+                  >
+                    Marco Imutável do Projeto
+                  </Badge>
+                </div>
+                <Input
+                  type="date"
+                  disabled={isProjectCompleted}
+                  value={formData.data_entrega_final}
+                  onChange={(e) => setFormData({ ...formData, data_entrega_final: e.target.value })}
+                  className="bg-white border-orange-300 focus-visible:ring-orange-500"
+                />
+                <p className="text-xs text-orange-900/80">
+                  Data limite global para conclusão e entrega de todas as demandas e entregáveis ao
+                  cliente. Prazos de demandas não devem ultrapassar esta data.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200/80 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Período de Realização do Job (Início e Fim)
+                  </Label>
+                  <span className="text-xs text-muted-foreground">Janela operacional do job</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Data de Início do Job</Label>
+                    <Input
+                      type="date"
+                      disabled={isProjectCompleted}
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">
+                      Data de Fim Prevista do Job <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="date"
+                      disabled={isProjectCompleted}
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">

@@ -10,6 +10,7 @@ export interface DashboardDemand {
   due_date: string | null
   created_at: string
   project_name: string | null
+  project_data_entrega_final?: string | null
   from_user_name: string | null
 }
 
@@ -58,7 +59,7 @@ export function useDashboardData(): DashboardData {
             .from('demands')
             .select(
               `id, title, status, priority, due_date, created_at,
-              project:projects(name),
+              project:projects(name, data_entrega_final),
               from_user:users!demands_from_user_id_fkey(full_name)`,
             )
             .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
@@ -78,6 +79,7 @@ export function useDashboardData(): DashboardData {
           due_date: d.due_date,
           created_at: d.created_at,
           project_name: d.project?.name ?? null,
+          project_data_entrega_final: d.project?.data_entrega_final ?? null,
           from_user_name: d.from_user?.full_name ?? null,
         }))
 

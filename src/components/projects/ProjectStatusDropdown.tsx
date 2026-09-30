@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 interface ProjectStatusDropdownProps {
   projectId: string
   end_date: string | null
+  data_entrega_final?: string | null
 }
 
 /**
@@ -18,7 +19,11 @@ interface ProjectStatusDropdownProps {
  * project's due date in highlight at the top, followed by one row per area
  * with a count-by-status summary and an orange progress bar.
  */
-export function ProjectStatusDropdown({ projectId, end_date }: ProjectStatusDropdownProps) {
+export function ProjectStatusDropdown({
+  projectId,
+  end_date,
+  data_entrega_final,
+}: ProjectStatusDropdownProps) {
   const [areas, setAreas] = useState<ProjectAreaStatus[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,15 +52,26 @@ export function ProjectStatusDropdown({ projectId, end_date }: ProjectStatusDrop
 
   return (
     <div className="bg-zinc-50 border-t border-zinc-200/60 px-4 py-4 animate-expand-down">
-      {/* Due date in highlight */}
-      <div className="flex items-center gap-2 mb-4">
-        <Calendar className="h-4 w-4 text-orange-500" />
-        <span className="text-xs font-medium text-zinc-500">Entrega prevista:</span>
-        {end_date ? (
-          <span className="text-sm font-semibold text-zinc-900">{formatDateBR(end_date)}</span>
-        ) : (
-          <span className="text-sm font-medium text-zinc-400 italic">Sem prazo definido</span>
+      {/* Due date and Final delivery in highlight */}
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        {data_entrega_final && (
+          <div className="flex items-center gap-2 bg-orange-100/70 border border-orange-200 px-3 py-1.5 rounded-lg">
+            <span className="text-sm">🎯</span>
+            <span className="text-xs font-semibold text-orange-950">Entrega Final:</span>
+            <span className="text-sm font-bold text-orange-900 font-mono">
+              {formatDateBR(data_entrega_final)}
+            </span>
+          </div>
         )}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-zinc-500" />
+          <span className="text-xs font-medium text-zinc-500">Fim do Job:</span>
+          {end_date ? (
+            <span className="text-sm font-semibold text-zinc-800">{formatDateBR(end_date)}</span>
+          ) : (
+            <span className="text-sm font-medium text-zinc-400 italic">Sem prazo definido</span>
+          )}
+        </div>
       </div>
 
       {loading ? (

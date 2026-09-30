@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/stores/use-app-store'
 import { MACRO_AREAS, GOVERNANCE_GATES, SlaStatus, ProjectStatus } from '@/lib/types'
 import { Eye } from 'lucide-react'
+import { formatDateBR } from '@/lib/utils'
 
 const statusMap: Record<
   ProjectStatus,
@@ -47,6 +48,7 @@ export function ProjectsTable() {
               <TableHead>Gate Ativo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>SLA</TableHead>
+              <TableHead>Entrega Final</TableHead>
               <TableHead className="text-right">Ação</TableHead>
             </TableRow>
           </TableHeader>
@@ -73,6 +75,15 @@ export function ProjectsTable() {
                     <span className={`h-2 w-2 rounded-full ${slaMap[project.sla_status].color}`} />
                     <span className="text-sm">{slaMap[project.sla_status].label}</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  {project.data_entrega_final ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-orange-950 bg-orange-100/70 border border-orange-200 text-xs px-2 py-0.5 rounded-full font-mono">
+                      🎯 {formatDateBR(project.data_entrega_final)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">-</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button

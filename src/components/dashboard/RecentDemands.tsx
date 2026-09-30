@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Inbox, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+import { Inbox, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
 import type { DashboardDemand } from '@/hooks/use-dashboard-data'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, isAfterFinalDelivery } from '@/lib/utils'
 
 interface RecentDemandsProps {
   demands: DashboardDemand[]
@@ -71,8 +71,20 @@ export function RecentDemands({ demands, loading }: RecentDemandsProps) {
                           </span>
                         )}
                         {demand.due_date && (
-                          <span className="text-xs text-zinc-400">
+                          <span className="text-xs text-zinc-400 flex items-center gap-1 font-mono">
                             • {formatDateBR(demand.due_date)}
+                            {isAfterFinalDelivery(
+                              demand.due_date,
+                              demand.project_data_entrega_final,
+                            ) && (
+                              <span
+                                className="text-amber-600 font-sans font-semibold inline-flex items-center gap-0.5 text-[10px] bg-amber-50 border border-amber-200 px-1 rounded"
+                                title={`⚠️ Prazo pós-entrega final (${formatDateBR(demand.project_data_entrega_final)})`}
+                              >
+                                <AlertTriangle className="w-2.5 h-2.5 text-amber-500" />
+                                Pós-entrega
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>

@@ -13,10 +13,12 @@ import {
   Banknote,
   Sparkles,
   Link as LinkIcon,
+  AlertTriangle,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, isAfterFinalDelivery } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -52,7 +54,9 @@ import { DemandAuditHistory } from '@/components/demands/DemandAuditHistory'
 import { DemandAuditHistoryDialog } from '@/components/demands/DemandAuditHistoryDialog'
 import { logDemandAuditEntry } from '@/services/demand-audit'
 import { useDemandAuditFilters } from '@/hooks/use-demand-audit-filters'
-import { BUDGET_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/lib/constants/demand-status'
+import { DetailSkeleton } from '@/components/ui/page-skeleton'
+import { Input } from '@/components/ui/input'
+import { updateDemand } from '@/services/demands'
 
 export interface DemandDetailsProps {
   /** The demand id to load and render. */
@@ -291,6 +295,9 @@ export function DemandDetails({
   }
 
   const [producaoAreaId, setProducaoAreaId] = useState<string | null>(null)
+  const [isEditingDueDate, setIsEditingDueDate] = useState(false)
+  const [newDueDate, setNewDueDate] = useState('')
+  const [savingDueDate, setSavingDueDate] = useState(false)
 
   useEffect(() => {
     async function fetchProducaoAreaId() {
@@ -313,6 +320,44 @@ export function DemandDetails({
     demand?.to_area?.code === 'criacao' ||
     demand?.to_area?.name?.toLowerCase().includes('criação') ||
     demand?.to_area?.name?.toLowerCase().includes('criacao')
+
+  const canEditDueDate =
+    !demand?.is_locked &&
+    (userCtx?.profile?.is_admin ||
+      userCtx?.profile?.is_director ||
+      userCtx?.id === demand?.from_user_id ||
+      userCtx?.id === demand?.to_user_id)
+
+  const handleSaveDueDate = async () => {
+    if (!demand) return
+    setSavingDueDate(true)
+    try {
+      const val = newDueDate || null
+      await updateDemand(demand.id, { due_date: val })
+      if (userCtx?.id) {
+        await logDemandAuditEntry({
+          demand_id: demand.id,
+          user_id: userCtx.id,
+          field_name: 'due_date',
+          old_value: demand.due_date || '',
+          new_value: val || '',
+        })
+      }
+      setDemand({ ...demand, due_date: val })
+      setIsEditingDueDate(false)
+      setAuditRefreshKey((k) => k + 1)
+      toast({ title: 'Prazo atualizado com sucesso' })
+      onDemandChanged?.()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao atualizar prazo',
+        description: err?.message || 'Falha ao salvar prazo',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingDueDate(false)
+    }
+  }
 
   const isProducaoDemand = Boolean(
     (producaoAreaId && demand?.to_area_id === producaoAreaId) ||
@@ -346,10 +391,15 @@ export function DemandDetails({
             <h1 className="text-2xl font-bold">{demand.title}</h1>
             <Link
               to={`/projetos/${demand.project_id}`}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-blue-600 hover:underline block"
             >
               Projeto: {demand.project?.name} ({demand.project?.project_code})
             </Link>
+            {demand.project?.data_entrega_final && (
+              <span className="inline-flex items-center gap-1 text-xs text-orange-900 bg-orange-100/70 border border-orange-200 px-2 py-0.5 rounded-md font-mono mt-1">
+                🎯 Entrega final: {formatDateBR(demand.project.data_entrega_final)}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -501,12 +551,76 @@ export function DemandDetails({
             </div>
 
             <div className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Prazo Limite
-              </span>
-              <p className="font-medium text-xs sm:text-sm py-1 font-mono">
-                {formatDateBR(demand.due_date)}
-              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Prazo Limite
+                </span>
+                {canEditDueDate && !isEditingDueDate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewDueDate(demand.due_date ? demand.due_date.split('T')[0] : '')
+                      setIsEditingDueDate(true)
+                    }}
+                    className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5 font-medium"
+                    title="Editar prazo da demanda"
+                  >
+                    <Pencil className="w-2.5 h-2.5" />
+                    Editar
+                  </button>
+                )}
+              </div>
+              {isEditingDueDate ? (
+                <div className="space-y-1 pt-1">
+                  <Input
+                    type="date"
+                    value={newDueDate}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                    className="h-7 text-xs font-mono p-1"
+                  />
+                  {isAfterFinalDelivery(newDueDate, demand.project?.data_entrega_final) && (
+                    <p className="text-[10px] text-amber-700 font-medium">
+                      ⚠️ Ultrapassa a entrega final (
+                      {formatDateBR(demand.project?.data_entrega_final)})
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1 pt-1">
+                    <Button
+                      size="sm"
+                      className="h-6 px-2 text-[10px]"
+                      onClick={handleSaveDueDate}
+                      disabled={savingDueDate}
+                    >
+                      {savingDueDate ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-[10px]"
+                      onClick={() => setIsEditingDueDate(false)}
+                      disabled={savingDueDate}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-1">
+                  <p className="font-medium text-xs sm:text-sm font-mono flex items-center gap-1.5 flex-wrap">
+                    <span>{formatDateBR(demand.due_date)}</span>
+                    {isAfterFinalDelivery(demand.due_date, demand.project?.data_entrega_final) && (
+                      <Badge
+                        variant="destructive"
+                        className="text-[10px] py-0 px-1.5 bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-normal"
+                        title={`⚠️ Atenção: Prazo ultrapassa a data de entrega final (${formatDateBR(demand.project?.data_entrega_final)})`}
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Pós-entrega
+                      </Badge>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
 
             {demand.tipo_criacao && (
@@ -545,6 +659,22 @@ export function DemandDetails({
             <div className="mt-3 bg-red-50 p-2.5 rounded border border-red-200 text-xs text-red-800 flex items-center gap-2">
               <strong className="font-semibold">Motivo ({demand.status}):</strong>
               <span>{demand.cancellation_reason}</span>
+            </div>
+          )}
+
+          {/* Banner de Risco de Prazo se pós-entrega final */}
+          {isAfterFinalDelivery(demand.due_date, demand.project?.data_entrega_final) && (
+            <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900 flex items-start gap-2.5 text-xs">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-950">
+                  ⚠️ Atenção: este prazo ({formatDateBR(demand.due_date)}) ultrapassa a entrega
+                  final do projeto ({formatDateBR(demand.project?.data_entrega_final)}).
+                </p>
+                <p className="text-amber-800 text-[11px] mt-0.5">
+                  Risco de descumprimento do marco de entrega do projeto acordado com o cliente.
+                </p>
+              </div>
             </div>
           )}
 

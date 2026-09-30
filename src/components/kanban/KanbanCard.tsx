@@ -8,8 +8,9 @@ import {
   CornerUpLeft,
   MessageSquare,
   Paperclip,
+  AlertTriangle,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatDateBR, isAfterFinalDelivery } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -308,6 +309,15 @@ export function KanbanCard({
         {demand.tipo_criacao && (
           <span className="text-[10px] text-zinc-400 font-medium capitalize">
             {demand.tipo_criacao.replace('_', ' ')}
+          </span>
+        )}
+        {isAfterFinalDelivery(demand.due_date, demand.project?.data_entrega_final) && (
+          <span
+            className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300"
+            title={`⚠️ Prazo (${formatDateBR(demand.due_date)}) ultrapassa a entrega final do projeto (${formatDateBR(demand.project?.data_entrega_final)})`}
+          >
+            <AlertTriangle className="w-3 h-3 text-amber-600" />
+            Prazo pós-entrega
           </span>
         )}
       </div>

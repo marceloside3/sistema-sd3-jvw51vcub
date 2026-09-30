@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { getProjects } from '@/services/projects'
 import { useCurrentUser } from '@/hooks/use-current-user'
-import { format } from 'date-fns'
+import { formatDateBR } from '@/lib/utils'
 import { getProjectStatusBadge } from '@/lib/constants/project-status'
 import { PageSkeleton } from '@/components/ui/page-skeleton'
 import { ProjectStatusDropdown } from '@/components/projects/ProjectStatusDropdown'
@@ -115,12 +115,13 @@ export default function ProjetosListPage() {
               <TableHead>Cliente</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Início previsto</TableHead>
+              <TableHead>Entrega Final</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canExpand ? 6 : 5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={canExpand ? 7 : 6} className="text-center py-8 text-gray-500">
                   Nenhum projeto encontrado
                 </TableCell>
               </TableRow>
@@ -190,12 +191,25 @@ function ProjectRowFragment({ project: p, canExpand, isOpen, onToggle }: Project
         </TableCell>
         <TableCell>{p.client?.name}</TableCell>
         <TableCell>{getProjectStatusBadge(p.status)}</TableCell>
-        <TableCell>{p.start_date ? format(new Date(p.start_date), 'dd/MM/yyyy') : '-'}</TableCell>
+        <TableCell>{p.start_date ? formatDateBR(p.start_date) : '-'}</TableCell>
+        <TableCell>
+          {p.data_entrega_final ? (
+            <span className="inline-flex items-center gap-1 font-semibold text-orange-950 bg-orange-100/70 border border-orange-200 text-xs px-2 py-0.5 rounded-full font-mono">
+              🎯 {formatDateBR(p.data_entrega_final)}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">Não definida</span>
+          )}
+        </TableCell>
       </TableRow>
       {canExpand && isOpen && (
         <TableRow className="border-b-0 hover:bg-transparent">
-          <TableCell colSpan={6} className="p-0">
-            <ProjectStatusDropdown projectId={p.id} end_date={p.end_date} />
+          <TableCell colSpan={7} className="p-0">
+            <ProjectStatusDropdown
+              projectId={p.id}
+              end_date={p.end_date}
+              data_entrega_final={p.data_entrega_final}
+            />
           </TableCell>
         </TableRow>
       )}

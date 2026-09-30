@@ -10,6 +10,7 @@ import {
   Coins,
   Sparkles,
   AlertCircle,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +42,7 @@ import { uploadAttachment } from '@/services/attachments'
 import { fetchAllLpuItems, LpuItem, findMatchingLpuItem, validateLpuQuantity } from '@/services/lpu'
 import { LpuItemPicker } from '@/components/demands/LpuItemPicker'
 import { NovaDemandaSkeleton } from '@/components/demands/NovaDemandaSkeleton'
+import { formatDateBR, isAfterFinalDelivery } from '@/lib/utils'
 
 interface DemandItem {
   item_name: string
@@ -717,6 +719,50 @@ export default function NovaDemandaPage() {
               </div>
             </div>
           )}
+
+          {!isCriacaoArea && !isFinanceiroArea && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Prazo da Demanda</Label>
+                {selectedProject?.data_entrega_final && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    Entrega final do projeto: {formatDateBR(selectedProject.data_entrega_final)}
+                  </span>
+                )}
+              </div>
+              <Input
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+              />
+            </div>
+          )}
+
+          {/* Alerta de Risco OPÇÃO B: Prazo ultrapassa entrega final do projeto (Permite salvar mas alerta visivelmente) */}
+          {(() => {
+            const currentDueDate = isFinanceiroArea
+              ? financeForm.payment_due_date
+              : formData.due_date
+            const finalDelivery = selectedProject?.data_entrega_final
+            if (isAfterFinalDelivery(currentDueDate, finalDelivery)) {
+              return (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-amber-900 flex items-start gap-3 animate-fade-in shadow-sm">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs sm:text-sm space-y-0.5">
+                    <p className="font-semibold text-amber-950">
+                      ⚠️ Atenção: este prazo ultrapassa a entrega final do projeto (
+                      {formatDateBR(finalDelivery)})
+                    </p>
+                    <p className="text-amber-800 text-xs">
+                      O salvamento é permitido, mas esta demanda fica sinalizada com alerta de risco
+                      de prazo pós-entrega.
+                    </p>
+                  </div>
+                </div>
+              )
+            }
+            return null
+          })()}
 
           {isCriacaoArea && (
             <div className="pt-4 border-t space-y-4 animate-fade-in">

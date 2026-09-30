@@ -59,6 +59,8 @@ export interface KanbanDemand {
     id: string
     name: string
     project_code: string
+    data_entrega_final?: string | null
+    end_date?: string | null
   } | null
   assignments?: DemandAssignment[]
   assigned_creative?: {
@@ -192,7 +194,7 @@ export async function getKanbanDemands(areaCode: string = 'criacao'): Promise<{
       to_area_id,
       from_area_id,
       created_at,
-      project:projects(id, name, project_code)
+      project:projects(id, name, project_code, data_entrega_final, end_date)
     `)
     .eq('to_area_id', area.id)
     .order('created_at', { ascending: true })
