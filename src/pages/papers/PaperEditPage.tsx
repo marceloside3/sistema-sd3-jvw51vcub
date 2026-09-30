@@ -498,7 +498,9 @@ export default function PaperEditPage() {
 
         <TabsContent value="benchmarks" className="mt-6">
           <BenchmarksTab
+            project={project}
             paper={currentPaper}
+            canEdit={canEditPaper}
             readOnly={!canEditPaper || !isLatest || currentPaper?.status !== 'draft'}
             onReload={refreshPapers}
           />
