@@ -148,28 +148,45 @@ export default function ProjectFormPage() {
       if (!formData.competence_month)
         return toast({ title: 'Selecione o mês de competência', variant: 'destructive' })
     }
-    if (step === 2 && !formData.name)
-      return toast({ title: 'Preencha o nome do projeto', variant: 'destructive' })
-    if (step === 2 && !formData.data_entrega_final)
-      return toast({
-        title: 'Data de Entrega Final obrigatória',
-        description: 'Informe a Data de Entrega Final do Projeto.',
-        variant: 'destructive',
-      })
-    if (
-      step === 2 &&
-      formData.start_date &&
-      formData.data_entrega_final &&
-      formData.data_entrega_final < formData.start_date
-    ) {
-      return toast({
-        title: 'Data de Entrega Final inválida',
-        description: 'A data de entrega final não pode ser anterior ao início do job.',
-        variant: 'destructive',
-      })
+    if (step === 2) {
+      if (!formData.name?.trim())
+        return toast({ title: 'Preencha o nome do projeto', variant: 'destructive' })
+      if (!formData.data_entrega_final)
+        return toast({
+          title: 'Data de Entrega Final obrigatória',
+          description: 'Informe a Data de Entrega Final do Projeto.',
+          variant: 'destructive',
+        })
+
+      const rawFinal = formData.data_entrega_final.split('T')[0]
+      const isValidFinalFormat = /^\d{4}-\d{2}-\d{2}$/.test(rawFinal)
+      const parsedFinal = isValidFinalFormat ? new Date(`${rawFinal}T00:00:00`) : null
+
+      if (!parsedFinal || isNaN(parsedFinal.getTime())) {
+        return toast({
+          title: 'Data de Entrega Final inválida',
+          description: 'Por favor, informe uma data de entrega final válida.',
+          variant: 'destructive',
+        })
+      }
+
+      if (formData.start_date) {
+        const rawStart = formData.start_date.split('T')[0]
+        if (/^\d{4}-\d{2}-\d{2}$/.test(rawStart)) {
+          const parsedStart = new Date(`${rawStart}T00:00:00`)
+          if (!isNaN(parsedStart.getTime()) && rawFinal < rawStart) {
+            return toast({
+              title: 'Data de Entrega Final inválida',
+              description: 'A data de entrega final não pode ser anterior ao início do job.',
+              variant: 'destructive',
+            })
+          }
+        }
+      }
+
+      if (!formData.end_date)
+        return toast({ title: 'Preencha a data de fim prevista', variant: 'destructive' })
     }
-    if (step === 2 && !formData.end_date)
-      return toast({ title: 'Preencha a data de fim prevista', variant: 'destructive' })
     if (step === 3) {
       if (formData.selectedAreas.length === 0)
         return toast({ title: 'Selecione ao menos uma área', variant: 'destructive' })
@@ -207,12 +224,18 @@ export default function ProjectFormPage() {
         fields.length > 0 && emptyFields.length === 0 ? new Date().toISOString() : null
 
       if (isEditMode && editingId) {
+        const finalDeliveryValue = formData.data_entrega_final
+          ? formData.data_entrega_final.split('T')[0]
+          : null
+        const startDateValue = formData.start_date ? formData.start_date.split('T')[0] : null
+        const endDateValue = formData.end_date ? formData.end_date.split('T')[0] : null
+
         const updatePayload: any = {
           name: formData.name,
           description: formData.description,
-          start_date: formData.start_date || null,
-          end_date: formData.end_date,
-          data_entrega_final: formData.data_entrega_final || null,
+          start_date: startDateValue,
+          end_date: endDateValue,
+          data_entrega_final: finalDeliveryValue,
           client_id: formData.client_id,
           status: formData.status,
           origin_type: formData.origin_type,
@@ -238,13 +261,21 @@ export default function ProjectFormPage() {
         toast({ title: 'Projeto atualizado com sucesso!' })
         navigate(`/projetos/${editingId}`)
       } else {
+        const finalDeliveryValue = formData.data_entrega_final
+          ? formData.data_entrega_final.split('T')[0]
+          : null
+        const startDateValue = formData.start_date
+          ? formData.start_date.split('T')[0]
+          : new Date().toISOString().split('T')[0]
+        const endDateValue = formData.end_date ? formData.end_date.split('T')[0] : null
+
         const project = await createProject(
           {
             name: formData.name,
             description: formData.description,
-            start_date: formData.start_date || new Date().toISOString().split('T')[0],
-            end_date: formData.end_date,
-            data_entrega_final: formData.data_entrega_final,
+            start_date: startDateValue,
+            end_date: endDateValue,
+            data_entrega_final: finalDeliveryValue,
             client_id: formData.client_id,
             status: formData.status,
             origin_type: formData.origin_type,
