@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -821,15 +822,11 @@ export function DemandItemsSection({
 
                               {/* Status do Custo */}
                               <TableCell className="text-center align-middle">
-                                {completed ? (
-                                  <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200 text-[10px] font-semibold">
-                                    Concluído
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 text-[10px] font-medium">
-                                    Pendente
-                                  </Badge>
-                                )}
+                                <StatusBadge
+                                  category="cost_status"
+                                  status={completed ? 'completed' : 'pending'}
+                                  size="sm"
+                                />
                               </TableCell>
 
                               {/* Ações */}

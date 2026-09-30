@@ -1,5 +1,6 @@
 import { TableCell, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Calendar, FileCheck2, GitBranch, Clock, Layers } from 'lucide-react'
 import { formatDateBR } from '@/lib/utils'
 import { SlaBadge } from '@/components/sla/SlaBadge'
@@ -27,15 +28,8 @@ export function HubExpandedRow({ project, slaLimit, colSpan }: HubExpandedRowPro
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <FileCheck2 className="h-3 w-3" /> G2
             </div>
-            {project.g2_status === 'approved' ? (
-              <Badge className="bg-green-500 hover:bg-green-600 text-xs">Aprovado</Badge>
-            ) : project.g2_status === 'override' ? (
-              <Badge
-                variant="secondary"
-                className="bg-orange-100 text-orange-800 border-orange-200 text-xs"
-              >
-                Override
-              </Badge>
+            {project.g2_status ? (
+              <StatusBadge category="g2_status" status={project.g2_status} size="sm" />
             ) : (
               <Badge variant="outline" className="text-gray-400 text-xs">
                 —

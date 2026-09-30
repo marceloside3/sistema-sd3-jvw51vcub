@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { StatusBadge } from '@/components/ui/status-badge'
 import type { KanbanDemand, KanbanStage } from '@/services/kanban'
 
 interface KanbanCardProps {
@@ -36,37 +37,6 @@ interface KanbanCardProps {
   areaCode?: string
   canMoveToStage?: (demand: KanbanDemand, targetStage: KanbanStage) => boolean
   onCustomValidate?: (demand: KanbanDemand, targetStage: KanbanStage) => void
-}
-
-// Priority badge styling — soft background, colored text
-function getPriorityInfo(priority: string) {
-  switch (priority) {
-    case 'urgent':
-      return {
-        label: 'Urgente',
-        badge: 'bg-rose-50 text-rose-600 border-rose-100',
-        dot: 'bg-rose-500',
-      }
-    case 'high':
-      return {
-        label: 'Alta',
-        badge: 'bg-red-50 text-red-600 border-red-100',
-        dot: 'bg-red-500',
-      }
-    case 'low':
-      return {
-        label: 'Baixa',
-        badge: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-        dot: 'bg-emerald-500',
-      }
-    case 'normal':
-    default:
-      return {
-        label: 'Média',
-        badge: 'bg-orange-50 text-orange-600 border-orange-100',
-        dot: 'bg-orange-500',
-      }
-  }
 }
 
 // Friendly relative-ish date label, e.g. "Amanhã 16:00" or "12 Ago 16:00"
@@ -152,7 +122,6 @@ export function KanbanCard({
   canMoveToStage,
   onCustomValidate,
 }: KanbanCardProps) {
-  const priorityInfo = getPriorityInfo(demand.priority)
   const due = demand.due_date ? formatDueLabel(demand.due_date) : null
 
   // Urgency detection (within 2 days) — keeps it subtle
@@ -295,17 +264,9 @@ export function KanbanCard({
         )}
       </div>
 
-      {/* Priority badge */}
-      <div className="flex items-center gap-1.5 mb-3">
-        <span
-          className={cn(
-            'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
-            priorityInfo.badge,
-          )}
-        >
-          <span className={cn('w-1.5 h-1.5 rounded-full', priorityInfo.dot)} />
-          {priorityInfo.label}
-        </span>
+      {/* Priority badge & metadata */}
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+        <StatusBadge category="demand_priority" status={demand.priority} size="sm" />
         {demand.tipo_criacao && (
           <span className="text-[10px] text-zinc-400 font-medium capitalize">
             {demand.tipo_criacao.replace('_', ' ')}
@@ -313,7 +274,7 @@ export function KanbanCard({
         )}
         {isAfterFinalDelivery(demand.due_date, demand.project?.data_entrega_final) && (
           <span
-            className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300"
+            className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300"
             title={`⚠️ Prazo (${formatDateBR(demand.due_date)}) ultrapassa a entrega final do projeto (${formatDateBR(demand.project?.data_entrega_final)})`}
           >
             <AlertTriangle className="w-3 h-3 text-amber-600" />

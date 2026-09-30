@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { SupplierSelect } from '@/components/suppliers/SupplierSelect'
 import type { Supplier } from '@/services/suppliers'
 import { SavingIndicator, type SaveStatus } from '@/components/demands/SavingIndicator'
@@ -421,17 +422,11 @@ export function ItemCostEditorDialog({
                 onRetry={() => persistChanges(false)}
               />
 
-              {isComplete ? (
-                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs font-semibold">
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Custos Completos
-                </Badge>
-              ) : (
-                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  Pendente Fornecedor/Custo
-                </Badge>
-              )}
+              <StatusBadge
+                category="cost_status"
+                status={isComplete ? 'completed' : 'pending'}
+                size="sm"
+              />
             </div>
           </div>
           <DialogDescription className="text-xs text-muted-foreground flex items-center gap-1 mt-1">

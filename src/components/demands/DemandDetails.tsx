@@ -19,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDateBR, isAfterFinalDelivery } from '@/lib/utils'
-import { BUDGET_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/lib/constants/demand-status'
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Dialog,
   DialogContent,
@@ -494,22 +494,7 @@ export function DemandDetails({
                 Prioridade
               </span>
               <div className="font-medium text-xs sm:text-sm capitalize py-1">
-                <Badge
-                  variant={
-                    demand.priority === 'urgent' || demand.priority === 'high'
-                      ? 'destructive'
-                      : 'outline'
-                  }
-                  className="font-semibold text-xs"
-                >
-                  {demand.priority === 'urgent'
-                    ? 'Urgente'
-                    : demand.priority === 'high'
-                      ? 'Alta'
-                      : demand.priority === 'low'
-                        ? 'Baixa'
-                        : 'Média'}
-                </Badge>
+                <StatusBadge category="demand_priority" status={demand.priority} />
               </div>
             </div>
 
@@ -684,24 +669,14 @@ export function DemandDetails({
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">Orçamento:</span>
-                  <Badge
-                    className={
-                      BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.className || ''
-                    }
-                  >
-                    {BUDGET_STATUS_CONFIG[demand.budget_status || 'pending']?.label || 'Pendente'}
-                  </Badge>
+                  <StatusBadge
+                    category="budget_status"
+                    status={demand.budget_status || 'pending'}
+                  />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">Pagamento:</span>
-                  <Badge
-                    className={
-                      PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.className || ''
-                    }
-                  >
-                    {PAYMENT_STATUS_CONFIG[demand.payment_status || 'none']?.label ||
-                      'Não Iniciado'}
-                  </Badge>
+                  <StatusBadge category="payment_status" status={demand.payment_status || 'none'} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
