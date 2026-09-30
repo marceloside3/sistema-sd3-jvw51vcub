@@ -60,7 +60,7 @@ export async function getDemandById(id: string) {
     .from('demands')
     .select(`
       *,
-      project:projects(id, name, project_code, client_id),
+      project:projects(id, name, project_code, client_id, data_entrega_final, end_date),
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
       from_area:areas!demands_from_area_id_fkey(id, name, code),
@@ -218,7 +218,7 @@ export async function getAllUserDemands(userId: string) {
     .from('demands')
     .select(`
       *,
-      project:projects(id, name, project_code),
+      project:projects(id, name, project_code, data_entrega_final, end_date),
       from_user:users!demands_from_user_id_fkey(id, full_name),
       to_user:users!demands_to_user_id_fkey(id, full_name),
       from_area:areas!demands_from_area_id_fkey(id, name),

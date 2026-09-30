@@ -17,6 +17,7 @@ export interface Project {
   sla_status: SlaStatus
   kamino_sync_id: string | null
   gates_passed: number[]
+  data_entrega_final?: string | null
   briefing_data: {
     objective: string
     target_audience: string

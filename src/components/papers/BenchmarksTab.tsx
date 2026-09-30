@@ -176,7 +176,8 @@ export function BenchmarksTab({ project, paper, readOnly, canEdit, onReload }: B
     setResult(null)
     setGeneratedConcept(null)
     setVisualDirection('')
-    setErrorMessage('')    setConceptImagesGenerated(0)
+    setErrorMessage('')
+    setConceptImagesGenerated(0)
   }, [project?.id, paper?.id])
 
   const runAnalysis = useCallback(async () => {

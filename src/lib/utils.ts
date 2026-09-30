@@ -19,6 +19,22 @@ export function formatDateBR(dateStr?: string | null): string {
   return `${day}/${month}/${year}`
 }
 
+/**
+ * Checks whether a given due date is strictly AFTER the project's final delivery date (data_entrega_final).
+ * Returns false if either date is missing/empty, or if due date is <= final delivery date.
+ * Both inputs can be ISO strings ('YYYY-MM-DD' or full ISO timestamps).
+ */
+export function isAfterFinalDelivery(
+  dueDate?: string | null,
+  dataEntregaFinal?: string | null,
+): boolean {
+  if (!dueDate || !dataEntregaFinal) return false
+  const due = dueDate.split('T')[0]
+  const final = dataEntregaFinal.split('T')[0]
+  if (!due || !final) return false
+  return due > final
+}
+
 // Add any other utility functions here
 // Build triggered to ensure formatDateBR logic without timezone shift is applied.
 // Forced production rebuild and publish to Skip Cloud to guarantee the updated formatDateBR is bundled.
