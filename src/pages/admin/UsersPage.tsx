@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { toast } from '@/components/ui/use-toast'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -337,12 +338,11 @@ export default function UsersPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={u.is_active ? 'outline' : 'destructive'}
-                        className={u.is_active ? 'bg-green-50 text-green-700 border-green-200' : ''}
-                      >
-                        {u.is_active ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      <StatusBadge
+                        category="entity_active"
+                        status={u.is_active ? 'active' : 'inactive'}
+                        size="sm"
+                      />
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Tooltip>

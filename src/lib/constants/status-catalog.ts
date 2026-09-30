@@ -283,8 +283,14 @@ export const G2_STATUS_CATALOG: Record<string, StatusMeta> = {
   },
   override: {
     label: 'Override',
-    className: 'bg-orange-50 text-orange-700 border-orange-200',
-    dotColor: 'bg-orange-500',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
+    icon: AlertTriangle,
+  },
+  g2_override: {
+    label: 'Exceção G2 (Override)',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
     icon: AlertTriangle,
   },
 }
@@ -302,8 +308,20 @@ export const G3_STATUS_CATALOG: Record<string, StatusMeta> = {
     dotColor: 'bg-amber-500',
     icon: Clock,
   },
+  g3_submitted: {
+    label: 'Submetido para Aprovação Diretoria',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
+    icon: Send,
+  },
   approved: {
     label: 'Aprovado',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dotColor: 'bg-emerald-500',
+    icon: CheckCircle2,
+  },
+  g3_approved: {
+    label: 'Aprovação Diretoria concluída',
     className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     dotColor: 'bg-emerald-500',
     icon: CheckCircle2,
@@ -314,10 +332,22 @@ export const G3_STATUS_CATALOG: Record<string, StatusMeta> = {
     dotColor: 'bg-rose-500',
     icon: XCircle,
   },
+  g3_rejected: {
+    label: 'Aprovação Diretoria recusada',
+    className: 'bg-rose-50 text-rose-700 border-rose-200',
+    dotColor: 'bg-rose-500',
+    icon: XCircle,
+  },
   override: {
     label: 'Override',
-    className: 'bg-orange-50 text-orange-700 border-orange-200',
-    dotColor: 'bg-orange-500',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
+    icon: AlertTriangle,
+  },
+  g3_override: {
+    label: 'Override Aprovação Diretoria',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
     icon: AlertTriangle,
   },
 }

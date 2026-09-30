@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { toast } from '@/components/ui/use-toast'
 import {
   Dialog,
@@ -166,13 +167,8 @@ export default function AreasPage() {
                 <TableCell className="font-mono text-sm">{a.code}</TableCell>
                 <TableCell className="font-medium">{a.name}</TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
-                    <Badge
-                      variant={a.is_active ? 'outline' : 'destructive'}
-                      className={a.is_active ? 'bg-green-50 text-green-700 border-green-200' : ''}
-                    >
-                      {a.is_active ? 'Ativa' : 'Inativa'}
-                    </Badge>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge category="active_boolean" status={a.is_active} size="sm" />
                     {a.is_hub && (
                       <Badge variant="secondary" className="bg-blue-50 text-blue-700">
                         Hub

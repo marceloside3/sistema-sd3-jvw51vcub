@@ -1,39 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase/client'
 import { formatDateBR } from '@/lib/utils'
-import { AlertCircle, Search, Send, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
+import { AlertCircle, Search, CheckCircle2 } from 'lucide-react'
+
+const G3_EVENT_TYPES = ['g3_submitted', 'g3_approved', 'g3_rejected', 'g3_override'] as const
 
 export default function AuditReport() {
   const [overrides, setOverrides] = useState<any[]>([])
   const [auditEvents, setAuditEvents] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState('')
-
-  const G3_EVENT_META: Record<string, { label: string; color: string; icon: any }> = {
-    g3_submitted: {
-      label: 'Submetido para Aprovação Diretoria',
-      color: 'bg-blue-100 text-blue-800',
-      icon: Send,
-    },
-    g3_approved: {
-      label: 'Aprovação Diretoria concluída',
-      color: 'bg-green-100 text-green-800',
-      icon: CheckCircle2,
-    },
-    g3_rejected: {
-      label: 'Aprovação Diretoria recusada',
-      color: 'bg-red-100 text-red-800',
-      icon: XCircle,
-    },
-    g3_override: {
-      label: 'Override Aprovação Diretoria',
-      color: 'bg-orange-100 text-orange-800',
-      icon: AlertTriangle,
-    },
-  }
 
   useEffect(() => {
     async function loadData() {
@@ -51,7 +31,7 @@ export default function AuditReport() {
         setOverrides(overrideData)
       }
 
-      const g3EventTypes = Object.keys(G3_EVENT_META)
+      const g3EventTypes = [...G3_EVENT_TYPES]
       const { data: g3Data, error: g3Error } = await supabase
         .from('project_audit_log')
         .select(`
@@ -147,9 +127,7 @@ export default function AuditReport() {
                           })}
                         </p>
                       </div>
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                        Exceção G2
-                      </Badge>
+                      <StatusBadge category="g2" status="g2_override" label="Exceção G2" showIcon />
                     </div>
 
                     <div className="bg-background border rounded p-3 text-sm">
@@ -203,12 +181,6 @@ export default function AuditReport() {
           ) : (
             <div className="space-y-4">
               {auditEvents.map((ev) => {
-                const meta = G3_EVENT_META[ev.event_type] || {
-                  label: ev.event_type,
-                  color: 'bg-gray-100 text-gray-800',
-                  icon: AlertCircle,
-                }
-                const Icon = meta.icon
                 const metadata = (ev.metadata as any) || {}
                 const proj = ev.projects
                 return (
@@ -233,10 +205,7 @@ export default function AuditReport() {
                           })}
                         </p>
                       </div>
-                      <Badge className={meta.color}>
-                        <Icon className="w-3 h-3 mr-1" />
-                        {meta.label}
-                      </Badge>
+                      <StatusBadge category="g3" status={ev.event_type} showIcon />
                     </div>
 
                     {metadata.version && (

@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { toast } from '@/components/ui/use-toast'
 import {
   Dialog,
@@ -173,13 +174,12 @@ export default function ProfilesPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
-                    <Badge
-                      variant={p.is_active ? 'outline' : 'destructive'}
-                      className={p.is_active ? 'bg-green-50 text-green-700 border-green-200' : ''}
-                    >
-                      {p.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge
+                      category="entity_active"
+                      status={p.is_active ? 'active' : 'inactive'}
+                      size="sm"
+                    />
                     {p.is_system && (
                       <Badge variant="secondary" className="bg-gray-100 text-gray-600">
                         Sistema

@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { toast } from '@/components/ui/use-toast'
 import {
   Select,
@@ -151,14 +151,11 @@ export default function ClientsPage() {
                 <TableCell>{c.cnpj || '-'}</TableCell>
                 <TableCell>{c.segment || '-'}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant={c.status === 'active' ? 'outline' : 'destructive'}
-                    className={
-                      c.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : ''
-                    }
-                  >
-                    {c.status === 'active' ? 'Ativo' : 'Inativo'}
-                  </Badge>
+                  <StatusBadge
+                    category="entity_active"
+                    status={c.status === 'active' ? 'active' : 'inactive'}
+                    size="sm"
+                  />
                 </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="sm" asChild>
