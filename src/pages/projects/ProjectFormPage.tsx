@@ -174,10 +174,11 @@ export default function ProjectFormPage() {
         const rawStart = formData.start_date.split('T')[0]
         if (/^\d{4}-\d{2}-\d{2}$/.test(rawStart)) {
           const parsedStart = new Date(`${rawStart}T00:00:00`)
-          if (!isNaN(parsedStart.getTime()) && rawFinal < rawStart) {
+          if (!isNaN(parsedStart.getTime()) && rawFinal > rawStart) {
             return toast({
               title: 'Data de Entrega Final inválida',
-              description: 'A data de entrega final não pode ser anterior ao início do job.',
+              description:
+                'A Data de Entrega Final deve ser anterior ou igual ao início do job (o conteúdo precisa estar pronto antes da execução do job).',
               variant: 'destructive',
             })
           }
@@ -489,8 +490,9 @@ export default function ProjectFormPage() {
                   className="bg-white border-orange-300 focus-visible:ring-orange-500"
                 />
                 <p className="text-xs text-orange-900/80">
-                  Data limite global para conclusão e entrega de todas as demandas e entregáveis ao
-                  cliente. Prazos de demandas não devem ultrapassar esta data.
+                  Data em que todo o conteúdo deve estar pronto para apresentação ao cliente, antes
+                  da execução do job. Prazos de demandas e entregas de conteúdo não devem
+                  ultrapassar esta data.
                 </p>
               </div>
 
